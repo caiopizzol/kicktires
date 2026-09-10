@@ -33,7 +33,11 @@ async function check(label: string, action: () => unknown | Promise<unknown>) {
   }
 }
 function run(file: string, args: string[], hint: string) {
-  const result = spawnSync(file, args, { encoding: "utf8", timeout: 10000 });
+  const result = spawnSync(file, args, {
+    encoding: "utf8",
+    timeout: 10000,
+    cwd: "/",
+  });
   if (result.error || result.status !== 0) throw new Error(hint);
   return result.stdout.trim();
 }
