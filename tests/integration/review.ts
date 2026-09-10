@@ -1,3 +1,5 @@
+import { parseArgs } from "node:util";
+import { resolve } from "node:path";
 import { mkdtemp, writeFile, readFile, stat, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -6,6 +8,7 @@ import assert from "node:assert/strict";
 import { command, quote } from "../../src/process.ts";
 import { startContextServer } from "./fixtures/requirements-mcp.ts";
 
+const { values } = parseArgs({ options: { profile: { type: "string" } } });
 const directory = await mkdtemp(join(tmpdir(), "kicktires-smoke-"));
 const server = startContextServer();
 await once(server, "listening");
@@ -35,7 +38,12 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
   git("commit", "-qm", "test: add counter");
   const base = git("rev-parse", "HEAD");
   const profile = JSON.parse(
-    await readFile(new URL("../../examples/profile.json", import.meta.url), "utf8"),
+    await readFile(
+      values.profile
+        ? resolve(values.profile)
+        : new URL("../../examples/profile.json", import.meta.url),
+      "utf8",
+    ),
   );
   Object.assign(profile, {
     setup: {

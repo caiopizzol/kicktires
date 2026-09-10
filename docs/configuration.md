@@ -4,7 +4,8 @@ Pass a trusted JSON file with `--profile`. It selects commands, credentials and 
 endpoints; never load it from a PR head. Unknown fields fail validation. Skill paths
 resolve relative to the profile.
 
-Start with [examples/profile.json](../examples/profile.json), then add capabilities:
+Start with [examples/profile.json](../examples/profile.json). For browser checks,
+extra skills and MCP context:
 
 ```json
 {
@@ -33,27 +34,61 @@ Replace the example commands, skill path and MCP endpoint with real ones. Omit
 
 ## Models and authentication
 
-| Provider    | Credential          | Integration                   |
-| ----------- | ------------------- | ----------------------------- |
-| `openai`    | `OPENAI_API_KEY`    | Direct OpenAI API             |
-| `anthropic` | `ANTHROPIC_API_KEY` | Direct Anthropic API          |
-| `xai`       | `XAI_API_KEY`       | Direct xAI API for Grok       |
-| `chatgpt`   | Eve login file      | Subscription path; unverified |
+| Provider    | Credential            | Integration          |
+| ----------- | --------------------- | -------------------- |
+| `openai`    | `OPENAI_API_KEY`      | OpenAI API           |
+| `anthropic` | `ANTHROPIC_API_KEY`   | Anthropic API        |
+| `xai`       | `XAI_API_KEY`         | xAI API              |
+| `chatgpt`   | Eve login file        | ChatGPT subscription |
+| `codex`     | Dedicated Codex login | Codex CLI adapter    |
 
-API adapters are typechecked; see the current validation limits before deployment.
-Live end-to-end validation of these direct providers is pending. Earlier Fireworks
-trials do not validate them. Fireworks is no longer supported; migrate profiles and
-secrets before upgrading an existing worker.
+The API adapters are typechecked; live end-to-end validation is pending. The Eve
+subscription path is unverified. Codex validation is described below. Fireworks is
+unsupported; existing workers must [migrate profiles and secrets](upgrading.md).
 
 Choose a provider model with tool calling and structured output support. `apiKeyEnv`
-overrides the credential variable name, never its value. `contextWindow` defaults to
+sets the credential variable name, not the key itself. `contextWindow` defaults to
 100,000 tokens; set it to the model's capacity. Custom endpoints are not supported.
 
 ChatGPT uses Eve's `eve dev` → `/model` → Provider → ChatGPT subscription login.
 Sign in as the account running the reviewer. Credentials live in
-`~/.eve/auth/chatgpt.json`, separately from Codex; review configuration changes and
-rebuild if needed. Eve managed deployment rejects this local login path.
+`~/.eve/auth/chatgpt.json`, separately from Codex. Eve managed deployment rejects
+this local login path.
 Claude Code subscriptions and Meta Muse execution are not implemented.
+
+## Codex subscription
+
+From the installed release directory, sign in as the account running reviews:
+
+```sh
+mkdir -p "$HOME/.local/share/kicktires/codex"
+chmod 700 "$HOME/.local/share/kicktires/codex"
+CODEX_HOME="$HOME/.local/share/kicktires/codex" bunx --no-install codex login --device-auth
+```
+
+Set the trusted profile's `model` field, using an absolute `codexHome` path:
+
+```json
+{
+  "provider": "codex",
+  "id": "gpt-5.6-terra",
+  "codexHome": "/home/runner/.local/share/kicktires/codex"
+}
+```
+
+The CLI manages login and token refresh; the model needs no API key or GitHub
+secret. Keep `auth.json` private (mode `600`) and out of PRs, profiles and sandboxes.
+Use a dedicated home without personal configuration or skills, and a separate
+login file for each concurrent worker account. The CLI may create account-synced
+plugin caches, but its app access and code execution are disabled.
+
+Codex proposes responses; Eve executes tools and validates evidence. Each step
+starts a fresh Codex thread with Eve's conversation, increasing context use compared
+with a persistent thread. The adapter uses the experimental app-server API in pinned
+CLI version 0.154.0. Subscription limits and reauthentication apply.
+
+Clean and seeded browser-regression tests verified terminal checks, browser checks
+and MCP context using a ChatGPT subscription.
 
 ## Checks and browser
 

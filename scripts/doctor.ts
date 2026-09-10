@@ -1,3 +1,4 @@
+import { assertCodexHome } from "../src/codex.ts";
 import { parseArgs } from "node:util";
 import { access, readFile, stat } from "node:fs/promises";
 import { constants } from "node:fs";
@@ -71,6 +72,7 @@ await check("Trusted profile and skills", async () => {
   if (credentialNames.some((name) => name && /^(GITHUB_|GH_|ACTIONS_|GIT_)/.test(name)))
     throw new Error("Model/MCP credentials cannot use GitHub, Actions or Git variable names.");
   await loadSkills(profile.skills.map((path) => resolve(dirname(profilePath), path)));
+  if (profile.model.provider === "codex") assertCodexHome(profile.model.codexHome);
   if (profile.model.provider === "chatgpt")
     throw new Error(
       "Subscription login is not verified for unattended installation; configure an API provider.",

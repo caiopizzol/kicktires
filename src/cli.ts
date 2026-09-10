@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { mkdir, mkdtemp, readFile, writeFile, open, chmod, realpath } from "node:fs/promises";
 import { resolve, join, dirname } from "node:path";
@@ -96,6 +97,11 @@ try {
       WORKFLOW_LOCAL_DATA_DIR: join(directory, ".eve/.workflow-data"),
       NODE_ENV: "production",
       KICKTIRES_JOB: join(directory, "job.json"),
+      ...(profile.model.provider === "codex"
+        ? {
+            KICKTIRES_CODEX_CLI: fileURLToPath(import.meta.resolve("@openai/codex/bin/codex.js")),
+          }
+        : {}),
       KICKTIRES_PASSWORD: password,
     },
     stdio: ["ignore", log.fd, log.fd],

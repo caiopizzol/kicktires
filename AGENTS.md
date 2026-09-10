@@ -10,6 +10,8 @@ structure and verification.
 - Use small modules and kebab-case filenames. Eve tool filenames use snake_case tool IDs.
 - Run `bun run check` and `bun run build` before committing. Use conventional commits.
 - Keep credentials, private reports and operator handoffs out of tracked files.
-- Do not add another agent framework or Slack functionality.
+- Eve owns tool execution and evidence; Codex is an inference adapter. Do not add unrelated agent frameworks or Slack functionality.
 
 Local operator history, when present, is in `.runs/archive/goals/`.
+
+Active operator goal: `.runs/codex-self-review/goal.md` (local, untracked).

@@ -8,7 +8,8 @@ The CLI and GitHub adapter share one review workflow. GitHub support currently c
 private repositories and same-repository PR branches.
 
 kicktires owns inputs, trusted configuration, evidence validation and reporting.
-Eve owns agent execution, tool dispatch, skill discovery and session lifecycle.
+Eve owns the agent loop, tool dispatch, skill discovery and session lifecycle.
+The Codex adapter proposes responses through the official CLI; Eve executes its tools.
 Portable skills remain independent of Eve and can be reused by other applications.
 
 Report authentication support from tested behavior. API keys and subscription logins
