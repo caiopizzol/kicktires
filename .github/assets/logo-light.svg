@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="title">
+  <title id="title">Kick Tires</title>
+  <g fill="#151515">
+    <circle cx="50.000" cy="9.000" r="4.6"/>
+    <circle cx="65.690" cy="12.121" r="4.6"/>
+    <circle cx="78.991" cy="21.009" r="4.6"/>
+    <circle cx="87.879" cy="34.310" r="4.6"/>
+    <circle cx="91.000" cy="50.000" r="4.6"/>
+    <circle cx="87.879" cy="65.690" r="4.6"/>
+    <circle cx="78.991" cy="78.991" r="4.6"/>
+    <circle cx="65.690" cy="87.879" r="4.6"/>
+    <circle cx="50.000" cy="91.000" r="4.6"/>
+    <circle cx="34.310" cy="87.879" r="4.6"/>
+    <circle cx="21.009" cy="78.991" r="4.6"/>
+    <circle cx="12.121" cy="65.690" r="4.6"/>
+    <circle cx="9.000" cy="50.000" r="4.6"/>
+    <circle cx="12.121" cy="34.310" r="4.6"/>
+    <circle cx="21.009" cy="21.009" r="4.6"/>
+    <circle cx="34.310" cy="12.121" r="4.6"/>
+  </g>
+  <g fill="#FF5A1F">
+    <circle cx="50.000" cy="29.000" r="3.4"/>
+    <circle cx="64.849" cy="35.151" r="3.4"/>
+    <circle cx="71.000" cy="50.000" r="3.4"/>
+    <circle cx="64.849" cy="64.849" r="3.4"/>
+    <circle cx="50.000" cy="71.000" r="3.4"/>
+    <circle cx="35.151" cy="64.849" r="3.4"/>
+    <circle cx="29.000" cy="50.000" r="3.4"/>
+    <circle cx="35.151" cy="35.151" r="3.4"/>
+  </g>
+  <circle cx="50" cy="50" r="4.6" fill="#151515"/>
+</svg>

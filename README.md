@@ -1,14 +1,29 @@
-# Kick Tires
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/logo-dark.svg">
+    <img src=".github/assets/logo-light.svg" width="80" height="80" alt="Kick Tires">
+  </picture>
+</p>
 
-**Code review that runs your code.**
+<h1 align="center">Kick Tires</h1>
 
-A self-hosted reviewer that investigates changes in Docker, runs checks on both
-revisions, and reports findings and verification gaps. Add your own skills, browser
-checks and MCP tools.
+<p align="center">
+  <strong>Code review that runs your code.</strong>
+  <br>
+  Self-hosted reviews with your models, skills and tools.
+</p>
 
-## Get started
+<p align="center">
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-24%2B-339933" alt="Node.js 24+"></a>
+  <a href="https://bun.sh/"><img src="https://img.shields.io/badge/Bun-1.3.12%2B-FF5A1F" alt="Bun 1.3.12+"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
+</p>
 
-Requires Git, Node 24+, Bun 1.3.12+, Docker and a model API key.
+## Requirements
+
+Git, Node 24+, Bun 1.3.12+, Docker and a model API key.
+
+## Quick start
 
 ```sh
 git clone https://github.com/caiopizzol/kicktires.git
@@ -32,7 +47,7 @@ in a private `.runs/review-*/` directory. A completed review is not an approval.
 
 Use OpenAI, Anthropic or xAI API access. See [authentication and verification status](docs/configuration.md#models-and-authentication) before choosing a model.
 
-## Guides
+## Documentation
 
 - [Configure models, skills and tools](docs/configuration.md)
 - [Install on a VM](docs/self-hosting.md)
