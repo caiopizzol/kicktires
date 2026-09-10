@@ -97,6 +97,27 @@ queued usually means no online runner matches its labels. A failed preflight mea
 host/profile problem; a retained incomplete report identifies review/setup/check gaps.
 No submitted review is an approval or a guarantee that the code is correct.
 
+## Move a repository to another worker
+
+Install and preflight the destination worker first. Create its dedicated account,
+copy the trusted profile and skills, and refresh any launcher snapshot for the
+installed release. Register a uniquely named runner with the existing labels;
+install its service but leave it stopped.
+
+Check that the old runner is idle and no review jobs are queued or running. Stop
+the old service and wait for GitHub to report it offline, then start the new service.
+Confirm only the new runner is online with the required labels. Keep the old
+registration available until validation succeeds.
+
+Open a temporary draft PR. Verify the job's runner identity and release, successful
+configured checks, and one review on the exact head. Rerun to check duplicate
+prevention, then close the fixture. After success, uninstall the old runner service
+and remove its GitHub registration; retain private review reports as needed.
+
+If validation fails, stop the new service before restarting the old one. Confirm
+which runner is online before retrying. Each repository has its own registration,
+so moving one does not require moving other repositories on the same VM.
+
 ## Choose advisory or merge-blocking reviews
 
 Start in **advisory mode**: install the workflow and validate a real review before

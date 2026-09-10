@@ -1,6 +1,8 @@
 # Agent instructions
 
-Active VM trial: [.goals/fresh-vm.md](.goals/fresh-vm.md).
+Completed cutover: [.goals/copilot-cutover.md](.goals/copilot-cutover.md).
+
+Completed VM trial: [.goals/fresh-vm.md](.goals/fresh-vm.md).
 
 Completed onboarding: [.goals/onboarding.md](.goals/onboarding.md).
 
