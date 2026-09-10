@@ -49,9 +49,9 @@ read [execution boundaries](execution.md).
 Bare installation and reboot were tested on Ubuntu 26.04 amd64 with 2 CPUs and 4 GB RAM.
 Ubuntu 24.04 and arm64 lack equivalent trials. Tested capacity is not a universal minimum.
 
-On a 4 GB Linux VM, provide 4 GB of swap. Vite+ lint reserves large virtual-memory
-regions and can fail before analysis without it. This configuration passed the full
-checks on the tested VM; reducing lint threads alone did not fix the failure.
+On a 4 GB Linux VM, provide 4 GB of swap. Vite+ lint can fail before analysis without
+it because it reserves large virtual-memory regions. Full checks passed with this
+configuration on the tested VM.
 
 ## Add a repository
 
