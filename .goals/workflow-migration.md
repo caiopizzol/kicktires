@@ -30,6 +30,5 @@ migration of the old application's self-review remain outside scope. These trial
 establish execution/publication, not accuracy on arbitrary changes. Browser/MCP
 capabilities were not exercised in these GitHub fixtures.
 
-No implementation or delivery work remains. An obsolete monitor631ac792-1555-4ba2-986f-b702972135e7
-may still wake for the verified merged CNPJ PR; read it once after that event without
-further PR mutations.
+No implementation or delivery work remains. All migration monitor events were consumed;
+the final event confirmed successful checks at the delivered CNPJ head.
