@@ -30,6 +30,6 @@ Consultation artifacts: `/tmp/agent-review/consult/onboarding/`.
 
 User was asked whether to publish caiopizzol/agent-review publicly or privately; no
 answer yet. No remote created. Source distribution remains a documented gap; do not
-publish without the requested visibility decision. An obsolete monitor for the now
-verified/closed regression fixture, fc52eb99-9304-4de7-ae16-f4eebb54a7ca, may still wake;
-read once only on its queued event, then no fixture mutations are needed.
+publish without the requested visibility decision. All onboarding monitor events were consumed. The final event confirmed the
+expected failing check for the already-verified regression fixture; no further
+fixture or runner actions remain.
