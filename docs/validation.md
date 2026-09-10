@@ -54,3 +54,34 @@ No hosted production workload, arbitrary third-party plugin loader, shared multi
 queue, GitHub publishing or Slack deployment was tested or implemented. Docker resource
 quotas and the distinction between recorded evidence and attested execution are described
 in [execution boundaries](execution.md).
+
+## Personal-project adoption trials
+
+Two real repositories exposed and verified these corrections:
+
+- Relative `AGENTS.md` links to tracked `CLAUDE.md` files now survive snapshots;
+  absolute, escaping, dangling, directory and chained links are rejected.
+- Each compiled server runs from its own private directory. Concurrent reviews own
+  separate `.eve/.workflow-data` stores; an old timed-out session cannot be recovered
+  by the next review's worker. The smoke command asserts the per-run store exists.
+- macOS archive creation disables AppleDouble metadata. A Linux reader saw 508 real
+  entries instead of 1016 entries containing `._` companions, and tests stopped
+  discovering those companion files as source.
+- Completion instructions distinguish required verification gaps from optional work
+  outside the requested scope. Host checks still reject failed required commands.
+
+Meta follow-ups reviewed the symlink policy and standalone-server isolation against
+supplied implementation and installed Eve behavior. No private project source was
+included in those consultation prompts. Project-specific profiles, reports and
+execution logs remain in the ignored `.runs/project-trials/` area.
+
+Final trial validation passed formatting, TypeScript and 17 tests / 55 assertions.
+The clean real-project review completed with all required tests passing; the other
+reproduced a known defect with a failing required test. Neither used production access.
+
+One additional browser smoke run diagnosed the planted regression but cited a context
+line; strict diff validation dropped the finding and kept the report incomplete. After
+adding exact-coordinate instructions, both smoke fixtures passed, with the regression
+retained at the changed line. This verifies the path, not consistent model accuracy.
+Meta's final consultation supported limited manual adoption and preserving strict
+validation; automatic PR publishing remains a separate increment.

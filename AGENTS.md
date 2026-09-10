@@ -1,7 +1,8 @@
 # Agent instructions
 
 Product scope: [PRODUCT.md](PRODUCT.md).
-Active goal and resume point: [.goals/build.md](.goals/build.md).
+Build record: [.goals/build.md](.goals/build.md).
+Trial record: [.goals/project-trials.md](.goals/project-trials.md).
 
 Build a focused review application on Eve. Keep reusable skills independent of the
 application. Do not introduce another agent framework or add Slack functionality.

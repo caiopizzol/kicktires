@@ -3,12 +3,13 @@
 Eve is currently a preview; dependencies are pinned and updates need execution tests.
 
 The CLI resolves two local Git refs to commits, validates their trees and prepares
-snapshots. Each review starts an authenticated Eve server on loopback with a random
+snapshots. Each review starts the compiled Eve server with its private run directory
+as the working directory, isolating its persisted workflows. It listens on loopback with a random
 password, creates a session, collects its report and retires the service. Eve runs
 the model, supplies skills/connections and owns the Docker sandbox lifecycle.
 
-Repositories are limited to 5000 files and 25 MiB per snapshot. Symlinks, submodules
-and unsafe paths are rejected. Dirty work is excluded. Snapshots contain no `.git`
+Repositories are limited to 5000 files and 25 MiB per snapshot. Relative symlinks to tracked regular files inside the same snapshot are preserved.
+Escaping, dangling, directory and chained links, submodules and unsafe paths are rejected. Dirty work is excluded. Snapshots contain no `.git`
 directory; use the supplied diff and file inventory instead of assuming Git commands
 will work in the sandbox. The CLI does not fetch remote branches.
 

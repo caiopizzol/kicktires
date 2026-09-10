@@ -1,5 +1,5 @@
-import { mkdir, writeFile, readFile } from "node:fs/promises";
-import { join, dirname } from "node:path";
+import { mkdir, writeFile, readFile, symlink } from "node:fs/promises";
+import { join, dirname, posix } from "node:path";
 import { command } from "./process.ts";
 
 export function safePath(path: string): boolean {
@@ -43,14 +43,22 @@ export async function snapshotRepository(
       const tab = entry.indexOf("\t"),
         meta = entry.slice(0, tab),
         path = entry.slice(tab + 1);
-      if (!/^100(644|755) blob [a-f0-9]+$/.test(meta) || !safePath(path))
+      if (
+        !/^(100644|100755|120000) blob [a-f0-9]+$/.test(meta) ||
+        !safePath(path)
+      )
         throw new Error(`Unsupported repository entry: ${path}`);
       return {
         path,
+        isLink: meta.startsWith("120000"),
         oid: meta.split(" ")[2]!,
         mode: meta.startsWith("100755") ? 0o755 : 0o644,
       };
     });
+    const regularPaths = new Set(
+      paths.filter((p) => !p.isLink).map((p) => p.path),
+    );
+    const links: { path: string; target: string }[] = [];
     const bodies = command(
       "git",
       ["cat-file", "--batch"],
@@ -73,12 +81,37 @@ export async function snapshotRepository(
       offset = end + 1;
       if (offset + size >= bodies.length || bodies[offset + size] !== 10)
         throw new Error("Truncated Git blob response");
-      const path = join(destination, revision, entry.path);
-      await mkdir(dirname(path), { recursive: true });
-      await writeFile(path, bodies.subarray(offset, offset + size), {
-        mode: entry.mode,
-      });
+      const content = bodies.subarray(offset, offset + size);
+      if (entry.isLink) {
+        const target = new TextDecoder("utf-8", { fatal: true }).decode(
+          content,
+        );
+        const resolved = posix.normalize(
+          posix.join(posix.dirname(entry.path), target),
+        );
+        if (
+          !target ||
+          target.includes("\0") ||
+          target.includes("\\") ||
+          posix.isAbsolute(target) ||
+          !safePath(resolved) ||
+          !regularPaths.has(resolved)
+        )
+          throw new Error(
+            `Unsupported repository symlink: ${entry.path} must target a tracked regular file inside the snapshot`,
+          );
+        links.push({ path: entry.path, target });
+      } else {
+        const path = join(destination, revision, entry.path);
+        await mkdir(dirname(path), { recursive: true });
+        await writeFile(path, content, { mode: entry.mode });
+      }
       offset += size + 1;
+    }
+    for (const link of links) {
+      const path = join(destination, revision, link.path);
+      await mkdir(dirname(path), { recursive: true });
+      await symlink(link.target, path);
     }
     command(
       "tar",
@@ -90,6 +123,9 @@ export async function snapshotRepository(
         ".",
       ],
       repo,
+      undefined,
+      // AppleDouble metadata creates extra ._ source files when extracted on Linux.
+      { ...process.env, COPYFILE_DISABLE: "1" },
     );
     const archive = await readFile(join(destination, `${revision}.tar`));
     if (archive.length > 25 * 1024 * 1024)

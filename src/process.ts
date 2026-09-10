@@ -5,10 +5,12 @@ export function command(
   args: string[],
   cwd: string,
   input?: string,
+  env?: NodeJS.ProcessEnv,
 ): Buffer {
   const result = spawnSync(file, args, {
     cwd,
     input,
+    env,
     timeout: 60000,
     maxBuffer: 32 * 1024 * 1024,
   });

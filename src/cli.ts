@@ -6,6 +6,7 @@ import {
   writeFile,
   open,
   chmod,
+  realpath,
 } from "node:fs/promises";
 import { resolve, join, dirname } from "node:path";
 import { randomBytes } from "node:crypto";
@@ -96,29 +97,24 @@ try {
   const password = randomBytes(32).toString("hex"),
     host = `http://127.0.0.1:${address.port}`;
   log = await open(join(directory, "server.log"), "w", 0o600);
-  server = spawn(
-    "bun",
-    [
-      "x",
-      "--no-install",
-      "eve",
-      "start",
-      "--host",
-      "127.0.0.1",
-      "--port",
-      String(address.port),
-    ],
-    {
-      cwd: root,
-      env: {
-        ...process.env,
-        AGENT_REVIEW_JOB: join(directory, "job.json"),
-        AGENT_REVIEW_PASSWORD: password,
-      },
-      stdio: ["ignore", log.fd, log.fd],
-      detached: true,
+  const serverEntry = await realpath(join(root, ".output/server/index.mjs"));
+  server = spawn("node", [serverEntry], {
+    cwd: directory,
+    env: {
+      ...process.env,
+      HOST: "127.0.0.1",
+      PORT: String(address.port),
+      NITRO_HOST: "127.0.0.1",
+      NITRO_PORT: String(address.port),
+      WORKFLOW_LOCAL_BASE_URL: host,
+      WORKFLOW_LOCAL_DATA_DIR: join(directory, ".eve/.workflow-data"),
+      NODE_ENV: "production",
+      AGENT_REVIEW_JOB: join(directory, "job.json"),
+      AGENT_REVIEW_PASSWORD: password,
     },
-  );
+    stdio: ["ignore", log.fd, log.fd],
+    detached: true,
+  });
   const deadline = Date.now() + 120000;
   while (true) {
     interruption.signal.throwIfAborted();

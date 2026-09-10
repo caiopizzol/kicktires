@@ -1,5 +1,12 @@
 import { test, expect } from "bun:test";
-import { mkdtemp, writeFile, rm, readFile, symlink } from "node:fs/promises";
+import {
+  mkdtemp,
+  writeFile,
+  rm,
+  readFile,
+  readlink,
+  symlink,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { command } from "../src/process.ts";
@@ -31,6 +38,7 @@ test("pins committed revisions and excludes dirty working-tree files", async () 
       "source.txt export-ignore\nversion.txt export-subst\n",
     );
     await writeFile(join(repo, "version.txt"), "$Format:%H$\n");
+    await symlink("source.txt", join(repo, "AGENTS.md"));
     git("add", ".");
     git("commit", "-qm", "base");
     const base = git("rev-parse", "HEAD");
@@ -40,6 +48,15 @@ test("pins committed revisions and excludes dirty working-tree files", async () 
     await writeFile(join(repo, "source.txt"), "dirty secret\n");
     const snapshot = await snapshotRepository(repo, base, head, out);
     expect(snapshot.base).toBe(base);
+    expect(
+      (await readFile(join(out, "head.tar"))).includes(
+        Buffer.from("._source.txt"),
+      ),
+    ).toBe(false);
+    expect(await readlink(join(out, "head", "AGENTS.md"))).toBe("source.txt");
+    expect(await readFile(join(out, "head", "AGENTS.md"), "utf8")).toBe(
+      "head\n",
+    );
     expect(await readFile(join(out, "head", "version.txt"), "utf8")).toBe(
       "$Format:%H$\n",
     );
@@ -55,7 +72,7 @@ test("pins committed revisions and excludes dirty working-tree files", async () 
     git("commit", "-qm", "link");
     await expect(
       snapshotRepository(repo, base, "HEAD", join(root, "unsafe")),
-    ).rejects.toThrow("Unsupported repository entry");
+    ).rejects.toThrow("Unsupported repository symlink");
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -71,4 +88,52 @@ test("rejects paths that escape the snapshot or Git metadata", () => {
   ])
     expect(safePath(path)).toBe(false);
   expect(safePath("src/file name.ts")).toBe(true);
+});
+
+test("rejects escaping, dangling, directory and chained repository links", async () => {
+  const { mkdir } = await import("node:fs/promises");
+  const root = await mkdtemp(join(tmpdir(), "agent-review-links-")),
+    repo = join(root, "repo");
+  try {
+    command("git", ["init", "-q", repo], root);
+    const git = (...args: string[]) =>
+      command(
+        "git",
+        [
+          "-c",
+          "user.name=Test",
+          "-c",
+          "user.email=test@example.invalid",
+          ...args,
+        ],
+        repo,
+      )
+        .toString()
+        .trim();
+    await writeFile(join(repo, "source.txt"), "tracked\n");
+    await mkdir(join(repo, "nested"));
+    await writeFile(join(repo, "nested", "file.txt"), "tracked\n");
+    await symlink("source.txt", join(repo, "another"));
+    git("add", ".");
+    git("commit", "-qm", "base");
+    const base = git("rev-parse", "HEAD");
+    for (const [index, target] of [
+      "../outside.txt",
+      "/etc/passwd",
+      "missing",
+      "nested",
+      "another",
+      "link",
+    ].entries()) {
+      await rm(join(repo, "link"), { force: true });
+      await symlink(target, join(repo, "link"));
+      git("add", "link");
+      git("commit", "-qm", "link target");
+      await expect(
+        snapshotRepository(repo, base, "HEAD", join(root, `out-${index}`)),
+      ).rejects.toThrow("Unsupported repository symlink");
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });

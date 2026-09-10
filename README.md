@@ -36,7 +36,8 @@ are excluded. Revisions are resolved to commit IDs before the review starts.
 Each run prints its private `.runs/review-*/` directory. `report.json` is the main
 result; `response.json`, `events.jsonl`, `setup.jsonl`, screenshots and `server.log`
 provide supporting evidence. These artifacts can contain private source and context.
-Eve also keeps local session state under `.eve/`. Both directories are ignored by Git.
+Each run owns its Eve workflow state under `.runs/review-*/.eve/`; runs never share
+a session store. The root `.eve/` contains build artifacts. Both are ignored by Git.
 
 Exit codes: `0` means the requested review completed (it may contain bugs); `2` means
 verification was incomplete or execution failed; `1` means input or startup preflight
@@ -85,7 +86,8 @@ scripts/                 live integration validation
 tests/                  focused regression tests
 ```
 
-See [PRODUCT.md](PRODUCT.md) for scope and [validation](docs/validation.md) for measured
+See [adoption](docs/adoption.md) for current parity with Codex Reviewer,
+[PRODUCT.md](PRODUCT.md) for scope and [validation](docs/validation.md) for measured
 results and known gaps. Keep generated builds (`.output/`, `.eve/`) and run artifacts
 out of source control; this application does not require a committed `dist/` bundle.
 

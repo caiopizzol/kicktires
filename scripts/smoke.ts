@@ -1,4 +1,4 @@
-import { mkdtemp, writeFile, readFile, rm } from "node:fs/promises";
+import { mkdtemp, writeFile, readFile, stat, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { once } from "node:events";
@@ -108,6 +108,10 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
     ]);
     assert.equal(exit, regression ? 2 : 0, stderr || stdout);
     const report = JSON.parse(stdout);
+    assert(
+      (await stat(join(report.directory, ".eve/.workflow-data"))).isDirectory(),
+      "Review must own its workflow store",
+    );
     assert.equal(report.status, regression ? "incomplete" : "reviewed");
     if (regression)
       assert(

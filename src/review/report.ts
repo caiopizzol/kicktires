@@ -7,7 +7,11 @@ import type { ReviewJob } from "../job.ts";
 export const reportSchema = z.object({
   summary: z.string(),
   status: z.enum(["reviewed", "incomplete"]),
-  gaps: z.array(z.string()),
+  gaps: z
+    .array(z.string())
+    .describe(
+      "Blockers to finishing the requested review, not a list of optional work that was not requested. Put contextual scope limitations in the summary.",
+    ),
   findings: z.array(
     findingSchema.extend({ evidenceRefs: z.array(z.string()).min(1) }),
   ),
