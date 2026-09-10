@@ -10,7 +10,7 @@ export const codexVersion = "0.154.0";
 
 export function assertCodexHome(home: string | undefined): asserts home is string {
   if (!home || !isAbsolute(home)) throw new Error("codex requires an absolute model.codexHome");
-  for (const file of ["config.toml", "AGENTS.md", "hooks.json", "plugins", ".agents", "rules"]) {
+  for (const file of ["config.toml", "AGENTS.md", "hooks.json", ".agents", "rules"]) {
     if (existsSync(join(home, file)))
       throw new Error(`Use a dedicated Codex login home without ${file}: ${home}`);
   }
@@ -49,6 +49,7 @@ export const codexConfig = [
     "code_mode",
     "code_mode_host",
     "memories",
+    "remote_plugin",
   ].map((key) => `features.${key}=false`),
   "features.skip_host_skill_discovery=true",
 ];

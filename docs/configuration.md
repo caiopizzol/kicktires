@@ -33,13 +33,13 @@ Replace the example commands, skill path and MCP endpoint with real ones. Omit
 
 ## Models and authentication
 
-| Provider    | Credential            | Integration                          |
-| ----------- | --------------------- | ------------------------------------ |
-| `openai`    | `OPENAI_API_KEY`      | Direct OpenAI API                    |
-| `anthropic` | `ANTHROPIC_API_KEY`   | Direct Anthropic API                 |
-| `xai`       | `XAI_API_KEY`         | Direct xAI API for Grok              |
-| `chatgpt`   | Eve login file        | Subscription path; unverified        |
-| `codex`     | Dedicated Codex login | CLI adapter; live validation pending |
+| Provider    | Credential            | Integration                         |
+| ----------- | --------------------- | ----------------------------------- |
+| `openai`    | `OPENAI_API_KEY`      | Direct OpenAI API                   |
+| `anthropic` | `ANTHROPIC_API_KEY`   | Direct Anthropic API                |
+| `xai`       | `XAI_API_KEY`         | Direct xAI API for Grok             |
+| `chatgpt`   | Eve login file        | Subscription path; unverified       |
+| `codex`     | Dedicated Codex login | CLI adapter; sandbox smoke verified |
 
 API adapters are typechecked; see the current validation limits before deployment.
 Live end-to-end validation of these direct providers is pending. Earlier Fireworks
@@ -78,12 +78,14 @@ Set `model` in the trusted profile (use an absolute path):
 
 The pinned CLI manages its login and token refresh. No API key or GitHub secret is
 needed for the model. Keep `auth.json` private (mode `600`); never put it in a PR,
-profile or sandbox. Use a dedicated home without personal configuration or plugins.
+profile or sandbox. Use a dedicated home without personal configuration or skills. Account-synced plugin
+caches may be created by the CLI; app access and code execution remain disabled.
 Do not share one login file between concurrent worker accounts.
 
 Codex proposes responses; Eve still executes tools and validates evidence. Each step
 starts a fresh Codex thread with the conversation supplied by Eve. This costs more
-context than a persistent CLI session. The adapter uses an experimental app-server
+context than a persistent CLI session. The clean and seeded-regression smoke fixtures verified terminal/browser checks and
+MCP context using a ChatGPT subscription. The adapter uses an experimental app-server
 API pinned to CLI 0.154.0. Subscription limits and reauthentication still apply.
 
 ## Checks and browser
