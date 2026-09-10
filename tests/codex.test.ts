@@ -275,7 +275,7 @@ const send=x=>console.log(JSON.stringify(x));
 readline.createInterface({input:process.stdin}).on('line',line=>{const m=JSON.parse(line);
 fs.appendFileSync(${JSON.stringify(requests)},line+'\\n');
 if(m.method==='initialize')send({id:m.id,result:{userAgent:'kicktires/0.154.0 (test)'}});
-if(m.method==='model/list')send({id:m.id,result:{data:[{model:m.params.cursor?'beta':'alpha',defaultReasoningEffort:'high',supportedReasoningEfforts:[{reasoningEffort:'low'},{reasoningEffort:'high'}]}],nextCursor:m.params.cursor?null:'page2'}});
+if(m.method==='model/list')send({id:m.id,result:{data:[{model:m.params.cursor?'beta':'alpha',defaultReasoningEffort:'high',supportedReasoningEfforts:[{reasoningEffort:'low'},{reasoningEffort:'high'}]}],...(m.params.cursor?{}:{nextCursor:'page2'})}});
 if(m.method==='thread/start'){
  if(m.params.model==='locked')send({id:m.id,error:{message:'Model unavailable for this account'}});
  else send({id:m.id,result:{thread:{id:'test'},model:m.params.model,reasoningEffort:m.params.model==='mismatch'?'low':m.params.config.model_reasoning_effort}});

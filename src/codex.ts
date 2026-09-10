@@ -214,7 +214,7 @@ const catalogPage = z.object({
       supportedReasoningEfforts: z.array(z.object({ reasoningEffort: z.string().min(1) })),
     }),
   ),
-  nextCursor: z.string().nullable(),
+  nextCursor: z.string().nullish(),
 });
 
 export async function resolveCodexSettings(
