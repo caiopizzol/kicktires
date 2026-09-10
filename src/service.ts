@@ -2,8 +2,7 @@ import type { ChildProcess } from "node:child_process";
 import { once } from "node:events";
 
 export async function stopService(server: ChildProcess) {
-  if (!server.pid || server.exitCode !== null || server.signalCode !== null)
-    return;
+  if (!server.pid || server.exitCode !== null || server.signalCode !== null) return;
   const pid = server.pid;
   const signal = (name: NodeJS.Signals) => {
     try {

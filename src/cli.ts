@@ -1,13 +1,5 @@
 import { parseArgs } from "node:util";
-import {
-  mkdir,
-  mkdtemp,
-  readFile,
-  writeFile,
-  open,
-  chmod,
-  realpath,
-} from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile, open, chmod, realpath } from "node:fs/promises";
 import { resolve, join, dirname } from "node:path";
 import { randomBytes } from "node:crypto";
 import { createServer } from "node:net";
@@ -45,9 +37,7 @@ if (values.help) {
 for (const name of ["repo", "base", "head", "profile"] as const)
   if (!values[name]) throw new Error(`Missing --${name}; run --help`);
 const profilePath = resolve(values.profile!);
-const profile = profileSchema.parse(
-  JSON.parse(await readFile(profilePath, "utf8")),
-);
+const profile = profileSchema.parse(JSON.parse(await readFile(profilePath, "utf8")));
 assertModelAccess(profile.model);
 for (const connection of Object.values(profile.connections))
   if (connection.tokenEnv && !process.env[connection.tokenEnv])
@@ -59,9 +49,7 @@ const directory = await mkdtemp(join(runs, "review-"));
 let outcome: ReturnType<typeof validateReport> | undefined;
 let server: ChildProcess | undefined;
 let log: FileHandle | undefined;
-let session:
-  | Awaited<ReturnType<Client["sessions"]["create"]>>["session"]
-  | undefined;
+let session: Awaited<ReturnType<Client["sessions"]["create"]>>["session"] | undefined;
 const interruption = new AbortController();
 const interrupt = () => interruption.abort(new Error("Review interrupted"));
 process.once("SIGINT", interrupt);
@@ -90,8 +78,7 @@ try {
   reservation.listen(0, "127.0.0.1");
   await once(reservation, "listening");
   const address = reservation.address();
-  if (!address || typeof address === "string")
-    throw new Error("No local port available");
+  if (!address || typeof address === "string") throw new Error("No local port available");
   await new Promise<void>((resolve) => reservation.close(() => resolve()));
   const password = randomBytes(32).toString("hex"),
     host = `http://127.0.0.1:${address.port}`;
@@ -117,14 +104,8 @@ try {
   const deadline = Date.now() + 120000;
   while (true) {
     interruption.signal.throwIfAborted();
-    if (
-      server.exitCode !== null ||
-      server.signalCode !== null ||
-      Date.now() > deadline
-    )
-      throw new Error(
-        `Service startup failed; inspect ${directory}/server.log`,
-      );
+    if (server.exitCode !== null || server.signalCode !== null || Date.now() > deadline)
+      throw new Error(`Service startup failed; inspect ${directory}/server.log`);
     try {
       if (
         (
@@ -140,10 +121,7 @@ try {
   if (
     (
       await fetch(`${host}/eve/v1/info`, {
-        signal: AbortSignal.any([
-          interruption.signal,
-          AbortSignal.timeout(5000),
-        ]),
+        signal: AbortSignal.any([interruption.signal, AbortSignal.timeout(5000)]),
       })
     ).status !== 401
   )
@@ -162,11 +140,9 @@ try {
   });
   session = turn.session;
   const result = await turn.response.result();
-  await writeFile(
-    join(directory, "response.json"),
-    JSON.stringify(result, null, 2),
-    { mode: 0o600 },
-  );
+  await writeFile(join(directory, "response.json"), JSON.stringify(result, null, 2), {
+    mode: 0o600,
+  });
   outcome = validateReport(
     result.data ?? {
       summary: "Review ended before producing a report",
@@ -196,9 +172,7 @@ try {
   if (session)
     await session
       .reset({ reason: "Review finished", signal: AbortSignal.timeout(5000) })
-      .catch((error) =>
-        console.error("Session retirement failed:", error.message),
-      );
+      .catch((error) => console.error("Session retirement failed:", error.message));
   try {
     if (server) await stopService(server);
   } catch (error) {
@@ -221,11 +195,9 @@ try {
 }
 
 if (outcome) {
-  await writeFile(
-    join(directory, "report.json"),
-    JSON.stringify(outcome, null, 2),
-    { mode: 0o600 },
-  );
+  await writeFile(join(directory, "report.json"), JSON.stringify(outcome, null, 2), {
+    mode: 0o600,
+  });
   console.log(JSON.stringify({ directory, ...outcome }, null, 2));
   if (outcome.status === "incomplete") process.exitCode = 2;
 }

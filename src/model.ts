@@ -14,16 +14,14 @@ export function assertModelAccess(model: Profile["model"]) {
       );
   } else {
     const key = modelCredentialEnv(model)!;
-    if (!process.env[key])
-      throw new Error(`Missing model credential environment variable: ${key}`);
+    if (!process.env[key]) throw new Error(`Missing model credential environment variable: ${key}`);
   }
 }
 export function resolveModel(model: Profile["model"]) {
   assertModelAccess(model);
   if (model.provider === "chatgpt") return chatgpt(model.id);
   const apiKey = process.env[modelCredentialEnv(model)!];
-  if (model.provider === "anthropic")
-    return createAnthropic({ apiKey })(model.id);
+  if (model.provider === "anthropic") return createAnthropic({ apiKey })(model.id);
   return model.provider === "openai"
     ? createOpenAI({ apiKey })(model.id)
     : createXai({ apiKey })(model.id);

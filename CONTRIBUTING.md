@@ -12,8 +12,12 @@ bun run check
 bun run build
 ```
 
-`check` runs formatting checks, TypeScript (including scripts), and regression tests.
-Use `bun run format` to apply formatting. Tests need neither Docker nor model keys.
+`check` runs Vite+ formatting and lint checks, TypeScript (including scripts), and
+Bun regression tests. Vite+ is pinned; Eve remains the application builder.
+Use `bun run format` to format, `bun run lint` to lint and `bun run typecheck` to
+check types. Installation enables the precommit hook: staged checks plus full-project
+type checking. Hooks require development dependencies. CI also runs tests and the build.
+Tests need neither Docker nor model keys.
 Rebuild after source changes; profile changes need no build.
 
 For agent, skill, model or sandbox changes, also run the paid integration test with

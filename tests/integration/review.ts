@@ -14,13 +14,7 @@ assert(address && typeof address !== "string");
 const git = (...args: string[]) =>
   command(
     "git",
-    [
-      "-c",
-      "user.name=Validation",
-      "-c",
-      "user.email=validation@example.invalid",
-      ...args,
-    ],
+    ["-c", "user.name=Validation", "-c", "user.email=validation@example.invalid", ...args],
     directory,
   )
     .toString()
@@ -41,10 +35,7 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
   git("commit", "-qm", "test: add counter");
   const base = git("rev-parse", "HEAD");
   const profile = JSON.parse(
-    await readFile(
-      new URL("../../examples/profile.json", import.meta.url),
-      "utf8",
-    ),
+    await readFile(new URL("../../examples/profile.json", import.meta.url), "utf8"),
   );
   Object.assign(profile, {
     setup: {
@@ -76,9 +67,7 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
     git(
       "commit",
       "-qm",
-      regression
-        ? "test: introduce regression"
-        : "refactor: normalize header casing",
+      regression ? "test: introduce regression" : "refactor: normalize header casing",
     );
     const child = Bun.spawn(
       [
@@ -118,14 +107,11 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
         report.findings.some((f: { file: string }) => f.file === "app.cjs"),
         "Regression was not identified",
       );
-    const response = JSON.parse(
-      await readFile(join(report.directory, "response.json"), "utf8"),
-    );
+    const response = JSON.parse(await readFile(join(report.directory, "response.json"), "utf8"));
     assert(
       response.events.some(
         (e: { type: string; data: { result?: { toolName?: string } } }) =>
-          e.type === "action.result" &&
-          e.data.result?.toolName?.includes("get_requirement"),
+          e.type === "action.result" && e.data.result?.toolName?.includes("get_requirement"),
       ),
       "MCP requirement was not fetched",
     );

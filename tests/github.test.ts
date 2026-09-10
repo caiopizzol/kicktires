@@ -8,10 +8,7 @@ import {
   type Api,
   type Report,
 } from "../src/github/review.ts";
-import {
-  reviewEnvironment,
-  readValidatedReport,
-} from "../src/github/execute.ts";
+import { reviewEnvironment, readValidatedReport } from "../src/github/execute.ts";
 import { profileSchema } from "../src/profile.ts";
 
 const repository = "example/project";
@@ -67,9 +64,7 @@ function scenario(
       return {};
     }
     if (path.includes("/reviews?")) {
-      const page = Number(
-        new URL(`https://api.github.com${path}`).searchParams.get("page"),
-      );
+      const page = Number(new URL(`https://api.github.com${path}`).searchParams.get("page"));
       return options.pages?.[page - 1] ?? [];
     }
     return ++reads === 1 ? (options.initial ?? pr) : (options.latest ?? pr);
@@ -191,9 +186,7 @@ test("rendering bounds text and neutralizes mentions and forged status markers",
     gaps: Array(100).fill(">".repeat(3000)),
   });
   expect(payload.body).toStartWith("## kicktires\n");
-  expect(payload.body).toContain(
-    `<!-- kicktires:${pr.base.sha}:${pr.head.sha} -->`,
-  );
+  expect(payload.body).toContain(`<!-- kicktires:${pr.base.sha}:${pr.head.sha} -->`);
   expect(payload.body).not.toContain("@someone");
   expect(payload.body).not.toContain("<script>");
   expect(payload.body).not.toContain("<!-- kicktires-status:incomplete -->");
@@ -261,13 +254,11 @@ test("preparation failures retain diagnostics but cannot publish findings or cla
   };
   try {
     await writeFile(join(run, "report.json"), JSON.stringify(failure));
-    expect(await readValidatedReport(run, pr.base.sha, pr.head.sha)).toEqual(
-      failure,
-    );
+    expect(await readValidatedReport(run, pr.base.sha, pr.head.sha)).toEqual(failure);
     await writeFile(join(run, "report.json"), JSON.stringify(report));
-    await expect(
-      readValidatedReport(run, pr.base.sha, pr.head.sha),
-    ).rejects.toThrow("preparation failure");
+    await expect(readValidatedReport(run, pr.base.sha, pr.head.sha)).rejects.toThrow(
+      "preparation failure",
+    );
     await writeFile(
       join(run, "report.json"),
       JSON.stringify({
@@ -287,9 +278,9 @@ test("preparation failures retain diagnostics but cannot publish findings or cla
         ],
       }),
     );
-    await expect(
-      readValidatedReport(run, pr.base.sha, pr.head.sha),
-    ).rejects.toThrow("preparation failure");
+    await expect(readValidatedReport(run, pr.base.sha, pr.head.sha)).rejects.toThrow(
+      "preparation failure",
+    );
   } finally {
     await rm(run, { recursive: true, force: true });
   }
@@ -306,21 +297,13 @@ test("provider credentials remain selected after configuration cleanup", () => {
       checks: ["bun test"],
     });
     expect(
-      reviewEnvironment(
-        { [key]: "selected", UNUSED_KEY: "excluded" },
-        profile,
-        "/runs",
-      )[key],
+      reviewEnvironment({ [key]: "selected", UNUSED_KEY: "excluded" }, profile, "/runs")[key],
     ).toBe("selected");
     const custom = {
       ...profile,
       model: { ...profile.model, apiKeyEnv: "CUSTOM_KEY" },
     };
-    const env = reviewEnvironment(
-      { [key]: "default", CUSTOM_KEY: "custom" },
-      custom,
-      "/runs",
-    );
+    const env = reviewEnvironment({ [key]: "default", CUSTOM_KEY: "custom" }, custom, "/runs");
     expect(env.CUSTOM_KEY).toBe("custom");
     expect(env[key]).toBeUndefined();
   }

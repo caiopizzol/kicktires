@@ -4,10 +4,7 @@ export default defineDynamic({
   events: {
     "session.started": () =>
       Object.fromEntries(
-        Object.entries(readJob().skills).map(([name, skill]) => [
-          name,
-          defineSkill(skill),
-        ]),
+        Object.entries(readJob().skills).map(([name, skill]) => [name, defineSkill(skill)]),
       ),
   },
 });

@@ -27,11 +27,7 @@ test("defaults to offline setup and bounded execution", () => {
 });
 test("loads the independently packaged skills with explicit dependencies present", async () => {
   const skills = await loadSkills([]);
-  expect(Object.keys(skills).sort()).toEqual([
-    "get-context",
-    "review-code",
-    "verify-change",
-  ]);
+  expect(Object.keys(skills).sort()).toEqual(["get-context", "review-code", "verify-change"]);
   expect(skills["review-code"]?.markdown).toContain("verify-change");
 });
 
@@ -53,10 +49,7 @@ test("rejects duplicate, symlinked and oversized supplied skills", async () => {
     await symlink("SKILL.md", join(directory, "link"));
     await expect(loadSkills([directory])).rejects.toThrow("symlinks");
     await rm(join(directory, "link"));
-    await writeFile(
-      join(directory, "large.txt"),
-      Buffer.alloc(1024 * 1024 + 1),
-    );
+    await writeFile(join(directory, "large.txt"), Buffer.alloc(1024 * 1024 + 1));
     await expect(loadSkills([directory])).rejects.toThrow("exceeds 1 MiB");
   } finally {
     await rm(directory, { recursive: true, force: true });

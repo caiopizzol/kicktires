@@ -31,9 +31,7 @@ export function parseEvent(value: unknown, repository: string) {
   if (event.repository.full_name !== repository)
     throw new Error("Event repository does not match GITHUB_REPOSITORY");
   if (!eligible(event.pull_request, repository) || !event.repository.private)
-    throw new Error(
-      "Reviews require a private repository and a same-repository PR",
-    );
+    throw new Error("Reviews require a private repository and a same-repository PR");
   return event.pull_request;
 }
 
@@ -64,9 +62,7 @@ async function previousReview(api: Api, endpoint: string, pr: PullRequest) {
       (r) =>
         r.user.login === "github-actions[bot]" &&
         (r.body?.includes(marker(pr)) ||
-          r.body?.includes(
-            `<!-- agent-review:${pr.base.sha}:${pr.head.sha} -->`,
-          )),
+          r.body?.includes(`<!-- agent-review:${pr.base.sha}:${pr.head.sha} -->`)),
     );
     if (previous) return previous.body!;
     if (reviews.length < 100) return null;
@@ -117,8 +113,7 @@ export async function reviewPullRequest(options: {
 }) {
   const { repository, event, api, review } = options;
   const endpoint = `/repos/${repository}/pulls/${event.number}`;
-  const fresh = () =>
-    api(endpoint).then((value) => pullRequestSchema.parse(value));
+  const fresh = () => api(endpoint).then((value) => pullRequestSchema.parse(value));
   const current = await fresh();
   if (
     !eligible(current, repository) ||

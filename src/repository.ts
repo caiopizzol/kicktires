@@ -31,9 +31,7 @@ export async function snapshotRepository(
       gitEnv,
     );
   const resolve = (ref: string) =>
-    git("rev-parse", "--verify", "--end-of-options", `${ref}^{commit}`)
-      .toString()
-      .trim();
+    git("rev-parse", "--verify", "--end-of-options", `${ref}^{commit}`).toString().trim();
   const base = resolve(baseRef),
     head = resolve(headRef);
   const files: Record<string, string[]> = {};
@@ -45,16 +43,12 @@ export async function snapshotRepository(
       .toString()
       .split("\0")
       .filter(Boolean);
-    if (entries.length > 5000)
-      throw new Error("Repository snapshot exceeds 5000 files");
+    if (entries.length > 5000) throw new Error("Repository snapshot exceeds 5000 files");
     const paths = entries.map((entry) => {
       const tab = entry.indexOf("\t"),
         meta = entry.slice(0, tab),
         path = entry.slice(tab + 1);
-      if (
-        !/^(100644|100755|120000) blob [a-f0-9]+$/.test(meta) ||
-        !safePath(path)
-      )
+      if (!/^(100644|100755|120000) blob [a-f0-9]+$/.test(meta) || !safePath(path))
         throw new Error(`Unsupported repository entry: ${path}`);
       return {
         path,
@@ -66,11 +60,7 @@ export async function snapshotRepository(
     const linkPaths = new Set(paths.filter((p) => p.isLink).map((p) => p.path));
     const directories = new Set<string>(["."]);
     for (const entry of paths)
-      for (
-        let dir = posix.dirname(entry.path);
-        dir !== ".";
-        dir = posix.dirname(dir)
-      )
+      for (let dir = posix.dirname(entry.path); dir !== "."; dir = posix.dirname(dir))
         directories.add(dir);
     const links: { path: string; target: string }[] = [];
     const bodies = command(
@@ -91,19 +81,14 @@ export async function snapshotRepository(
         throw new Error("Invalid Git blob response");
       const size = Number(match[2]);
       total += size;
-      if (total > 25 * 1024 * 1024)
-        throw new Error("Repository snapshot exceeds 25 MiB");
+      if (total > 25 * 1024 * 1024) throw new Error("Repository snapshot exceeds 25 MiB");
       offset = end + 1;
       if (offset + size >= bodies.length || bodies[offset + size] !== 10)
         throw new Error("Truncated Git blob response");
       const content = bodies.subarray(offset, offset + size);
       if (entry.isLink) {
-        const target = new TextDecoder("utf-8", { fatal: true }).decode(
-          content,
-        );
-        const resolved = posix.normalize(
-          posix.join(posix.dirname(entry.path), target),
-        );
+        const target = new TextDecoder("utf-8", { fatal: true }).decode(content);
+        const resolved = posix.normalize(posix.join(posix.dirname(entry.path), target));
         let cursor = posix.dirname(entry.path);
         const traversesLink = target.split("/").some((part) => {
           cursor = posix.normalize(posix.join(cursor, part));
@@ -136,21 +121,14 @@ export async function snapshotRepository(
     }
     command(
       "tar",
-      [
-        "-cf",
-        join(destination, `${revision}.tar`),
-        "-C",
-        join(destination, revision),
-        ".",
-      ],
+      ["-cf", join(destination, `${revision}.tar`), "-C", join(destination, revision), "."],
       repo,
       undefined,
       // AppleDouble metadata creates extra ._ source files when extracted on Linux.
       { PATH: process.env.PATH, COPYFILE_DISABLE: "1" },
     );
     const archive = await readFile(join(destination, `${revision}.tar`));
-    if (archive.length > 25 * 1024 * 1024)
-      throw new Error("Repository snapshot exceeds 25 MiB");
+    if (archive.length > 25 * 1024 * 1024) throw new Error("Repository snapshot exceeds 25 MiB");
     files[revision] = paths.map((p) => p.path);
   }
   const diff = git(

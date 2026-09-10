@@ -4,9 +4,7 @@ import { defineHook, type HookContext } from "eve/hooks";
 import { readJob } from "../../src/job.ts";
 async function cleanup(_event: unknown, ctx: HookContext) {
   const state = JSON.parse(
-    await readFile(join(readJob().directory, "sandbox.json"), "utf8").catch(
-      () => "null",
-    ),
+    await readFile(join(readJob().directory, "sandbox.json"), "utf8").catch(() => "null"),
   );
   if (!state?.ready) return;
   const sandbox = await ctx.getSandbox();
@@ -27,11 +25,9 @@ export default defineHook({
         ].includes(event.type)
       )
         return;
-      await appendFile(
-        join(readJob().directory, "events.jsonl"),
-        JSON.stringify(event) + "\n",
-        { mode: 0o600 },
-      );
+      await appendFile(join(readJob().directory, "events.jsonl"), JSON.stringify(event) + "\n", {
+        mode: 0o600,
+      });
     },
     "turn.completed": cleanup,
     "turn.failed": cleanup,

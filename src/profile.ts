@@ -24,10 +24,7 @@ export const profileSchema = z
       .default({ commands: [], network: "deny-all" }),
     checks: z.array(z.string().min(1)).min(1),
     browser: z
-      .union([
-        z.literal(false),
-        z.object({ start: z.string().min(1) }).strict(),
-      ])
+      .union([z.literal(false), z.object({ start: z.string().min(1) }).strict()])
       .default(false),
     connections: z
       .record(
@@ -56,9 +53,7 @@ export const profileSchema = z
   .strict();
 export type Profile = z.infer<typeof profileSchema>;
 
-export function modelCredentialEnv(
-  model: Profile["model"],
-): string | undefined {
+export function modelCredentialEnv(model: Profile["model"]): string | undefined {
   if (model.provider === "chatgpt") return undefined;
   return (
     model.apiKeyEnv ??

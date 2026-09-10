@@ -18,8 +18,7 @@ const job: ReviewJob = {
     changedFiles: ["a.ts"],
   },
 };
-const diff =
-  "diff --git a/a.ts b/a.ts\n--- a/a.ts\n+++ b/a.ts\n@@ -1 +1 @@\n-old\n+new\n";
+const diff = "diff --git a/a.ts b/a.ts\n--- a/a.ts\n+++ b/a.ts\n@@ -1 +1 @@\n-old\n+new\n";
 const report = {
   summary: "Test report",
   status: "reviewed",
@@ -67,16 +66,9 @@ function events() {
 }
 test("requires actual skill and pinned check evidence", () => {
   expect(validateReport(report, events(), job, diff).status).toBe("reviewed");
-  const incomplete = validateReport(
-    report,
-    [{ type: "turn.completed", data: {} }],
-    job,
-    diff,
-  );
+  const incomplete = validateReport(report, [{ type: "turn.completed", data: {} }], job, diff);
   expect(incomplete.status).toBe("incomplete");
-  expect(incomplete.gaps).toContain(
-    "Required check not recorded for head: npm test",
-  );
+  expect(incomplete.gaps).toContain("Required check not recorded for head: npm test");
 });
 test("retains finding evidence and rejects fabricated references", () => {
   const finding = {
@@ -90,20 +82,11 @@ test("retains finding evidence and rejects fabricated references", () => {
     suggestion: "Fix condition",
     evidenceRefs: ["head"],
   };
-  const valid = validateReport(
-    { ...report, findings: [finding] },
-    events(),
-    job,
-    diff,
-  );
+  const valid = validateReport({ ...report, findings: [finding] }, events(), job, diff);
   expect(valid.findings[0]).toHaveProperty("evidenceRefs", ["head"]);
   expect(
-    validateReport(
-      { ...report, findings: [{ ...finding, line: 2 }] },
-      events(),
-      job,
-      diff,
-    ).findings,
+    validateReport({ ...report, findings: [{ ...finding, line: 2 }] }, events(), job, diff)
+      .findings,
   ).toEqual([]);
   const unsupported = validateReport(
     { ...report, findings: [{ ...finding, evidenceRefs: ["invented"] }] },
@@ -115,30 +98,17 @@ test("retains finding evidence and rejects fabricated references", () => {
   expect(unsupported.findings).toEqual([]);
   expect(unsupported.executions).toHaveLength(2);
   expect(
-    validateReport(
-      { ...report, findings: [{ ...finding, file: "other.ts" }] },
-      events(),
-      job,
-      diff,
-    ).status,
+    validateReport({ ...report, findings: [{ ...finding, file: "other.ts" }] }, events(), job, diff)
+      .status,
   ).toBe("incomplete");
 });
 test("failed turns and token-limit pauses cannot become completed reviews", () => {
   expect(
-    validateReport(
-      report,
-      [...events(), { type: "turn.failed", data: {} }],
-      job,
-      diff,
-    ).status,
+    validateReport(report, [...events(), { type: "turn.failed", data: {} }], job, diff).status,
   ).toBe("incomplete");
   expect(
-    validateReport(
-      { ...report, status: "incomplete", gaps: ["Token limit"] },
-      events(),
-      job,
-      diff,
-    ).status,
+    validateReport({ ...report, status: "incomplete", gaps: ["Token limit"] }, events(), job, diff)
+      .status,
   ).toBe("incomplete");
 });
 test("configured browser requires successful captured checks on both revisions", () => {
@@ -146,9 +116,7 @@ test("configured browser requires successful captured checks on both revisions",
     ...job,
     profile: { ...job.profile, browser: { start: "node app.js" } },
   };
-  expect(validateReport(report, events(), browserJob, diff).status).toBe(
-    "incomplete",
-  );
+  expect(validateReport(report, events(), browserJob, diff).status).toBe("incomplete");
   const browserEvents = (exitCode = 0) =>
     ["base", "head"].map((revision) => ({
       type: "action.result",
@@ -166,20 +134,17 @@ test("configured browser requires successful captured checks on both revisions",
         },
       },
     }));
-  expect(
-    validateReport(report, [...events(), ...browserEvents()], browserJob, diff)
-      .status,
-  ).toBe("reviewed");
-  expect(
-    validateReport(report, [...events(), ...browserEvents(1)], browserJob, diff)
-      .status,
-  ).toBe("incomplete");
+  expect(validateReport(report, [...events(), ...browserEvents()], browserJob, diff).status).toBe(
+    "reviewed",
+  );
+  expect(validateReport(report, [...events(), ...browserEvents(1)], browserJob, diff).status).toBe(
+    "incomplete",
+  );
 });
 
 test("dedicated required checks retain exact commands and flag truncated evidence", () => {
   const baseline = events().filter((event) => {
-    const result = (event as { data: { result?: { toolName?: string } } }).data
-      .result;
+    const result = (event as { data: { result?: { toolName?: string } } }).data.result;
     return result?.toolName !== "run_checks";
   });
   expect(validateReport(report, baseline, job, diff).status).toBe("incomplete");
@@ -203,12 +168,8 @@ test("dedicated required checks retain exact commands and flag truncated evidenc
       },
     },
   });
-  expect(
-    validateReport(report, [...baseline, checks()], job, diff).status,
-  ).toBe("reviewed");
-  expect(
-    validateReport(report, [...baseline, checks(true)], job, diff).status,
-  ).toBe("incomplete");
+  expect(validateReport(report, [...baseline, checks()], job, diff).status).toBe("reviewed");
+  expect(validateReport(report, [...baseline, checks(true)], job, diff).status).toBe("incomplete");
 });
 
 test("malformed tool output leaves other execution evidence intact", () => {
@@ -232,9 +193,7 @@ test("malformed tool output leaves other execution evidence intact", () => {
   );
   expect(result.status).toBe("incomplete");
   expect(result.executions).toHaveLength(2);
-  expect(result.gaps).toContain(
-    "Malformed command result omitted; inspect raw evidence",
-  );
+  expect(result.gaps).toContain("Malformed command result omitted; inspect raw evidence");
 });
 
 test("a failing required check remains incomplete even when the model claims success", () => {

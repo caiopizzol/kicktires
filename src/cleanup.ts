@@ -17,35 +17,22 @@ export async function cleanupSandbox(directory: string) {
     .parse(JSON.parse(text));
   const inspect = spawnSync(
     "docker",
-    [
-      "container",
-      "inspect",
-      "--format",
-      '{{index .Config.Labels "eve.sandbox"}}',
-      id,
-    ],
+    ["container", "inspect", "--format", '{{index .Config.Labels "eve.sandbox"}}', id],
     { encoding: "utf8", timeout: 10000 },
   );
   if (inspect.status !== 0) {
-    if (
-      inspect.stderr?.includes("No such container") ||
-      inspect.stderr?.includes("No such object")
-    )
+    if (inspect.stderr?.includes("No such container") || inspect.stderr?.includes("No such object"))
       return;
     throw new Error(
       `Could not inspect review sandbox: ${inspect.error?.message ?? inspect.stderr}`,
     );
   }
   if (inspect.stdout.trim() !== "1")
-    throw new Error(
-      "Refusing to delete a container without Eve's sandbox label",
-    );
+    throw new Error("Refusing to delete a container without Eve's sandbox label");
   const removed = spawnSync("docker", ["rm", "-f", id], {
     encoding: "utf8",
     timeout: 10000,
   });
   if (removed.status !== 0)
-    throw new Error(
-      `Could not remove review sandbox: ${removed.error?.message ?? removed.stderr}`,
-    );
+    throw new Error(`Could not remove review sandbox: ${removed.error?.message ?? removed.stderr}`);
 }

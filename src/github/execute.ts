@@ -7,11 +7,7 @@ import { jobSchema } from "../job.ts";
 import { validateReport, reportSchema } from "../review/report.ts";
 import type { PullRequest, Report } from "./review.ts";
 
-export function reviewEnvironment(
-  env: NodeJS.ProcessEnv,
-  profile: Profile,
-  runs: string,
-) {
+export function reviewEnvironment(env: NodeJS.ProcessEnv, profile: Profile, runs: string) {
   const result: NodeJS.ProcessEnv = {
     PATH: env.PATH,
     HOME: env.HOME,
@@ -25,9 +21,7 @@ export function reviewEnvironment(
   for (const key of keys) {
     if (!key) continue;
     if (/^(GITHUB_|GH_|ACTIONS_|GIT_)/.test(key))
-      throw new Error(
-        "Review credentials cannot use GitHub or Git environment names",
-      );
+      throw new Error("Review credentials cannot use GitHub or Git environment names");
     if (env[key]) result[key] = env[key];
   }
   return result;
@@ -43,9 +37,7 @@ export async function executeReview(options: {
 }): Promise<Report> {
   const { pr, token, temporary, runs, env } = options;
   const profilePath = resolve(options.profile);
-  const profile = profileSchema.parse(
-    JSON.parse(await readFile(profilePath, "utf8")),
-  );
+  const profile = profileSchema.parse(JSON.parse(await readFile(profilePath, "utf8")));
   const directory = await mkdtemp(join(temporary, "kicktires-input-"));
   const repository = join(directory, "repository.git");
   const gitEnv = {
@@ -56,13 +48,7 @@ export async function executeReview(options: {
     GIT_TERMINAL_PROMPT: "0",
   };
   try {
-    command(
-      "git",
-      ["init", "--bare", "-q", repository],
-      directory,
-      undefined,
-      gitEnv,
-    );
+    command("git", ["init", "--bare", "-q", repository], directory, undefined, gitEnv);
     command(
       "git",
       [
@@ -148,8 +134,7 @@ export async function executeReview(options: {
     }
     const output = JSON.parse(stdout);
     const run = resolve(output.directory);
-    if (!run.startsWith(`${resolve(runs)}/review-`))
-      throw new Error("Unexpected report directory");
+    if (!run.startsWith(`${resolve(runs)}/review-`)) throw new Error("Unexpected report directory");
     return readValidatedReport(run, base, pr.head.sha);
   } finally {
     await rm(directory, { recursive: true, force: true });
@@ -161,9 +146,7 @@ export async function readValidatedReport(
   base: string,
   head: string,
 ): Promise<Report> {
-  const report = reportSchema.parse(
-    JSON.parse(await readFile(join(run, "report.json"), "utf8")),
-  );
+  const report = reportSchema.parse(JSON.parse(await readFile(join(run, "report.json"), "utf8")));
   const rawJob = await readFile(join(run, "job.json"), "utf8").catch(
     (error: NodeJS.ErrnoException) => {
       if (error.code !== "ENOENT") throw error;
@@ -172,9 +155,7 @@ export async function readValidatedReport(
   );
   if (rawJob === null) {
     if (report.status !== "incomplete" || report.findings.length)
-      throw new Error(
-        "A preparation failure cannot contain findings or claim completion",
-      );
+      throw new Error("A preparation failure cannot contain findings or claim completion");
     return report;
   }
   const job = jobSchema.parse(JSON.parse(rawJob));

@@ -44,21 +44,18 @@ try {
       signal: AbortSignal.timeout(30000),
       redirect: "error",
     });
-    if (!response.ok)
-      throw new Error(`GitHub API returned ${response.status} for ${path}`);
+    if (!response.ok) throw new Error(`GitHub API returned ${response.status} for ${path}`);
     return response.json();
   };
   const result = await reviewPullRequest({
     repository,
     event,
     api,
-    review: (pr) =>
-      executeReview({ pr, token, profile, temporary, runs, env: process.env }),
+    review: (pr) => executeReview({ pr, token, profile, temporary, runs, env: process.env }),
   });
   const summary = `kicktires: ${result.result}${result.incomplete ? "; verification incomplete" : ""}.\n`;
   console.log(summary.trim());
-  if (process.env.GITHUB_STEP_SUMMARY)
-    await appendFile(process.env.GITHUB_STEP_SUMMARY, summary);
+  if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, summary);
   if (process.env.GITHUB_OUTPUT)
     await appendFile(
       process.env.GITHUB_OUTPUT,
@@ -66,8 +63,6 @@ try {
     );
   if (result.incomplete) process.exitCode = 2;
 } catch (error) {
-  console.error(
-    error instanceof Error ? error.message : "GitHub review failed",
-  );
+  console.error(error instanceof Error ? error.message : "GitHub review failed");
   process.exitCode = 1;
 }

@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+if [ ! -x node_modules/.bin/vp ]; then
+  echo 'Install development dependencies before committing: bun install --frozen-lockfile' >&2
+  exit 1
+fi
+vp staged
+bun run typecheck

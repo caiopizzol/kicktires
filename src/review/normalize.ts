@@ -1,9 +1,7 @@
 import type { ChangedLines } from "./diff.ts";
 import { type Finding, type Review, SEVERITIES } from "./schema.ts";
 
-const SEVERITY_ORDER = new Map(
-  SEVERITIES.map((severity, index) => [severity, index]),
-);
+const SEVERITY_ORDER = new Map(SEVERITIES.map((severity, index) => [severity, index]));
 
 export interface NormalizeOptions {
   readonly maxFindings: number;
@@ -19,19 +17,14 @@ export interface NormalizedReview extends Review {
 }
 
 /** Keep findings citable on the diff, sort worst first, and apply the report cap. */
-export function normalizeReview(
-  review: Review,
-  options: NormalizeOptions,
-): NormalizedReview {
+export function normalizeReview(review: Review, options: NormalizeOptions): NormalizedReview {
   const changed = new Set(options.changedFiles);
 
   const kept: Finding[] = [];
 
   for (const finding of review.findings) {
     // Relax only model-authored paths; the changed-file list is authoritative.
-    const matched = candidatePaths(finding.file).find((path) =>
-      changed.has(path),
-    );
+    const matched = candidatePaths(finding.file).find((path) => changed.has(path));
 
     if (matched === undefined) {
       continue;

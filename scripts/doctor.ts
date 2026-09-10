@@ -27,9 +27,7 @@ async function check(label: string, action: () => unknown | Promise<unknown>) {
     console.log(`PASS ${label}`);
   } catch (error) {
     failures++;
-    console.error(
-      `FAIL ${label}: ${error instanceof Error ? error.message : error}`,
-    );
+    console.error(`FAIL ${label}: ${error instanceof Error ? error.message : error}`);
   }
 }
 function run(file: string, args: string[], hint: string) {
@@ -54,11 +52,7 @@ await check("Bun 1.3.12+", () => {
     throw new Error("Install Bun 1.3.12+.");
 });
 await check("Docker access", () =>
-  run(
-    "docker",
-    ["info"],
-    "Start Docker and grant this account access to its daemon.",
-  ),
+  run("docker", ["info"], "Start Docker and grant this account access to its daemon."),
 );
 await check("Review sandbox image", () =>
   run(
@@ -69,34 +63,21 @@ await check("Review sandbox image", () =>
 );
 const profilePath = resolve(values.profile);
 await check("Trusted profile and skills", async () => {
-  const profile = profileSchema.parse(
-    JSON.parse(await readFile(profilePath, "utf8")),
-  );
+  const profile = profileSchema.parse(JSON.parse(await readFile(profilePath, "utf8")));
   const credentialNames = [
     profile.model.apiKeyEnv,
     ...Object.values(profile.connections).map((c) => c.tokenEnv),
   ];
-  if (
-    credentialNames.some(
-      (name) => name && /^(GITHUB_|GH_|ACTIONS_|GIT_)/.test(name),
-    )
-  )
-    throw new Error(
-      "Model/MCP credentials cannot use GitHub, Actions or Git variable names.",
-    );
-  await loadSkills(
-    profile.skills.map((path) => resolve(dirname(profilePath), path)),
-  );
+  if (credentialNames.some((name) => name && /^(GITHUB_|GH_|ACTIONS_|GIT_)/.test(name)))
+    throw new Error("Model/MCP credentials cannot use GitHub, Actions or Git variable names.");
+  await loadSkills(profile.skills.map((path) => resolve(dirname(profilePath), path)));
   if (profile.model.provider === "chatgpt")
     throw new Error(
       "Subscription login is not verified for unattended installation; configure an API provider.",
     );
   if (values.credentials) {
     const key = modelCredentialEnv(profile.model);
-    for (const name of [
-      key,
-      ...Object.values(profile.connections).map((c) => c.tokenEnv),
-    ])
+    for (const name of [key, ...Object.values(profile.connections).map((c) => c.tokenEnv)])
       if (name && !process.env[name])
         throw new Error(
           `Supply ${name} in the process environment; never put its value in the profile.`,
@@ -123,9 +104,7 @@ if (values.worker) {
     ]) {
       const info = await stat(path);
       if (info.uid !== 0 || info.mode & 0o022)
-        throw new Error(
-          `Make ${path} root-owned and not group/world-writable.`,
-        );
+        throw new Error(`Make ${path} root-owned and not group/world-writable.`);
     }
     await access("/opt/kicktires/bin/review-pr", constants.X_OK);
     if (
@@ -155,28 +134,18 @@ if (values.worker) {
     await access("/var/lock/kicktires/review.lock", constants.W_OK);
     const parent = await stat("/var/lock/kicktires");
     if (parent.uid !== 0 || parent.mode & 0o022)
-      throw new Error(
-        "Make the lock directory root-owned and not group/world-writable.",
-      );
+      throw new Error("Make the lock directory root-owned and not group/world-writable.");
     const tmpfiles = await readFile("/etc/tmpfiles.d/kicktires.conf", "utf8");
-    if (
-      !tmpfiles.includes(
-        "f /run/lock/kicktires/review.lock 0660 root kicktires -",
-      )
-    )
-      throw new Error(
-        "Run install-worker.sh to configure the review lock after reboot.",
-      );
+    if (!tmpfiles.includes("f /run/lock/kicktires/review.lock 0660 root kicktires -"))
+      throw new Error("Run install-worker.sh to configure the review lock after reboot.");
     run("flock", ["--version"], "Install util-linux (flock).");
     run("timeout", ["--version"], "Install coreutils (timeout).");
   });
   await check("Private runner home", async () => {
-    if (!process.env.HOME)
-      throw new Error("Set HOME to the runner account's home.");
+    if (!process.env.HOME) throw new Error("Set HOME to the runner account's home.");
     await access(process.env.HOME, constants.W_OK);
     const info = await stat(process.env.HOME);
-    if (info.mode & 0o077)
-      throw new Error("Set the runner home permissions to 700.");
+    if (info.mode & 0o077) throw new Error("Set the runner home permissions to 700.");
   });
 }
 await check("Compiled Eve application", async () => {

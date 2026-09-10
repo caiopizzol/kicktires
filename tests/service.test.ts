@@ -15,10 +15,7 @@ test("shutdown tolerates an already-exited service", async () => {
 test("shutdown forcibly stops a service that ignores SIGTERM", async () => {
   const child = spawn(
     "node",
-    [
-      "-e",
-      "process.on('SIGTERM',()=>{});console.log('ready');setInterval(()=>{},1000)",
-    ],
+    ["-e", "process.on('SIGTERM',()=>{});console.log('ready');setInterval(()=>{},1000)"],
     { detached: true, stdio: ["ignore", "pipe", "ignore"] },
   );
   try {
@@ -26,7 +23,6 @@ test("shutdown forcibly stops a service that ignores SIGTERM", async () => {
     await stopService(child);
     expect(child.signalCode).toBe("SIGKILL");
   } finally {
-    if (child.exitCode === null && child.signalCode === null)
-      child.kill("SIGKILL");
+    if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
   }
 }, 12000);

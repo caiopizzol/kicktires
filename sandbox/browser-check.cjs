@@ -42,11 +42,7 @@ async function main() {
     const page = await browser.newPage();
     await page.goto(origin);
     const execute = Object.getPrototypeOf(async function () {}).constructor;
-    await new execute("page", "assert", "origin", config.script)(
-      page,
-      assert,
-      origin,
-    );
+    await new execute("page", "assert", "origin", config.script)(page, assert, origin);
     await page.screenshot({ path: config.screenshot, fullPage: true });
     writeFileSync(
       config.result,

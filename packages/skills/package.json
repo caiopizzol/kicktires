@@ -1,7 +1,7 @@
 {
   "name": "@kicktires/skills",
   "version": "0.1.0",
-  "type": "module",
+  "license": "MIT",
   "files": [
     "review-code",
     "get-context",
@@ -9,9 +9,9 @@
     "README.md",
     "LICENSE"
   ],
+  "type": "module",
   "exports": {
     "./package.json": "./package.json",
     "./*": "./*"
-  },
-  "license": "MIT"
+  }
 }

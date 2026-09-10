@@ -21,8 +21,7 @@ export default defineDynamic({
             }),
             async execute({ revision, script }, ctx) {
               const job = readJob();
-              if (!job.profile.browser)
-                throw new Error("Browser is not configured");
+              if (!job.profile.browser) throw new Error("Browser is not configured");
               const sandbox = await ctx.getSandbox(),
                 id = randomUUID(),
                 prefix = `/workspace/browser-${id}`;
