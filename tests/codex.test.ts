@@ -1,3 +1,5 @@
+import { rejects } from "node:assert/strict";
+import { join } from "node:path";
 import { z } from "zod";
 import { expect, test } from "bun:test";
 import { codexModel, proposedResponse } from "../src/codex-model.ts";
@@ -67,7 +69,8 @@ test("Codex corrects one invalid proposal atomically and counts both attempts", 
     const command = "printf '%s\\n' '{\"quoted\":true}'\n# browser source can contain quotes";
     const prompts: string[] = [];
     const signals: AbortSignal[] = [];
-    const model = codexModel("test", "unused", async (request) => {
+    const model = codexModel("test", "unused", "high", async (request) => {
+      expect(request.reasoningEffort).toBe("high");
       prompts.push(request.prompt);
       signals.push(request.signal!);
       return {
@@ -127,7 +130,7 @@ test("Codex stops after two invalid proposals and honors cancellation before ret
     for (const cancel of [false, true]) {
       let calls = 0;
       const controller = new AbortController();
-      const model = codexModel("test", "unused", async () => {
+      const model = codexModel("test", "unused", "high", async () => {
         calls++;
         if (cancel) controller.abort();
         return {
@@ -252,6 +255,66 @@ send({method:'turn/completed',params:{turn:{status:'completed'}}});
       error = caught;
     }
     expect(error).toBeInstanceOf(SyntaxError);
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
+test("Codex resolves paginated model defaults and rejects unsupported settings before a turn", async () => {
+  const { mkdtemp, writeFile, readFile, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { resolveCodexSettings, codexResponse } = await import("../src/codex.ts");
+  const home = await mkdtemp(join(tmpdir(), "kicktires-model-test-"));
+  try {
+    await writeFile(join(home, "auth.json"), "{}", { mode: 0o600 });
+    const cli = join(home, "fake.cjs");
+    const requests = join(home, "requests.jsonl");
+    await writeFile(
+      cli,
+      `const fs=require('node:fs'),readline=require('node:readline');
+const send=x=>console.log(JSON.stringify(x));
+readline.createInterface({input:process.stdin}).on('line',line=>{const m=JSON.parse(line);
+fs.appendFileSync(${JSON.stringify(requests)},line+'\\n');
+if(m.method==='initialize')send({id:m.id,result:{userAgent:'kicktires/0.154.0 (test)'}});
+if(m.method==='model/list')send({id:m.id,result:{data:[{model:m.params.cursor?'beta':'alpha',defaultReasoningEffort:'high',supportedReasoningEfforts:[{reasoningEffort:'low'},{reasoningEffort:'high'}]}],...(m.params.cursor?{}:{nextCursor:'page2'})}});
+if(m.method==='thread/start'){
+ if(m.params.model==='locked')send({id:m.id,error:{message:'Model unavailable for this account'}});
+ else send({id:m.id,result:{thread:{id:'test'},model:m.params.model,reasoningEffort:m.params.model==='mismatch'?'low':m.params.config.model_reasoning_effort}});
+}
+if(m.method==='turn/start'){send({id:m.id,result:{}});send({method:'thread/tokenUsage/updated',params:{tokenUsage:{total:{inputTokens:1,cachedInputTokens:0,outputTokens:1,reasoningOutputTokens:0}}}});send({method:'item/completed',params:{item:{type:'agentMessage',text:'ready'}}});send({method:'turn/completed',params:{turn:{status:'completed'}}});}
+});`,
+    );
+    const base = { cli, home, model: "beta" };
+    expect(await resolveCodexSettings(base)).toEqual({ id: "beta", reasoningEffort: "high" });
+    expect(await resolveCodexSettings({ ...base, reasoningEffort: "low" })).toEqual({
+      id: "beta",
+      reasoningEffort: "low",
+    });
+    await rejects(
+      resolveCodexSettings({ ...base, reasoningEffort: "invalid" }),
+      /Supported: low, high/,
+    );
+    await rejects(resolveCodexSettings({ ...base, model: "unknown" }), /Available: alpha, beta/);
+    const before = (await readFile(requests, "utf8"))
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+    expect(before.some((r) => r.method === "turn/start" || r.method === "thread/start")).toBe(
+      false,
+    );
+    expect(
+      before.filter((r) => r.method === "model/list").every((r) => r.params.includeHidden),
+    ).toBe(true);
+    const turn = { ...base, reasoningEffort: "high", prompt: "ready", schema: {} };
+    expect((await codexResponse(turn)).text).toBe("ready");
+    await rejects(codexResponse({ ...turn, model: "mismatch" }), /did not accept/);
+    await rejects(codexResponse({ ...turn, model: "locked" }), /unavailable for this account/);
+    const after = (await readFile(requests, "utf8"))
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+    expect(after.filter((r) => r.method === "turn/start")).toHaveLength(1);
+    await rejects(resolveCodexSettings({ ...base, signal: AbortSignal.abort() }));
   } finally {
     await rm(home, { recursive: true, force: true });
   }

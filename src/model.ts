@@ -23,7 +23,8 @@ export function assertModelAccess(model: Profile["model"]) {
 }
 export function resolveModel(model: Profile["model"]) {
   assertModelAccess(model);
-  if (model.provider === "codex") return codexModel(model.id, model.codexHome!);
+  if (model.provider === "codex")
+    return codexModel(model.id, model.codexHome!, model.reasoningEffort);
   if (model.provider === "chatgpt") return chatgpt(model.id);
   const apiKey = process.env[modelCredentialEnv(model)!];
   if (model.provider === "anthropic") return createAnthropic({ apiKey })(model.id);

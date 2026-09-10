@@ -7,6 +7,7 @@ import { createServer } from "node:net";
 import { spawn, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
 import { Client } from "eve/client";
+import { resolveCodexSettings } from "./codex.ts";
 import { profileSchema } from "./profile.ts";
 import { snapshotRepository } from "./repository.ts";
 import { loadSkills } from "./skills.ts";
@@ -15,7 +16,7 @@ import type { FileHandle } from "node:fs/promises";
 import { stopService } from "./service.ts";
 import { cleanupSandbox } from "./cleanup.ts";
 import { jobSchema } from "./job.ts";
-import { reportJSONSchema, validateReport } from "./review/report.ts";
+import { reportJSONSchema, validateReport, modelSettingsSchema } from "./review/report.ts";
 
 const root = resolve(import.meta.dir, "..");
 const { values } = parseArgs({
@@ -40,6 +41,16 @@ for (const name of ["repo", "base", "head", "profile"] as const)
 const profilePath = resolve(values.profile!);
 const profile = profileSchema.parse(JSON.parse(await readFile(profilePath, "utf8")));
 assertModelAccess(profile.model);
+if (profile.model.provider === "codex")
+  Object.assign(
+    profile.model,
+    await resolveCodexSettings({
+      cli: fileURLToPath(import.meta.resolve("@openai/codex/bin/codex.js")),
+      home: profile.model.codexHome!,
+      model: profile.model.id,
+      reasoningEffort: profile.model.reasoningEffort,
+    }),
+  );
 for (const connection of Object.values(profile.connections))
   if (connection.tokenEnv && !process.env[connection.tokenEnv])
     throw new Error(`Missing connection credential: ${connection.tokenEnv}`);
@@ -165,6 +176,7 @@ try {
   );
 } catch (error) {
   outcome = {
+    model: modelSettingsSchema.parse(profile.model),
     executions: [],
     browserExecutions: [],
     status: "incomplete",

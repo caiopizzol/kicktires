@@ -72,9 +72,20 @@ Set the trusted profile's `model` field, using an absolute `codexHome` path:
 {
   "provider": "codex",
   "id": "gpt-5.6-terra",
+  "reasoningEffort": "high",
   "codexHome": "/home/runner/.local/share/kicktires/codex"
 }
 ```
+
+`reasoningEffort` is optional and currently supported only for Codex. Omit it to use
+the selected model's catalog default. kicktires rejects unknown models and unsupported
+efforts before preparing the review. Run `bun run doctor -- --profile PROFILE --credentials`
+to check the catalog without generating a response; account access is still checked
+when the model runs.
+
+The report records the selected provider, model and resolved effort. Codex must
+acknowledge those settings before generation. Higher effort does not replace required
+checks or guarantee a correct finding.
 
 The CLI manages login and token refresh; the model needs no API key or GitHub
 secret. Keep `auth.json` private (mode `600`) and out of PRs, profiles and sandboxes.

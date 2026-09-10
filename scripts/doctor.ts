@@ -1,4 +1,5 @@
-import { assertCodexHome } from "../src/codex.ts";
+import { fileURLToPath } from "node:url";
+import { assertCodexHome, resolveCodexSettings } from "../src/codex.ts";
 import { parseArgs } from "node:util";
 import { access, readFile, stat } from "node:fs/promises";
 import { constants } from "node:fs";
@@ -17,7 +18,7 @@ const { values } = parseArgs({
 });
 if (values.help || !values.profile) {
   console.log(
-    "Usage: bun --no-env-file scripts/doctor.ts --profile TRUSTED.json [--worker] [--credentials]\nChecks installation without model calls or repository execution. Run --worker as the runner account; --credentials also checks required environment variables.",
+    "Usage: bun --no-env-file scripts/doctor.ts --profile TRUSTED.json [--worker] [--credentials]\nChecks installation without model calls or repository execution. Run --worker as the runner account; --credentials also checks credentials and the Codex model catalog.",
   );
   process.exit(values.help ? 0 : 1);
 }
@@ -72,7 +73,18 @@ await check("Trusted profile and skills", async () => {
   if (credentialNames.some((name) => name && /^(GITHUB_|GH_|ACTIONS_|GIT_)/.test(name)))
     throw new Error("Model/MCP credentials cannot use GitHub, Actions or Git variable names.");
   await loadSkills(profile.skills.map((path) => resolve(dirname(profilePath), path)));
-  if (profile.model.provider === "codex") assertCodexHome(profile.model.codexHome);
+  if (profile.model.provider === "codex") {
+    assertCodexHome(profile.model.codexHome);
+    if (values.credentials) {
+      const settings = await resolveCodexSettings({
+        cli: fileURLToPath(import.meta.resolve("@openai/codex/bin/codex.js")),
+        home: profile.model.codexHome,
+        model: profile.model.id,
+        reasoningEffort: profile.model.reasoningEffort,
+      });
+      console.log(`Codex: ${settings.id} · reasoning: ${settings.reasoningEffort}`);
+    }
+  }
   if (profile.model.provider === "chatgpt")
     throw new Error(
       "Subscription login is not verified for unattended installation; configure an API provider.",

@@ -8,6 +8,7 @@ export const profileSchema = z
         provider: z.enum(["xai", "openai", "anthropic", "chatgpt", "codex"]),
         id: z.string().min(1),
         codexHome: z.string().min(1).optional(),
+        reasoningEffort: z.string().min(1).optional(),
         apiKeyEnv: z
           .string()
           .regex(/^[A-Z][A-Z0-9_]*$/)
@@ -19,8 +20,8 @@ export const profileSchema = z
         (model) =>
           model.provider === "codex"
             ? !!model.codexHome && !model.apiKeyEnv
-            : model.codexHome === undefined,
-        "codex requires codexHome and no apiKeyEnv; other providers cannot set codexHome",
+            : model.codexHome === undefined && model.reasoningEffort === undefined,
+        "codex requires codexHome and no apiKeyEnv; other providers cannot set codexHome or reasoningEffort",
       ),
     skills: z.array(z.string().min(1)).default([]),
     setup: z

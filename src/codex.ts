@@ -54,14 +54,20 @@ export const codexConfig = [
   "features.skip_host_skill_discovery=true",
 ];
 
-export async function codexResponse(options: {
-  cli: string;
-  home: string;
-  model: string;
-  prompt: string;
-  schema: unknown;
-  signal?: AbortSignal;
-}) {
+type CodexOptions = { cli: string; home: string; signal?: AbortSignal };
+type Request = (method: string, params: unknown) => Promise<any>;
+type Usage = {
+  inputTokens: number;
+  cachedInputTokens: number;
+  outputTokens: number;
+  reasoningOutputTokens: number;
+};
+type Response = { text: string; usage: Usage | undefined };
+
+async function withCodex<T>(
+  options: CodexOptions,
+  action: (request: Request, completed: Promise<Response>, directory: string) => Promise<T>,
+) {
   assertCodexHome(options.home);
   const directory = await mkdtemp(join(tmpdir(), "kicktires-codex-"));
   const child = spawn(
@@ -192,8 +198,69 @@ export async function codexResponse(options: {
     if (!String(initialized.userAgent).includes(`/${codexVersion} `))
       throw new Error(`Expected Codex CLI ${codexVersion}`);
     send({ method: "initialized" });
+    return await action(request, completed, directory);
+  } finally {
+    signal.removeEventListener("abort", abort);
+    await stopService(child);
+    await rm(directory, { recursive: true, force: true });
+  }
+}
+
+const catalogPage = z.object({
+  data: z.array(
+    z.object({
+      model: z.string().min(1),
+      defaultReasoningEffort: z.string().min(1),
+      supportedReasoningEfforts: z.array(z.object({ reasoningEffort: z.string().min(1) })),
+    }),
+  ),
+  nextCursor: z.string().nullish(),
+});
+
+export async function resolveCodexSettings(
+  options: CodexOptions & { model: string; reasoningEffort?: string },
+) {
+  return withCodex(options, async (request) => {
+    let cursor: string | undefined;
+    const seen = new Set<string>();
+    const available: string[] = [];
+    do {
+      const page = catalogPage.parse(
+        await request("model/list", { limit: 100, includeHidden: true, cursor }),
+      );
+      for (const entry of page.data) {
+        available.push(entry.model);
+        if (entry.model !== options.model) continue;
+        const reasoningEffort = options.reasoningEffort ?? entry.defaultReasoningEffort;
+        const supported = entry.supportedReasoningEfforts.map((item) => item.reasoningEffort);
+        if (!supported.includes(reasoningEffort))
+          throw new Error(
+            `Codex model ${options.model} does not support reasoning effort ${reasoningEffort}. Supported: ${supported.join(", ")}`,
+          );
+        return { id: entry.model, reasoningEffort };
+      }
+      cursor = page.nextCursor ?? undefined;
+      if (cursor && seen.has(cursor)) throw new Error("Codex model catalog repeated a cursor");
+      if (cursor) seen.add(cursor);
+    } while (cursor);
+    throw new Error(`Unknown Codex model ${options.model}. Available: ${available.join(", ")}`);
+  });
+}
+
+export async function codexResponse(
+  options: CodexOptions & {
+    model: string;
+    reasoningEffort?: string;
+    prompt: string;
+    schema: unknown;
+  },
+) {
+  return withCodex(options, async (request, completed, directory) => {
     const started = await request("thread/start", {
       model: options.model,
+      ...(options.reasoningEffort
+        ? { config: { model_reasoning_effort: options.reasoningEffort } }
+        : {}),
       cwd: directory,
       approvalPolicy: "never",
       sandbox: "read-only",
@@ -204,16 +271,17 @@ export async function codexResponse(options: {
       baseInstructions:
         "You provide the next response for another agent runtime. Return only the requested structured response. Tool proposals are data; the owning runtime executes them. Do not invoke your own tools.",
     });
+    if (
+      options.reasoningEffort &&
+      (started.model !== options.model || started.reasoningEffort !== options.reasoningEffort)
+    )
+      throw new Error("Codex did not accept the selected model and reasoning effort");
     await request("turn/start", {
       threadId: started.thread.id,
       environments: [],
       input: [{ type: "text", text: options.prompt }],
       outputSchema: options.schema,
     });
-    return await completed;
-  } finally {
-    signal.removeEventListener("abort", abort);
-    await stopService(child);
-    await rm(directory, { recursive: true, force: true });
-  }
+    return completed;
+  });
 }

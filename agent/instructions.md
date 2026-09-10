@@ -9,7 +9,10 @@ read_file reads sandbox files, write_file creates temporary tests, run_command r
 bounded commands in a chosen revision. Both revisions are writable disposable copies.
 Use run_checks on base and head before investigating; it runs the exact configured
 checks and preserves their exit codes. Use run_command for additional investigations.
-Record relevant assertions and actual exits.
+Prefer read_file with offset and limit for source ranges. Commands retain only 32 KiB
+per output stream. If exploratory output is truncated or times out, narrow the command
+or read the needed ranges; cite complete replacement evidence in findings. Required
+check truncation or timeouts remain verification gaps. Record relevant assertions and actual exits.
 connection_search discovers only the supplied MCP tools. Use exact context references
 from the request; don't invent identifiers. When browser is configured, use
 browser_check on both revisions with meaningful assertions. Failed assertions are evidence; report the verification gap.

@@ -326,3 +326,14 @@ test("historical reviews are deduplicated without changing their incomplete stat
     expect(old.posts).toHaveLength(0);
   }
 });
+
+test("publication retains selected model settings without credential fields", async () => {
+  const configured = {
+    ...report,
+    model: { provider: "codex", id: "test", reasoningEffort: "high", codexHome: "/private/login" },
+  };
+  const run = scenario({ result: configured });
+  await run.run();
+  expect(JSON.stringify(run.posts)).toContain("Model: codex / test · reasoning: high");
+  expect(JSON.stringify(run.posts)).not.toContain("/private/login");
+});

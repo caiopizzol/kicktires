@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { reportSchema, type validateReport } from "../review/report.ts";
+import { publishedReportSchema, type validateReport } from "../review/report.ts";
 
 const sha = z.string().regex(/^[a-f0-9]{40}$/);
 const repositorySchema = z.object({
@@ -23,7 +23,7 @@ export type PullRequest = z.infer<typeof pullRequestSchema>;
 export type Report = Pick<
   ReturnType<typeof validateReport>,
   "summary" | "status" | "gaps" | "findings"
->;
+> & { model?: ReturnType<typeof validateReport>["model"] };
 export type Api = (path: string, body?: unknown) => Promise<unknown>;
 
 export function parseEvent(value: unknown, repository: string) {
@@ -86,6 +86,11 @@ export function renderReview(pr: PullRequest, report: Report) {
     `Revision: ${pr.head.sha}`,
     `Verification: **${report.status}** · ${report.findings.length} finding(s).`,
     text(report.summary, 12000),
+    ...(report.model
+      ? [
+          `Model: ${text(report.model.provider, 100)} / ${text(report.model.id, 200)}${report.model.reasoningEffort ? ` · reasoning: ${text(report.model.reasoningEffort, 100)}` : ""}`,
+        ]
+      : []),
     ...report.gaps.slice(0, 20).map((gap) => `- ${text(gap, 1000)}`),
     "Automated review with recorded tool evidence; not an approval.",
     marker(pr),
@@ -127,7 +132,7 @@ export async function reviewPullRequest(options: {
       result: "duplicate",
       incomplete: isIncomplete(duplicate),
     };
-  const report = reportSchema.parse(await review(current));
+  const report = publishedReportSchema.parse(await review(current));
   // Repeat after the slow model call. commit_id also anchors the unavoidable API race.
   const latest = await fresh();
   if (

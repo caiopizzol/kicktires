@@ -15,6 +15,13 @@ export const reportSchema = z.object({
   findings: z.array(findingSchema.extend({ evidenceRefs: z.array(z.string()).min(1) })),
 });
 export const reportJSONSchema = z.toJSONSchema(reportSchema);
+export const modelSettingsSchema = z.object({
+  provider: z.string(),
+  id: z.string(),
+  reasoningEffort: z.string().optional(),
+});
+export const publishedReportSchema = reportSchema.extend({ model: modelSettingsSchema.optional() });
+
 const eventSchema = z.object({
   type: z.string(),
   data: z.record(z.string(), z.unknown()),
@@ -142,8 +149,13 @@ export function validateReport(data: unknown, rawEvents: unknown[], job: ReviewJ
     }
   for (const e of executions.filter((e) => e.tool === "run_checks" && e.exitCode !== 0))
     gaps.push(`Required check exited ${e.exitCode} for ${e.revision}: ${e.command}`);
-  if (executions.some((e) => e.truncated || [124, 137, 143].includes(e.exitCode)))
-    gaps.push("Command output was truncated or execution timed out");
+  const citedEvidence = new Set(normalized.findings.flatMap((f) => f.evidenceRefs));
+  for (const e of executions.filter((e) => e.truncated || [124, 137, 143].includes(e.exitCode))) {
+    if (e.tool === "run_checks")
+      gaps.push(`Required check output was truncated or execution timed out: ${e.command}`);
+    else if (citedEvidence.has(e.callId))
+      gaps.push(`Cited command output was truncated or execution timed out: ${e.callId}`);
+  }
   const browserExecutions = actions
     .filter((a) => a.toolName === "browser_check" && !a.isError)
     .flatMap((a) =>
@@ -178,6 +190,7 @@ export function validateReport(data: unknown, rawEvents: unknown[], job: ReviewJ
     gaps.push("A required capability failed; inspect tool evidence");
   return {
     ...report,
+    model: modelSettingsSchema.parse(job.profile.model),
     findings: normalized.findings,
     status: gaps.length || report.status === "incomplete" ? "incomplete" : "reviewed",
     gaps: [...new Set(gaps)],

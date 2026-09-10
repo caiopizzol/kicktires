@@ -51,7 +51,11 @@ changed-line coordinates and configured checks on both revisions. It does not pr
 that the evidence supports a finding. Failed checks need not be new regressions.
 
 Commands default to 60 seconds (maximum 300) and retain 32 KiB per output stream.
-Timeouts and truncated output leave verification incomplete. Reviews default to
+Required checks that time out or produce truncated output leave verification incomplete.
+A finding citing a truncated or timed-out command remains visible and makes the review
+incomplete. Uncited exploratory commands retain their exit codes and truncation flags
+in the report but do not prevent completion. The agent can narrow a command or use
+read_file ranges to obtain complete replacement evidence. Reviews default to
 600 seconds (maximum 1,800). Eve's session limits are 2 million input tokens and
 24,000 output tokens, checked between calls; a final call may exceed them. A paused
 review remains incomplete.

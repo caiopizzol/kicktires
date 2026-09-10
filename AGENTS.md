@@ -14,4 +14,4 @@ structure and verification.
 
 Local operator history, when present, is in `.runs/archive/goals/`.
 
-Active operator goal: `.runs/codex-self-review/goal.md` (local, untracked).
+Active operator goal: `.runs/model-controls/goal.md` (local, untracked).

@@ -71,3 +71,18 @@ test("connection names follow Eve's kebab-case contract", () => {
     }),
   ).toThrow();
 });
+
+test("reasoning effort is an explicit Codex-only setting", () => {
+  expect(
+    profileSchema.parse({
+      model: { provider: "codex", id: "test", codexHome: "/login", reasoningEffort: "high" },
+      checks: ["true"],
+    }).model.reasoningEffort,
+  ).toBe("high");
+  expect(() =>
+    profileSchema.parse({
+      model: { provider: "openai", id: "test", reasoningEffort: "high" },
+      checks: ["true"],
+    }),
+  ).toThrow();
+});
