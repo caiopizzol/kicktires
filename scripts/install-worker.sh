@@ -43,8 +43,9 @@ else
   bun install --frozen-lockfile
   bun run check
   bun run build
-  printf '%s\n' "$commit" > .agent-review-installed
   chmod -R go-w .
+  printf '%s\n' "$commit" > .agent-review-installed
+  chmod 644 .agent-review-installed
   trap - EXIT HUP INT TERM
 fi
 
@@ -60,8 +61,8 @@ if docker image inspect agent-review-sandbox:0.1.0 >/dev/null 2>&1; then
       }
     done
   else
-    echo 'An existing sandbox image has no active release to compare. Inspect/remove that exact image before a fresh install.' >&2
-    exit 1
+    echo 'Resuming first installation: rebuild the sandbox from the pinned source.'
+    docker build -t agent-review-sandbox:0.1.0 -f "$release/Dockerfile.sandbox" "$release"
   fi
 else
   docker build -t agent-review-sandbox:0.1.0 -f "$release/Dockerfile.sandbox" "$release"

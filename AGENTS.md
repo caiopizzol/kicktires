@@ -1,6 +1,8 @@
 # Agent instructions
 
-Active onboarding: [.goals/onboarding.md](.goals/onboarding.md).
+Active VM trial: [.goals/fresh-vm.md](.goals/fresh-vm.md).
+
+Completed onboarding: [.goals/onboarding.md](.goals/onboarding.md).
 
 Completed migration: [.goals/workflow-migration.md](.goals/workflow-migration.md).
 
