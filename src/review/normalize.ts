@@ -11,16 +11,20 @@ export interface NormalizeOptions {
   readonly changedLines: ChangedLines;
 }
 
-export interface NormalizedReview extends Review {
+export interface NormalizedReview<F extends Finding = Finding> extends Omit<Review, "findings"> {
+  findings: F[];
   /** Findings removed because the report was already at its cap. */
   readonly droppedOverCap: number;
 }
 
 /** Keep findings citable on the diff, sort worst first, and apply the report cap. */
-export function normalizeReview(review: Review, options: NormalizeOptions): NormalizedReview {
+export function normalizeReview<F extends Finding>(
+  review: Omit<Review, "findings"> & { findings: F[] },
+  options: NormalizeOptions,
+): NormalizedReview<F> {
   const changed = new Set(options.changedFiles);
 
-  const kept: Finding[] = [];
+  const kept: F[] = [];
 
   for (const finding of review.findings) {
     // Relax only model-authored paths; the changed-file list is authoritative.

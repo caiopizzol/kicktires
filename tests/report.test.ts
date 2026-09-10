@@ -242,3 +242,93 @@ test("published model settings come from the trusted job and omit credentials", 
   expect(result.model).toEqual({ provider: "codex", id: "test", reasoningEffort: "high" });
   expect(JSON.stringify(result)).not.toContain("/private/login");
 });
+
+const interruptedCommands = [
+  { truncated: true, exitCode: 0 },
+  ...[124, 137, 143].map((exitCode) => ({ truncated: false, exitCode })),
+];
+function commandEvent(callId: string, interrupted = { truncated: false, exitCode: 0 }) {
+  return {
+    type: "action.result",
+    data: {
+      result: {
+        callId,
+        toolName: "run_command",
+        output: {
+          revision: "head",
+          commit: job.repository.head,
+          command: "nl -ba a.ts",
+          stdout: "1 new",
+          stderr: "",
+          ...interrupted,
+        },
+      },
+    },
+  };
+}
+test("uncited interrupted exploration remains recorded without preventing completion", () => {
+  for (const interrupted of interruptedCommands) {
+    const raw = [...events(), commandEvent("explore", interrupted)];
+    const result = validateReport(report, raw, job, diff);
+    expect(result.status).toBe("reviewed");
+    expect(result.gaps).toEqual([]);
+    expect(result.executions.find((e) => e.callId === "explore")).toMatchObject(interrupted);
+    const reportedGap = validateReport({ ...report, gaps: ["Missing context"] }, raw, job, diff);
+    expect(reportedGap.status).toBe("incomplete");
+    expect(reportedGap.gaps).toContain("Missing context");
+  }
+});
+test("findings citing interrupted commands remain visible until complete evidence replaces them", () => {
+  const finding = {
+    severity: "P1" as const,
+    file: "a.ts",
+    line: 1,
+    side: "RIGHT" as const,
+    title: "Bug",
+    explanation: "Behavior fails",
+    evidence: "Test input",
+    suggestion: "Fix condition",
+    evidenceRefs: ["explore"],
+  };
+  for (const interrupted of interruptedCommands) {
+    const raw = [...events(), commandEvent("explore", interrupted), commandEvent("complete")];
+    const cited = validateReport({ ...report, findings: [finding] }, raw, job, diff);
+    expect(cited.status).toBe("incomplete");
+    expect(cited.findings).toEqual([finding]);
+    expect(cited.gaps).toContain(
+      "Cited command output was truncated or execution timed out: explore",
+    );
+    const recovered = validateReport(
+      { ...report, findings: [{ ...finding, evidenceRefs: ["complete"] }] },
+      raw,
+      job,
+      diff,
+    );
+    expect(recovered.status).toBe("reviewed");
+    expect(recovered.findings).toHaveLength(1);
+    expect(recovered.executions.find((e) => e.callId === "explore")).toMatchObject(interrupted);
+  }
+});
+test("interrupted required checks remain gaps even with complete replacement checks", () => {
+  for (const interrupted of interruptedCommands) {
+    const check = commandEvent("interrupted-check", interrupted);
+    const raw = [
+      ...events(),
+      {
+        ...check,
+        data: {
+          result: {
+            ...check.data.result,
+            toolName: "run_checks",
+            output: { executions: [{ ...check.data.result.output, command: "npm test" }] },
+          },
+        },
+      },
+    ];
+    const result = validateReport(report, raw, job, diff);
+    expect(result.status).toBe("incomplete");
+    expect(result.gaps).toContain(
+      "Required check output was truncated or execution timed out: npm test",
+    );
+  }
+});
