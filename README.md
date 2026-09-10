@@ -90,7 +90,8 @@ tests/                  focused regression tests
 For unattended GitHub reviews, start with [Install a review worker](docs/self-hosting.md),
 then [add a repository](docs/github-actions.md#add-a-new-repository). The installer
 preserves an existing active release; `bun run doctor -- --profile TRUSTED.json`
-checks prerequisites before a paid review.
+checks prerequisites before a paid review. After a successful trial, optionally
+[require reviews before merging](docs/github-actions.md#choose-advisory-or-merge-blocking-reviews).
 
 See [adoption](docs/adoption.md) for current parity with Codex Reviewer,
 [PRODUCT.md](PRODUCT.md) for scope and [validation](docs/validation.md) for measured

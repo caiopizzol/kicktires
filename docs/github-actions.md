@@ -97,6 +97,51 @@ queued usually means no online runner matches its labels. A failed preflight mea
 host/profile problem; a retained incomplete report identifies review/setup/check gaps.
 No submitted review is an approval or a guarantee that the code is correct.
 
+## Choose advisory or merge-blocking reviews
+
+Start in **advisory mode**: install the workflow and validate a real review before
+making it required. Reviews and failed jobs remain visible, but without branch rules
+they do not prevent merging. A submitted bot comment alone is not a merge gate.
+
+After both CI and Agent Review succeed on the same real PR revision, enable
+**merge-blocking mode** in GitHub's branch protection for the default branch:
+
+- Require a pull request before merging. For a solo-maintained repository, leave the
+  required approval count at zero; the author cannot approve their own pull request.
+- Require the exact successful CI and reviewer check names. For the example workflow,
+  the reviewer check is `Agent review`; use the actual CI job name, not its workflow
+  display name. Bind checks to the observed GitHub Actions app when available.
+- Require all review conversations to be resolved before merging.
+- Apply the rules to administrators too if the checks must block everyone. Keep force
+  pushes and branch deletion disabled. Preserve any stronger existing requirements.
+
+Do not require check names that have not run yet. An old integration might still
+publish `Codex review`; changing its workflow display name does not rename the check.
+Repository rulesets may impose additional requirements; inspect them as well.
+
+### Handle a finding you disagree with
+
+Reply on the inline review thread with your reasoning, then resolve the conversation
+if you have permission. A finding can also be fixed in a follow-up commit and its
+thread resolved after verification. Resolving a thread records that it was addressed;
+it is not proof that the fix is correct or that the bot agrees with the decision.
+
+Conversation resolution and status checks are separate requirements. Resolving a
+finding does not turn a failed check green. Required tests or capabilities that fail
+must be fixed, or their trusted configuration corrected and validated. The current
+adapter preserves a published incomplete result on a same-base/head rerun; use a new
+revision to review again after correcting the cause. Review-summary prose does not
+create a resolvable inline conversation and is not independently merge-blocking.
+
+Findings alone do not fail `Agent review`. The check records whether required
+verification completed; unresolved inline threads provide the separate human decision
+point. The bot submits comments, not approvals or change-request reviews. Do not use
+an automatic approval or a label that overrides failed tests to settle a disagreement.
+
+GitHub controls these merge rules; Agent Review does not silently change repository
+settings during installation. Use the repository's normal configuration or follow
+[GitHub's branch-protection instructions](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule).
+
 ## Supply worker context
 
 A workflow can depend on a launcher that exists only on the worker. Supply its source
