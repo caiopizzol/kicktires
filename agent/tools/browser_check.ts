@@ -14,7 +14,7 @@ export default defineDynamic({
       readJob().profile.browser
         ? defineTool({
             description:
-              "Start the configured app on an isolated localhost port, then run a Playwright script with page, Node assert, and origin. Runs entirely inside Docker, saves a screenshot on success and returns visible page text. Use real assertions to test interactions.",
+              "Start the configured app on an isolated localhost port, then run a Playwright script with page, Node assert, and origin. Runs entirely inside Docker, saves a screenshot on success and returns visible page text. Use Node assert.equal(await page.locator('output').textContent(), '0'); await page.getByRole('button', { name: 'Increment' }).click(); assert.equal(await page.locator('output').textContent(), '1'). Await browser operations before asserting. assert is node:assert/strict, not a fluent API; assert(...).equals(...) is invalid. The helper owns browser cleanup.",
             inputSchema: z.object({
               revision: z.enum(["base", "head"]),
               script: z.string().min(1).max(16000),
