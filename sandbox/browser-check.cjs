@@ -5,6 +5,14 @@ const { createServer } = require("node:net");
 const assert = require("node:assert/strict");
 const { chromium } = require("/opt/browser/node_modules/playwright");
 
+function reportError(error) {
+  console.error(error instanceof Error ? error.stack : String(error));
+  process.exitCode = 1;
+}
+
+// Unawaited script operations can reject while cleanup closes the browser.
+process.on("unhandledRejection", reportError);
+
 async function main() {
   const config = JSON.parse(readFileSync(process.argv[2], "utf8"));
   const reservation = createServer();
@@ -53,6 +61,8 @@ async function main() {
       }),
     );
     console.log("Browser script completed");
+  } catch (error) {
+    reportError(error);
   } finally {
     if (browser) await browser.close();
     if (server.pid) {
@@ -71,7 +81,4 @@ async function main() {
     log.end();
   }
 }
-main().catch((error) => {
-  console.error(error.stack);
-  process.exitCode = 1;
-});
+main().catch(reportError);
