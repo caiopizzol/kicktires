@@ -7,10 +7,25 @@ Managed serverless platforms without a Docker daemon are not supported by this s
 
 ## Prepare the machine
 
-Install Git, Node 24+, Bun 1.3.12+, Docker Engine, and the standard Linux tools
-`tar`, `flock` (util-linux), `timeout` (coreutils), and `groupadd`. The installation
-script requires root and builds for the worker's native architecture. The GitHub
-integration also needs a repository-scoped GitHub Actions runner, configured next.
+For a bare Ubuntu 24.04 or 26.04 VM (amd64 or arm64), obtain a pinned Agent Review
+source checkout, inspect `install.sh`, and run:
+
+```sh
+sudo sh install.sh --source /path/to/agent-review
+```
+
+The bootstrap installs Ubuntu prerequisites and Docker Engine from Docker's official
+APT repository. It downloads Node24.14.0 and Bun1.3.14 with pinned SHA-256 checksums,
+then calls the worker installer below. Existing worker runtimes are preserved; the
+worker installer validates their supported versions. Docker is enabled at boot.
+The bootstrap does not upgrade the whole OS, configure a public listener, register
+GitHub runners or collect model credentials. Unsupported OS/architecture exits before
+package installation. Runtime updates require updating and verifying their pinned
+versions and hashes in the script.
+
+If you provision prerequisites separately, install Git, Node24+, Bun1.3.12+, Docker
+Engine and standard Linux tools (`tar`, `flock`, `timeout`, `groupadd`), then use
+`scripts/install-worker.sh` directly. Both paths require root for worker installation.
 
 Start with a dedicated worker for your trusted repositories. Docker access gives
 control over the host daemon. Reviews are serialized, but the current sandbox has
@@ -28,7 +43,7 @@ git checkout FULL_COMMIT_SHA
 sudo env PATH="$PATH" sh scripts/install-worker.sh "$PWD"
 ```
 
-Inspect the script before running it. It archives committed source, installs locked
+The worker installer archives committed source, installs locked
 dependencies and builds/tests on Linux. Uncommitted tracked changes are rejected;
 untracked files are not installed. It creates:
 

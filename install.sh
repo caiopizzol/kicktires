@@ -1,5 +1,6 @@
 #!/bin/sh
 set -eu
+umask 022
 
 [ "$#" -eq 2 ] && [ "$1" = --source ] || {
   echo 'Usage: sudo sh install.sh --source /path/to/agent-review' >&2; exit 1;
@@ -36,13 +37,15 @@ if [ ! -e "$runtime/node" ]; then
   curl -fL --retry 3 "https://nodejs.org/dist/v24.14.0/node-v24.14.0-linux-$arch.tar.xz" -o "$temporary/node.tar.xz"
   printf '%s  %s\n' "$nodehash" "$temporary/node.tar.xz" | sha256sum -c -
   tar -xf "$temporary/node.tar.xz" -C "$temporary"
-  install -m 755 "$temporary/node-v24.14.0-linux-$arch/bin/node" "$runtime/node"
+  install -m 755 "$temporary/node-v24.14.0-linux-$arch/bin/node" "$runtime/node.next"
+  mv "$runtime/node.next" "$runtime/node"
 fi
 if [ ! -e "$runtime/bun" ]; then
   curl -fL --retry 3 "https://github.com/oven-sh/bun/releases/download/bun-v1.3.14/bun-linux-$bunarch.zip" -o "$temporary/bun.zip"
   printf '%s  %s\n' "$bunhash" "$temporary/bun.zip" | sha256sum -c -
   unzip -q "$temporary/bun.zip" -d "$temporary"
-  install -m 755 "$temporary/bun-linux-$bunarch/bun" "$runtime/bun"
+  install -m 755 "$temporary/bun-linux-$bunarch/bun" "$runtime/bun.next"
+  mv "$runtime/bun.next" "$runtime/bun"
 fi
 sh "$checkout/scripts/install-worker.sh" "$checkout"
 echo 'Worker installed. Add a trusted profile and repository runner using docs/github-actions.md.'

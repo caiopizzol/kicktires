@@ -1,5 +1,6 @@
 #!/bin/sh
 set -eu
+umask 022
 
 # Install committed source; never use a working tree as a live runner installation.
 [ "$#" -eq 1 ] || { echo 'Usage: sudo install-worker.sh CHECKOUT' >&2; exit 1; }
