@@ -1,7 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="title">
   <title id="title">kicktires</title>
-  <defs><clipPath id="cp-load"><path d="M25.34,84 A42,42 0 1,1 74.66,84 Z M50,28 a22,22 0 1,0 0.01,0 Z" clip-rule="evenodd"/></clipPath></defs>
+  <defs>
+    <clipPath id="tire" clip-rule="evenodd">
+      <path d="M25.34,84 A42,42 0 1,1 74.66,84 Z M50,28 a22,22 0 1,0 0.01,0 Z"/>
+    </clipPath>
+  </defs>
   <path fill="#F7F4EC" fill-rule="evenodd" d="M25.34,84 A42,42 0 1,1 74.66,84 Z M50,28 a22,22 0 1,0 0.01,0 Z"/>
-  <rect x="0" y="75" width="100" height="9" fill="#FF5A1F" clip-path="url(#cp-load)"/>
-
+  <rect x="0" y="75" width="100" height="9" fill="#FF5A1F" clip-path="url(#tire)"/>
 </svg>
