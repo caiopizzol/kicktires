@@ -55,3 +55,17 @@ export const profileSchema = z
   })
   .strict();
 export type Profile = z.infer<typeof profileSchema>;
+
+export function modelCredentialEnv(
+  model: Profile["model"],
+): string | undefined {
+  if (model.provider === "chatgpt") return undefined;
+  return (
+    model.apiKeyEnv ??
+    {
+      fireworks: "FIREWORKS_API_KEY",
+      openai: "OPENAI_API_KEY",
+      anthropic: "ANTHROPIC_API_KEY",
+    }[model.provider]
+  );
+}

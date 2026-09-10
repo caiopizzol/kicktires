@@ -1,14 +1,15 @@
-# Agent Review
+# Kick Tires
 
-Agent Review is a self-hosted code-review application for people who want to use
+Kick Tires is a self-hosted code-review application for people who want to use
 an agent with their own models, review skills, tools and repository context.
 
 The first version runs an explicit review of pinned Git revisions, provisions a
 writable isolated environment, supplies trusted skills and tools, and returns
 findings with recorded execution evidence. A command-line workflow is the initial
 interface. It must work on real repositories, with configurable test commands,
-browser checks and optional context connections. A thin GitHub Actions adapter may
-trigger this same workflow and publish validated findings against the pinned PR head.
+browser checks and optional context connections. The GitHub Actions adapter triggers
+this workflow for private, same-repository PRs and publishes findings against the pinned
+head after checking report coordinates and recorded evidence references.
 
 Eve owns agent execution, tool dispatch, skill discovery and session lifecycle.
 This application owns review input preparation, trusted configuration, evidence,

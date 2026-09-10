@@ -7,7 +7,7 @@ import type { ReviewJob } from "./job.ts";
 
 export async function loadSkills(extraDirectories: string[]) {
   const bundled = dirname(
-    fileURLToPath(import.meta.resolve("@agent-review/skills/package.json")),
+    fileURLToPath(import.meta.resolve("@kicktires/skills/package.json")),
   );
   const skills: ReviewJob["skills"] = {};
   let fileCount = 0,

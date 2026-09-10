@@ -177,16 +177,12 @@ test("configured browser requires successful captured checks on both revisions",
 });
 
 test("dedicated required checks retain exact commands and flag truncated evidence", () => {
-  const baseline = events().filter(
-    (e) =>
-      !(
-        typeof e === "object" &&
-        e !== null &&
-        "data" in e &&
-        (e.data as { result?: { toolName?: string } }).result?.toolName ===
-          "run_command"
-      ),
-  );
+  const baseline = events().filter((event) => {
+    const result = (event as { data: { result?: { toolName?: string } } }).data
+      .result;
+    return result?.toolName !== "run_checks";
+  });
+  expect(validateReport(report, baseline, job, diff).status).toBe("incomplete");
   const checks = (truncated = false) => ({
     type: "action.result",
     data: {

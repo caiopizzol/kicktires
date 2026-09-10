@@ -1,19 +1,17 @@
-# Agent instructions
+# Contributor instructions
 
-Completed cutover: [.goals/copilot-cutover.md](.goals/copilot-cutover.md).
+Kick Tires is a focused code-review application built on Eve. Read [PRODUCT.md](PRODUCT.md)
+for scope and [CONTRIBUTING.md](CONTRIBUTING.md) for structure and verification.
 
-Completed VM trial: [.goals/fresh-vm.md](.goals/fresh-vm.md).
+- Keep reviewed source, tests and browser execution inside the sandbox.
+- Keep reusable Markdown skills independent of Eve and the GitHub adapter.
+- Treat profiles as trusted operator configuration; never load one from a PR head.
+- Preserve deployed worker paths, environment variables and GitHub deduplication markers
+  unless a change includes an explicit migration. See [compatibility](docs/compatibility.md).
+- Prefer small, direct modules; use kebab-case filenames except Eve tool filenames,
+  whose snake_case names are the agent's tool identifiers.
+- Run `bun run check` and `bun run build` before committing. Use conventional commits.
+- Keep private source, reports, credentials and operator handoffs out of tracked files.
+- Do not introduce another agent framework or add Slack functionality.
 
-Completed onboarding: [.goals/onboarding.md](.goals/onboarding.md).
-
-Completed migration: [.goals/workflow-migration.md](.goals/workflow-migration.md).
-
-Product scope: [PRODUCT.md](PRODUCT.md).
-Build record: [.goals/build.md](.goals/build.md).
-Deployment goal: [.goals/hetzner-trial.md](.goals/hetzner-trial.md).
-Trial record: [.goals/project-trials.md](.goals/project-trials.md).
-
-Build a focused review application on Eve. Keep reusable skills independent of the
-application. Do not introduce another agent framework or add Slack functionality.
-Use conventional commits. Run the documented checks before committing changes.
-Keep reviewed code and browser execution inside the isolated review environment.
+Local operator history, when present, is in `.runs/archive/goals/`.

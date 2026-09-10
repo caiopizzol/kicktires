@@ -55,7 +55,7 @@ try {
     review: (pr) =>
       executeReview({ pr, token, profile, temporary, runs, env: process.env }),
   });
-  const summary = `Agent Review: ${result.result}${result.incomplete ? "; verification incomplete" : ""}.\n`;
+  const summary = `Kick Tires: ${result.result}${result.incomplete ? "; verification incomplete" : ""}.\n`;
   console.log(summary.trim());
   if (process.env.GITHUB_STEP_SUMMARY)
     await appendFile(process.env.GITHUB_STEP_SUMMARY, summary);

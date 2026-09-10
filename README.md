@@ -1,7 +1,10 @@
-# Agent Review
+# Kick Tires
 
-Self-hosted code reviews with real terminal checks, optional browser verification,
-and your own model, skills, and MCP context tools. Built on [Eve](https://github.com/vercel/eve).
+Code review that runs your code.
+
+Kick Tires is a self-hosted reviewer that investigates changes in a sandbox, runs
+your configured checks on both revisions, and reports findings and verification gaps.
+Customize it with supported models, portable skills and MCP context tools.
 
 Use the CLI with a local Git repository, two revisions and a trusted profile, or
 connect it to [GitHub PR workflows](docs/github-actions.md) on your self-hosted runner.
@@ -50,7 +53,7 @@ See [configuration](docs/configuration.md) for the full profile and
 [execution boundaries](docs/execution.md) for networking, isolation and limitations.
 
 - **Models:** Fireworks, OpenAI and Anthropic API providers; Eve's separate ChatGPT
-  subscription login path. See the verification status below before choosing one.
+  subscription login path. Check [provider verification status](docs/configuration.md#models-and-authentication) before choosing one.
 - **Skills:** the bundled review workflow plus additional `SKILL.md` directories.
 - **Terminal:** required checks run verbatim through `run_checks`; `run_command`
   permits further investigation and temporary reproductions inside the container.
@@ -62,6 +65,9 @@ Skills describe how to work; the application supplies actual capabilities. Addin
 skill does not grant terminal access, install a dependency or create a connection.
 
 ## Develop and verify
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the source map, conventions and change validation.
+Eve supplies agent execution, tool dispatch, skill discovery and sandbox integration.
 
 ```sh
 bun run check       # formatting, types and focused regression tests
@@ -87,7 +93,7 @@ scripts/                 live integration validation
 tests/                  focused regression tests
 ```
 
-For a bare Ubuntu VM, `sudo sh install.sh --source /path/to/agent-review` installs
+For a bare Ubuntu VM, `sudo sh install.sh --source /path/to/kicktires` installs
 prerequisites and the worker from a pinned checkout. For unattended GitHub reviews,
 start with [Install a review worker](docs/self-hosting.md),
 then [add a repository](docs/github-actions.md#add-a-new-repository). The installer
@@ -95,10 +101,13 @@ preserves an existing active release; `bun run doctor -- --profile TRUSTED.json`
 checks prerequisites before a paid review. After a successful trial, optionally
 [require reviews before merging](docs/github-actions.md#choose-advisory-or-merge-blocking-reviews).
 
-See [adoption](docs/adoption.md) for current parity with Codex Reviewer,
+See [adoption](docs/adoption.md) for current capabilities and limitations,
 [PRODUCT.md](PRODUCT.md) for scope and [validation](docs/validation.md) for measured
 results and known gaps. Keep generated builds (`.output/`, `.eve/`) and run artifacts
 out of source control; this application does not require a committed `dist/` bundle.
+
+Existing worker identifiers remain stable during the product rename; see
+[naming and compatibility](docs/compatibility.md).
 
 ## Share skills with another agent
 

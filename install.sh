@@ -3,7 +3,7 @@ set -eu
 umask 022
 
 [ "$#" -eq 2 ] && [ "$1" = --source ] || {
-  echo 'Usage: sudo sh install.sh --source /path/to/agent-review' >&2; exit 1;
+  echo 'Usage: sudo sh install.sh --source /path/to/kicktires' >&2; exit 1;
 }
 [ "$(id -u)" -eq 0 ] || { echo 'Run as root on the worker VM.' >&2; exit 1; }
 export PATH=/opt/agent-review/runtime/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -15,7 +15,7 @@ case "$(dpkg --print-architecture)" in
   *) echo 'Supported architectures: amd64 and arm64.' >&2; exit 1 ;;
 esac
 checkout=$(cd "$2" && pwd)
-[ -f "$checkout/scripts/install-worker.sh" ] || { echo 'Expected an Agent Review source checkout.' >&2; exit 1; }
+[ -f "$checkout/scripts/install-worker.sh" ] || { echo 'Expected a Kick Tires source checkout.' >&2; exit 1; }
 if command -v git >/dev/null; then
   git -C "$checkout" rev-parse --verify HEAD >/dev/null
   git -C "$checkout" diff --quiet HEAD -- || { echo 'Commit tracked source changes before installing.' >&2; exit 1; }

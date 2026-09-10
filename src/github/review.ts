@@ -82,7 +82,7 @@ function text(value: string, limit: number) {
 
 export function renderReview(pr: PullRequest, report: Report) {
   const body = [
-    "## Agent Review",
+    "## Kick Tires",
     `Revision: ${pr.head.sha}`,
     `Verification: **${report.status}** · ${report.findings.length} finding(s).`,
     text(report.summary, 12000),

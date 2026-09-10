@@ -1,85 +1,29 @@
-# Adopting Agent Review
+# Is Kick Tires a fit?
 
-The CLI supports manual reviews on real repositories. The [GitHub adapter](github-actions.md)
-adds automatic reviews and inline comments for private, same-repository PRs on your own
-runner. Use the API authentication path already validated for your installation.
+Kick Tires currently serves developers operating reviews for their own repositories.
+Start with the [local CLI](../README.md), or install a [Linux worker](self-hosting.md)
+and connect a [GitHub repository](github-actions.md).
 
-| Capability                                                            | Current Agent Review                            |
-| --------------------------------------------------------------------- | ----------------------------------------------- |
-| Review exact base/head commits and produce diff-scoped findings       | Available                                       |
-| Run on your own machine                                               | Available with Node, Bun and Docker             |
-| Add review skills, terminal/browser tools and MCP context             | Available through Eve                           |
-| Start automatically on a GitHub PR and publish inline review comments | Available on a self-hosted runner               |
-| Use an existing Codex or Claude Code subscription login               | Not interchangeable with Eve; see configuration |
-| Dashboard and arbitrary plugin marketplace                            | Outside the current scope                       |
+| Capability                                               | Current support                                                                  |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Local review of exact Git revisions                      | Available with Node, Bun and Docker                                              |
+| Automatic GitHub reviews and inline findings             | Private repositories, same-repository PR branches, self-hosted runner            |
+| Required tests, extra terminal investigation             | Available inside the sandbox                                                     |
+| Browser assertions                                       | Optional Playwright checks on both revisions                                     |
+| Portable skills and MCP tools                            | Trusted skill directories and allowlisted remote MCP tools                       |
+| Model access                                             | Fireworks live-tested; other paths detailed in [configuration](configuration.md) |
+| Existing Codex/Claude subscription reuse                 | Not interchangeable with the current execution path                              |
+| Public/fork PRs and GitHub-hosted runner setup           | Not supported by the current adapter/setup                                       |
+| Dashboard, arbitrary plugin marketplace, automatic fixes | Outside current scope                                                            |
 
-The first adoption trials used existing test suites against selected commits in two
-personal projects. They exposed three reviewer bugs: rejecting safe instruction-file
-symlinks, sharing persisted workflows between runs, and including macOS metadata as
-extra source files. Those paths now have corrections and regression evidence.
+Installation currently requires obtaining source, a Docker-capable machine, a trusted
+profile and (for GitHub) a dedicated runner registration per repository. There is no
+published package, hosted control plane or one-click cloud deployment.
 
-The initial GitHub integration invokes an immutable installed release and root-owned
-trusted profile, pins PR revisions, and publishes retained findings only after checking
-the current head and base. It preserves private-repository and same-repository branch
-restrictions. Each runner has private artifacts, and a shared host lock serializes work.
+If replacing Codex Reviewer, preserve the existing required GitHub check name until
+branch protection is deliberately updated. Validate authentication and the complete
+review path before retiring the prior worker. See [worker migration](github-actions.md#move-a-repository-to-another-worker)
+and [naming compatibility](compatibility.md).
 
-Choose authentication separately. API access works today; subscription support must be
-verified with the intended provider before replacing a subscription-based workflow.
-
-Live GitHub trials also verified both publication paths: a clean change passed its
-required checks on both revisions, while an intentional month-formatting regression
-produced an inline finding on the changed line and failed verification after the head
-tests failed. The base tests passed. Temporary regression PRs are validation fixtures,
-not application changes to merge.
-
-Required review skills are explicitly requested before inspection and checked against
-recorded tool calls. If the agent skips a required skill, the check fails even when
-repository tests pass. These trials establish the execution and publication path;
-they do not measure review accuracy across arbitrary changes.
-
-## Fresh repository onboarding
-
-A third private repository with no previous review agent was onboarded using a new
-repository-scoped runner and the existing worker release. Its sandbox ran 573 tests,
-package type checks, generated-type verification and a web build with networking
-disabled after dependency setup. The clean GitHub review passed every configured
-check on both revisions. A temporary case-normalization regression then produced an
-inline finding and 10 failing head tests; the base remained green. The fixture was
-closed without merging.
-
-That installation drove the worker installer, preflight command and unified
-[setup guide](self-hosting.md). The installer was exercised twice on the existing
-Linux worker without changing the active release, and twice in a clean Linux
-filesystem with a separately tagged real Docker image. The latter used the host
-Docker daemon; it was not a new cloud VM or a VM reboot test. Runner service startup
-was verified separately on the actual worker.
-
-The trials found and corrected missing administrator/local executable paths and a
-misleading preflight failure from an inaccessible working directory. Preflight was
-verified both passing under the runner account and failing for a missing model key.
-A tmpfiles rule now provisions the review lock after reboot; reboot recovery itself
-has not been exercised in these trials.
-
-Installation still requires obtaining source, installing platform prerequisites and
-registering the runner through GitHub. There is no published installation package,
-cloud deployment template or hosted control plane. The documented cloud path is a
-Linux VM with Docker; serverless platforms without Docker are outside this setup.
-
-## Bare Ubuntu VM validation
-
-The root `install.sh` bootstrap was subsequently tested on a newly provisioned
-Ubuntu26.04 amd64 VM with2CPUs and4GB RAM, where Node, Bun and Docker were absent.
-It installed prerequisites, verified pinned runtime downloads, built/tested the
-application and built the real Chromium sandbox image. Repeated installation passed,
-as did resuming with a built image but no initial release-selection file.
-
-A dedicated non-root account passed preflight and the live smoke test: terminal checks,
-browser assertions and MCP context retrieval completed for a clean change, and the
-seeded browser regression produced a retained finding with incomplete verification.
-After cleanup, the VM was rebooted. Docker started automatically, the selected release
-was unchanged, tmpfiles recreated the shared lock with correct ownership/mode, and
-preflight plus a network-disabled sandbox command passed again.
-
-Ubuntu24.04 and arm64 paths are implemented but were not exercised in this bare-VM
-trial. The trial used a pinned Git bundle because source publication is still pending.
-It did not register another GitHub runner or migrate existing repository workflows.
+[Validation](validation.md) describes the tests and live trials behind these claims.
+Self-hosting the worker does not keep model context local when using an external API.

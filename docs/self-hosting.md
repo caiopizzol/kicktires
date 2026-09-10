@@ -1,21 +1,24 @@
 # Install a review worker
 
 Use a Linux VM with Docker: a cloud VM and an on-premises machine follow the same
-steps. Agent Review starts a loopback-only Eve service for each review and removes
+steps. Kick Tires starts a loopback-only Eve service for each review and removes
 its disposable review container afterward. No public port or domain is needed.
 Managed serverless platforms without a Docker daemon are not supported by this setup.
 
+Worker paths retain their original `agent-review` names for upgrade compatibility.
+See [naming and compatibility](compatibility.md) before changing them.
+
 ## Prepare the machine
 
-For a bare Ubuntu 24.04 or 26.04 VM (amd64 or arm64), obtain a pinned Agent Review
+For a bare Ubuntu 24.04 or 26.04 VM (amd64 or arm64), obtain a pinned Kick Tires
 source checkout, inspect `install.sh`, and run:
 
 ```sh
-sudo sh install.sh --source /path/to/agent-review
+sudo sh install.sh --source /path/to/kicktires
 ```
 
 The bootstrap installs Ubuntu prerequisites and Docker Engine from Docker's official
-APT repository. It downloads Node24.14.0 and Bun1.3.14 with pinned SHA-256 checksums,
+APT repository. It downloads Node 24.14.0 and Bun 1.3.14 with pinned SHA-256 checksums,
 then calls the worker installer below. Existing worker runtimes are preserved; the
 worker installer validates their supported versions. Docker is enabled at boot.
 The bootstrap does not upgrade the whole OS, configure a public listener, register
@@ -23,7 +26,7 @@ GitHub runners or collect model credentials. Unsupported OS/architecture exits b
 package installation. Runtime updates require updating and verifying their pinned
 versions and hashes in the script.
 
-If you provision prerequisites separately, install Git, Node24+, Bun1.3.12+, Docker
+If you provision prerequisites separately, install Git, Node 24+, Bun 1.3.12+, Docker
 Engine and standard Linux tools (`tar`, `flock`, `timeout`, `groupadd`), then use
 `scripts/install-worker.sh` directly. Both paths require root for worker installation.
 
@@ -33,12 +36,12 @@ no CPU/memory quotas. See [execution boundaries](execution.md) for the isolation
 networking limits. Both 4-CPU/8-GB and 2-CPU/4-GB x86 Linux VMs have been used for installation trials;
 that is tested capacity, not a minimum for every repository.
 
-Obtain an Agent Review source checkout and pin the intended commit. Distribution is
+Obtain a Kick Tires source checkout and pin the intended commit. Distribution is
 currently source-based; there is no published installer package or container release.
 Do not copy another machine's `node_modules`, `.output`, or `.eve` directories.
 
 ```sh
-cd /path/to/agent-review
+cd /path/to/kicktires
 git checkout FULL_COMMIT_SHA
 sudo env PATH="$PATH" sh scripts/install-worker.sh "$PWD"
 ```
@@ -70,7 +73,7 @@ Before a paid review, run the preflight under the same account as the runner:
 
 ```sh
 export PATH=/opt/agent-review/runtime/bin:$PATH
-bun --no-env-file /path/to/agent-review/scripts/doctor.ts \
+bun --no-env-file /path/to/kicktires/scripts/doctor.ts \
   --worker --profile /etc/agent-review/your-project.json
 ```
 

@@ -1,4 +1,4 @@
-name: Agent review
+name: Kick Tires
 
 on:
   pull_request_target:
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   review:
-    name: Agent review
+    name: Kick Tires
     if: >-
       github.event.repository.private == true &&
       github.event.pull_request.head.repo.full_name == github.repository

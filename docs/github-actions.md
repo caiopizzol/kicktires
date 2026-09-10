@@ -10,6 +10,8 @@ This first integration supports private repositories on github.com and PR branch
 in the same repository. Keep its workflow on the trusted base branch with
 `pull_request_target`; never check out PR code or load its profile on the host.
 
+Worker paths and runner labels retain their original names; see [compatibility](compatibility.md).
+
 ## Add a new repository
 
 Install the application once using [the worker guide](self-hosting.md). For each
@@ -71,14 +73,14 @@ Run the worker [preflight](self-hosting.md#add-a-repository) as the runner accou
 
 Set the model key as a repository **Actions secret** named `FIREWORKS_API_KEY`, or use
 your provider's corresponding variable. Copy [the workflow](../examples/github-workflow.yml)
-to `.github/workflows/agent-review.yml`, replacing `/etc/agent-review/profile.json`
+to `.github/workflows/kicktires.yml`, replacing `/etc/agent-review/profile.json`
 with the profile installed above. The workflow passes the model secret; GitHub supplies
 a job token with `contents: read` and `pull-requests: write`. Neither token is stored
 in the profile. The GitHub token is excluded from the model and sandbox environments.
 
 Keep `pull_request_target`, the private/same-repository guards and the absence of a
 checkout step. Keep cancellation disabled so bounded jobs can clean up normally.
-Fresh installations use **Agent review** for both the workflow and check names.
+Fresh installations use **Kick Tires** for both the workflow and check names.
 When replacing an existing required check, preserve its name until branch protection
 is deliberately migrated. Runner labels and profile paths must match the host setup.
 
@@ -124,13 +126,13 @@ Start in **advisory mode**: install the workflow and validate a real review befo
 making it required. Reviews and failed jobs remain visible, but without branch rules
 they do not prevent merging. A submitted bot comment alone is not a merge gate.
 
-After both CI and Agent Review succeed on the same real PR revision, enable
+After both CI and Kick Tires succeed on the same real PR revision, enable
 **merge-blocking mode** in GitHub's branch protection for the default branch:
 
 - Require a pull request before merging. For a solo-maintained repository, leave the
   required approval count at zero; the author cannot approve their own pull request.
 - Require the exact successful CI and reviewer check names. For the example workflow,
-  the reviewer check is `Agent review`; use the actual CI job name, not its workflow
+  the reviewer check is `Kick Tires`; use the actual CI job name, not its workflow
   display name. Bind checks to the observed GitHub Actions app when available.
 - Require all review conversations to be resolved before merging.
 - Apply the rules to administrators too if the checks must block everyone. Keep force
@@ -154,12 +156,12 @@ adapter preserves a published incomplete result on a same-base/head rerun; use a
 revision to review again after correcting the cause. Review-summary prose does not
 create a resolvable inline conversation and is not independently merge-blocking.
 
-Findings alone do not fail `Agent review`. The check records whether required
+Findings alone do not fail `Kick Tires`. The check records whether required
 verification completed; unresolved inline threads provide the separate human decision
 point. The bot submits comments, not approvals or change-request reviews. Do not use
 an automatic approval or a label that overrides failed tests to settle a disagreement.
 
-GitHub controls these merge rules; Agent Review does not silently change repository
+GitHub controls these merge rules; Kick Tires does not silently change repository
 settings during installation. Use the repository's normal configuration or follow
 [GitHub's branch-protection instructions](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule).
 

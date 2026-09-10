@@ -51,7 +51,7 @@ Eve documents ChatGPT subscription login through `eve dev`, then `/model` → Pr
 ChatGPT subscription. This stores a private `~/.eve/auth/chatgpt.json`, separate from
 Codex login. Perform login on the self-hosted machine under the account running Eve;
 review any model-configuration changes made by `/model` and rebuild when necessary.
-Agent Review never copies or translates Codex credentials. Local subscription login
+Kick Tires never copies or translates Codex credentials. Local subscription login
 is not a deployable API credential; Eve's managed deployment rejects it.
 
 Claude Code subscription reuse is **not implemented or verified**. An Anthropic API

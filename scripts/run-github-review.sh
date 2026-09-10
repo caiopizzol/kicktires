@@ -16,7 +16,7 @@ entry="$installation/src/github/cli.ts"
 [ -r "$entry" ] || { echo 'Reviewer release is not installed' >&2; exit 1; }
 
 cd "$installation"
-printf 'Agent Review release: %s\n' "$release"
+printf 'Kick Tires release: %s\n' "$release"
 exec flock --exclusive --close --wait 600 /var/lock/agent-review/review.lock \
   timeout --signal=TERM --kill-after=30s 1200 \
   bun --no-env-file "$entry" --profile "$profile"

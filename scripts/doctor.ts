@@ -3,7 +3,7 @@ import { access, readFile, stat } from "node:fs/promises";
 import { constants } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
-import { profileSchema } from "../src/profile.ts";
+import { profileSchema, modelCredentialEnv } from "../src/profile.ts";
 import { loadSkills } from "../src/skills.ts";
 
 const { values } = parseArgs({
@@ -92,13 +92,7 @@ await check("Trusted profile and skills", async () => {
       "Subscription login is not verified for unattended installation; configure an API provider.",
     );
   if (values.credentials) {
-    const key =
-      profile.model.apiKeyEnv ??
-      {
-        fireworks: "FIREWORKS_API_KEY",
-        openai: "OPENAI_API_KEY",
-        anthropic: "ANTHROPIC_API_KEY",
-      }[profile.model.provider];
+    const key = modelCredentialEnv(profile.model);
     for (const name of [
       key,
       ...Object.values(profile.connections).map((c) => c.tokenEnv),
@@ -145,7 +139,7 @@ if (values.worker) {
     run(
       "/opt/agent-review/runtime/bin/node",
       ["-e", 'if (+process.versions.node.split(".")[0] < 24) process.exit(1)'],
-      "Upgrade worker Node to24+.",
+      "Upgrade worker Node to 24+.",
     );
     run(
       "/opt/agent-review/runtime/bin/bun",
@@ -154,7 +148,7 @@ if (values.worker) {
         "-e",
         'const [a,b,c]=Bun.version.split(".").map(Number); if(a<1 || (a===1 && (b<3 || (b===3 && c<12)))) process.exit(1)',
       ],
-      "Upgrade worker Bun to1.3.12+.",
+      "Upgrade worker Bun to 1.3.12+.",
     );
   });
   await check("Shared review lock", async () => {

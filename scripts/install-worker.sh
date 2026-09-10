@@ -16,7 +16,7 @@ bun --no-env-file -e 'const [a,b,c]=Bun.version.split(".").map(Number); if(a<1 |
 docker info >/dev/null
 commit=$(git -C "$source" rev-parse --verify HEAD)
 git -C "$source" diff --quiet HEAD -- || { echo 'Commit tracked changes first; the installer uses HEAD.' >&2; exit 1; }
-[ -f "$source/src/github/cli.ts" ] || { echo 'Expected an Agent Review checkout.' >&2; exit 1; }
+[ -f "$source/src/github/cli.ts" ] || { echo 'Expected a Kick Tires checkout.' >&2; exit 1; }
 
 root=/opt/agent-review
 release="$root/releases/$commit"

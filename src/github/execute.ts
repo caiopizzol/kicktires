@@ -2,7 +2,7 @@ import { mkdtemp, mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { command } from "../process.ts";
-import { profileSchema, type Profile } from "../profile.ts";
+import { profileSchema, modelCredentialEnv, type Profile } from "../profile.ts";
 import { jobSchema } from "../job.ts";
 import { validateReport, reportSchema } from "../review/report.ts";
 import type { PullRequest, Report } from "./review.ts";
@@ -19,13 +19,7 @@ export function reviewEnvironment(
     AGENT_REVIEW_RUNS_DIR: runs,
   };
   const keys = [
-    profile.model.apiKeyEnv ??
-      {
-        fireworks: "FIREWORKS_API_KEY",
-        openai: "OPENAI_API_KEY",
-        anthropic: "ANTHROPIC_API_KEY",
-        chatgpt: undefined,
-      }[profile.model.provider],
+    modelCredentialEnv(profile.model),
     ...Object.values(profile.connections).map((c) => c.tokenEnv),
   ];
   for (const key of keys) {
