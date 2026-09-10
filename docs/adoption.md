@@ -25,3 +25,14 @@ restrictions. Each runner has private artifacts, and a shared host lock serializ
 
 Choose authentication separately. API access works today; subscription support must be
 verified with the intended provider before replacing a subscription-based workflow.
+
+Live GitHub trials also verified both publication paths: a clean change passed its
+required checks on both revisions, while an intentional month-formatting regression
+produced an inline finding on the changed line and failed verification after the head
+tests failed. The base tests passed. Temporary regression PRs are validation fixtures,
+not application changes to merge.
+
+Required review skills are explicitly requested before inspection and checked against
+recorded tool calls. If the agent skips a required skill, the check fails even when
+repository tests pass. These trials establish the execution and publication path;
+they do not measure review accuracy across arbitrary changes.

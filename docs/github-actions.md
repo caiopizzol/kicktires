@@ -46,6 +46,19 @@ protection is deliberately updated. The workflow display name can change indepen
 Keep cancellation disabled so the bounded worker can retire its session normally.
 A queued event whose head is already outdated skips the model call.
 
+## Supply worker context
+
+A workflow can depend on a launcher that exists only on the worker. Supply its source
+through a trusted profile skill when the reviewer needs to inspect that contract.
+Keep `SKILL.md` focused on when to inspect the launcher, with the exact source and a
+short deployment record in `references/`. Record the release, source digest, capture
+date and checks actually performed. Update the snapshot when the launcher changes.
+
+Add the skill directory to the root-owned profile's `skills` list. Eve makes its files
+available inside the review sandbox. Distinguish operator-recorded evidence from
+checks the agent executes itself; supplying context does not grant host access or
+instruct the reviewer to accept a change. Missing material evidence still fails review.
+
 ## Revision and publication guarantees
 
 The adapter fetches the exact current base and event-matching head into a temporary
