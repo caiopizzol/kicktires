@@ -1,6 +1,8 @@
 # Agent instructions
 
-Active migration: [.goals/workflow-migration.md](.goals/workflow-migration.md).
+Active onboarding: [.goals/onboarding.md](.goals/onboarding.md).
+
+Completed migration: [.goals/workflow-migration.md](.goals/workflow-migration.md).
 
 Product scope: [PRODUCT.md](PRODUCT.md).
 Build record: [.goals/build.md](.goals/build.md).

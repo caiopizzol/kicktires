@@ -13,7 +13,8 @@
     "check": "prettier --check . && tsc --noEmit && bun run test",
     "sandbox": "docker build -t agent-review-sandbox:0.1.0 -f Dockerfile.sandbox .",
     "format": "prettier --write .",
-    "smoke": "bun scripts/smoke.ts"
+    "smoke": "bun scripts/smoke.ts",
+    "doctor": "bun --no-env-file scripts/doctor.ts"
   },
   "dependencies": {
     "@agent-review/skills": "workspace:*",

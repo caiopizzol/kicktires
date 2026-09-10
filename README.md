@@ -87,7 +87,10 @@ scripts/                 live integration validation
 tests/                  focused regression tests
 ```
 
-For a remote worker, see [Linux VM setup](docs/self-hosting.md).
+For unattended GitHub reviews, start with [Install a review worker](docs/self-hosting.md),
+then [add a repository](docs/github-actions.md#add-a-new-repository). The installer
+preserves an existing active release; `bun run doctor -- --profile TRUSTED.json`
+checks prerequisites before a paid review.
 
 See [adoption](docs/adoption.md) for current parity with Codex Reviewer,
 [PRODUCT.md](PRODUCT.md) for scope and [validation](docs/validation.md) for measured
