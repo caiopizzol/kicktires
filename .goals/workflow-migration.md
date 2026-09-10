@@ -1,42 +1,35 @@
 # Replace existing reviewer workflows
 
-Replace the old reviewer in the two private personal projects with the verified
-Eve-based application on the existing VM. Preserve PR triggers and resolvable inline
-review comments. Keep dirty working trees and unrelated services unchanged.
+Completed on 2026-09-10 for fipe-chat and cnpj-chat using the Eve-based application
+on the authorized Hetzner VM. Existing dirty working trees and unrelated services
+were preserved. The old application's own self-review was outside this migration.
 
-- [ ] Add and verify a small GitHub Actions adapter: trusted event/profile, pinned
-      revisions, retained findings, stale-head rejection, duplicate prevention and honest
-      incomplete results. Reviewed code stays in Docker; no GitHub token reaches the model.
-- [ ] Install the adapter and trusted profiles for the existing repo-scoped runners;
-      serialize work on the shared VM and configure model authentication.
-- [ ] Replace the workflows through verified PRs and confirm their merge.
-- [ ] Exercise the actual GitHub event-to-review path and inspect published results.
+- [x] Implement and verify trusted GitHub adapter, exact snapshots, stale-head rejection,
+      bot-only deduplication, credential isolation and honest incomplete results.
+- [x] Install immutable release, root-owned profiles/release selection, model credentials,
+      repo-scoped runners and shared serialization.
+- [x] Merge both workflow replacements and final profile-only launcher changes.
+- [x] Verify live clean review, required skills, supplied worker-context skill, duplicate
+      prevention, and an inline finding for an intentional test-backed regression.
+- [x] Remove temporary compatibility bridge, close validation PRs without merging,
+      delete their task-created remote branches and verify sandbox cleanup.
 
-Private repository/VM details and delivery records stay in ignored `.runs/migration/`.
-Use the existing API model. Subscription interoperability is not part of this migration.
-Scope of the old action's own self-review is awaiting optional user clarification.
+Evidence: `.runs/migration/summary.md`, `merged-prs.json`, `validation-final.json`,
+review/comment receipts and `cnpj-launcher-owner.md`. These private records contain
+exact PRs, revisions, runs and VM details. Selected release1c003e79c3329c4a81c2e5a5d6d939585f06187f
+passed local/Linux checks (26tests,105assertions) and the Linux Eve build. FIPE passed
+133tests per revision; CNPJ passed390base tests and failed2head tests for the seeded
+month-offset regression, publishing the precise changed-line finding.
 
-Implementation check: 25 tests / 98 assertions passed, including stale-after-review
-failure, paginated bot-only dedupe and child credential isolation. Meta reviewed the
-migration architecture. Independent Grok review led to one canonical snapshot diff,
-isolated Git configuration/environment and non-success for revisions changed during
-review. Cancellation remains no-publish; API rejection remains a visible failure
-instead of an automatic fallback or silently successful check.
+Meta and Grok consultations informed credential/revision boundaries and the fixes
+exposed by live trials. Final evidence closure used an operator-supplied skill with
+exact launcher source, preserving host isolation and incomplete-review failures.
 
-Existing runner registrations were preserved. Their idle services were restarted after
-adding Docker/shared-lock group membership; runtime files are root-owned under /opt.
-Workflows are being prepared in isolated private worktrees. The existing required check
-name is retained to preserve branch protection without modifying repository settings.
+API authentication is deployed. Subscription interoperability, public/fork PRs and
+migration of the old application's self-review remain outside scope. These trials
+establish execution/publication, not accuracy on arbitrary changes. Browser/MCP
+capabilities were not exercised in these GitHub fixtures.
 
-Live validation exposed a dangling instruction link on the second project's current
-main (the earlier trial revisions had its target). Preserve contained dangling links
-without dereferencing; reject directory targets and traversal through other links.
-Preparation failures now retain their diagnostics without inventing findings. Exact
-current base/head snapshots succeeded locally after the correction; 26 tests passed.
-Meta reviewed the correction against materialization and archive behavior.
-
-Release selection is moving to a root-owned worker file rather than per-repository
-SHA arguments: the old worker otherwise blocks the very PR needed to update its pin.
-Releases remain immutable and individually tested; workflow invocation stays stable.
-The initial migration PRs merged; follow-up launcher changes and final live validation
-are still pending. Private delivery state is in `.runs/migration/`.
+No implementation or delivery work remains. An obsolete monitor631ac792-1555-4ba2-986f-b702972135e7
+may still wake for the verified merged CNPJ PR; read it once after that event without
+further PR mutations.
