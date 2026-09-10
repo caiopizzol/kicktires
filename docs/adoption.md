@@ -64,3 +64,22 @@ Installation still requires obtaining source, installing platform prerequisites 
 registering the runner through GitHub. There is no published installation package,
 cloud deployment template or hosted control plane. The documented cloud path is a
 Linux VM with Docker; serverless platforms without Docker are outside this setup.
+
+## Bare Ubuntu VM validation
+
+The root `install.sh` bootstrap was subsequently tested on a newly provisioned
+Ubuntu26.04 amd64 VM with2CPUs and4GB RAM, where Node, Bun and Docker were absent.
+It installed prerequisites, verified pinned runtime downloads, built/tested the
+application and built the real Chromium sandbox image. Repeated installation passed,
+as did resuming with a built image but no initial release-selection file.
+
+A dedicated non-root account passed preflight and the live smoke test: terminal checks,
+browser assertions and MCP context retrieval completed for a clean change, and the
+seeded browser regression produced a retained finding with incomplete verification.
+After cleanup, the VM was rebooted. Docker started automatically, the selected release
+was unchanged, tmpfiles recreated the shared lock with correct ownership/mode, and
+preflight plus a network-disabled sandbox command passed again.
+
+Ubuntu24.04 and arm64 paths are implemented but were not exercised in this bare-VM
+trial. The trial used a pinned Git bundle because source publication is still pending.
+It did not register another GitHub runner or migrate existing repository workflows.

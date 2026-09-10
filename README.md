@@ -87,7 +87,9 @@ scripts/                 live integration validation
 tests/                  focused regression tests
 ```
 
-For unattended GitHub reviews, start with [Install a review worker](docs/self-hosting.md),
+For a bare Ubuntu VM, `sudo sh install.sh --source /path/to/agent-review` installs
+prerequisites and the worker from a pinned checkout. For unattended GitHub reviews,
+start with [Install a review worker](docs/self-hosting.md),
 then [add a repository](docs/github-actions.md#add-a-new-repository). The installer
 preserves an existing active release; `bun run doctor -- --profile TRUSTED.json`
 checks prerequisites before a paid review. After a successful trial, optionally

@@ -30,7 +30,7 @@ Engine and standard Linux tools (`tar`, `flock`, `timeout`, `groupadd`), then us
 Start with a dedicated worker for your trusted repositories. Docker access gives
 control over the host daemon. Reviews are serialized, but the current sandbox has
 no CPU/memory quotas. See [execution boundaries](execution.md) for the isolation and
-networking limits. A 4-CPU, 8-GB x86 Linux VM has been used for the initial trials;
+networking limits. Both 4-CPU/8-GB and 2-CPU/4-GB x86 Linux VMs have been used for installation trials;
 that is tested capacity, not a minimum for every repository.
 
 Obtain an Agent Review source checkout and pin the intended commit. Distribution is
