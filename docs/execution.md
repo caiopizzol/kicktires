@@ -47,7 +47,9 @@ the supplied review context; self-hosting the worker does not self-host the mode
 | `1`      | Input or startup preflight failed                  |
 
 A completed review is not an approval. The validator requires recorded tool references,
-changed-line coordinates and configured checks on both revisions. It does not prove
+host-resolved change references and configured checks on both revisions.
+The agent copies a changed line’s anchor from the review manifest; kicktires resolves
+it to the file, side and source line. Unknown anchors are rejected. It does not prove
 that the evidence supports a finding. Failed checks need not be new regressions.
 
 Commands default to 60 seconds (maximum 300) and retain 32 KiB per output stream.

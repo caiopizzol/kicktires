@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { command } from "../process.ts";
 import { profileSchema, modelCredentialEnv, type Profile } from "../profile.ts";
 import { jobSchema } from "../job.ts";
-import { validateReport, reportSchema } from "../review/report.ts";
+import { validateReport, publishedReportSchema } from "../review/report.ts";
 import type { PullRequest, Report } from "./review.ts";
 
 export function reviewEnvironment(env: NodeJS.ProcessEnv, profile: Profile, runs: string) {
@@ -146,7 +146,9 @@ export async function readValidatedReport(
   base: string,
   head: string,
 ): Promise<Report> {
-  const report = reportSchema.parse(JSON.parse(await readFile(join(run, "report.json"), "utf8")));
+  const report = publishedReportSchema.parse(
+    JSON.parse(await readFile(join(run, "report.json"), "utf8")),
+  );
   const rawJob = await readFile(join(run, "job.json"), "utf8").catch(
     (error: NodeJS.ErrnoException) => {
       if (error.code !== "ENOENT") throw error;

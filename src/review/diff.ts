@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { DiffSide } from "./schema.ts";
 
 /** Changed line numbers on each side of a file's diff. */
@@ -8,16 +9,13 @@ const OLD_FILE_HEADER = /^--- (?:a\/)?(.+)$/;
 const FILE_HEADER = /^\+\+\+ (?:b\/)?(.+)$/;
 const HUNK_HEADER = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
 
-interface MutableChangedFileLines {
-  readonly LEFT: Set<number>;
-  readonly RIGHT: Set<number>;
-}
+type ChangedLine = { file: string; side: DiffSide; line: number; text: string };
 
 /** Reads added and removed line numbers from a unified diff. */
-export function parseChangedLines(diff: string): ChangedLines {
-  const files = new Map<string, MutableChangedFileLines>();
+function changedLines(diff: string): ChangedLine[] {
+  const lines: ChangedLine[] = [];
   let previousPath: string | undefined;
-  let current: MutableChangedFileLines | undefined;
+  let current: string | undefined;
   let oldLine = 0;
   let newLine = 0;
   let oldRemaining = 0;
@@ -41,11 +39,7 @@ export function parseChangedLines(diff: string): ChangedLines {
           current = undefined;
           continue;
         }
-        current = files.get(path) ?? {
-          LEFT: new Set<number>(),
-          RIGHT: new Set<number>(),
-        };
-        files.set(path, current);
+        current = path;
         continue;
       }
     }
@@ -64,11 +58,11 @@ export function parseChangedLines(diff: string): ChangedLines {
     }
 
     if (line.startsWith("+")) {
-      current.RIGHT.add(newLine);
+      lines.push({ file: current, side: "RIGHT", line: newLine, text: line.slice(1) });
       newLine += 1;
       newRemaining -= 1;
     } else if (line.startsWith("-")) {
-      current.LEFT.add(oldLine);
+      lines.push({ file: current, side: "LEFT", line: oldLine, text: line.slice(1) });
       oldLine += 1;
       oldRemaining -= 1;
     } else if (line.startsWith(" ") || line === "") {
@@ -79,5 +73,26 @@ export function parseChangedLines(diff: string): ChangedLines {
     }
   }
 
+  return lines;
+}
+
+export function parseChangedLines(diff: string): ChangedLines {
+  const files = new Map<string, { LEFT: Set<number>; RIGHT: Set<number> }>();
+  for (const entry of changedLines(diff)) {
+    const lines = files.get(entry.file) ?? { LEFT: new Set<number>(), RIGHT: new Set<number>() };
+    lines[entry.side].add(entry.line);
+    files.set(entry.file, lines);
+  }
   return files;
+}
+
+/** References bind findings to source coordinates, never diff display line numbers. */
+export function diffAnchors(diff: string) {
+  const seen = new Set<string>();
+  return changedLines(diff).map((entry) => {
+    const anchor = createHash("sha256").update(JSON.stringify(entry)).digest("hex").slice(0, 16);
+    if (seen.has(anchor)) throw new Error("Duplicate diff anchor");
+    seen.add(anchor);
+    return { anchor, ...entry, text: entry.text.slice(0, 240) };
+  });
 }

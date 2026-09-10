@@ -249,7 +249,7 @@ test("preparation failures retain diagnostics but cannot publish findings or cla
   const run = await mkdtemp(join(tmpdir(), "kicktires-preparation-"));
   const failure = {
     ...report,
-    status: "incomplete",
+    status: "incomplete" as const,
     gaps: ["Unsupported repository entry"],
   };
   try {

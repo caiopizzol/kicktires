@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { findingSchema } from "./schema.ts";
-import { parseChangedLines } from "./diff.ts";
+import { parseChangedLines, diffAnchors } from "./diff.ts";
 import { normalizeReview } from "./normalize.ts";
 import type { ReviewJob } from "../job.ts";
 
@@ -12,7 +12,12 @@ export const reportSchema = z.object({
     .describe(
       "Blockers to finishing the requested review, not a list of optional work that was not requested. Put contextual scope limitations in the summary.",
     ),
-  findings: z.array(findingSchema.extend({ evidenceRefs: z.array(z.string()).min(1) })),
+  findings: z.array(
+    findingSchema.omit({ file: true, side: true, line: true }).extend({
+      anchor: z.string().min(1),
+      evidenceRefs: z.array(z.string()).min(1),
+    }),
+  ),
 });
 export const reportJSONSchema = z.toJSONSchema(reportSchema);
 export const modelSettingsSchema = z.object({
@@ -20,7 +25,15 @@ export const modelSettingsSchema = z.object({
   id: z.string(),
   reasoningEffort: z.string().optional(),
 });
-export const publishedReportSchema = reportSchema.extend({ model: modelSettingsSchema.optional() });
+export const publishedReportSchema = reportSchema.extend({
+  findings: z.array(
+    findingSchema.extend({
+      anchor: z.string().optional(),
+      evidenceRefs: z.array(z.string()).min(1),
+    }),
+  ),
+  model: modelSettingsSchema.optional(),
+});
 
 const eventSchema = z.object({
   type: z.string(),
@@ -60,12 +73,20 @@ export function validateReport(data: unknown, rawEvents: unknown[], job: ReviewJ
     .filter((e) => e.type === "action.result")
     .flatMap((e) => readEvidence(actionSchema, e.data.result, "action result"));
   const evidence = new Set(actions.filter((a) => !a.isError).map((a) => a.callId));
-  const supportedFindings = report.findings.filter((f) =>
+  const anchors = new Map(diffAnchors(diff).map((entry) => [entry.anchor, entry]));
+  const locatedFindings = report.findings.flatMap((finding) => {
+    const location = anchors.get(finding.anchor);
+    if (!location) return [];
+    return [{ ...finding, file: location.file, side: location.side, line: location.line }];
+  });
+  if (locatedFindings.length !== report.findings.length)
+    gaps.push("Finding(s) dropped because their change references were unknown");
+  const supportedFindings = locatedFindings.filter((f) =>
     f.evidenceRefs.every((id) => evidence.has(id)),
   );
-  if (supportedFindings.length !== report.findings.length)
+  if (supportedFindings.length !== locatedFindings.length)
     gaps.push(
-      `${report.findings.length - supportedFindings.length} finding(s) dropped because their evidence references were missing or failed`,
+      `${locatedFindings.length - supportedFindings.length} finding(s) dropped because their evidence references were missing or failed`,
     );
   const changedLines = parseChangedLines(diff);
   const normalized = normalizeReview(
@@ -192,7 +213,10 @@ export function validateReport(data: unknown, rawEvents: unknown[], job: ReviewJ
     ...report,
     model: modelSettingsSchema.parse(job.profile.model),
     findings: normalized.findings,
-    status: gaps.length || report.status === "incomplete" ? "incomplete" : "reviewed",
+    status:
+      gaps.length || report.status === "incomplete"
+        ? ("incomplete" as const)
+        : ("reviewed" as const),
     gaps: [...new Set(gaps)],
     executions,
     browserExecutions,

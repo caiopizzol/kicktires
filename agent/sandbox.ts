@@ -2,6 +2,7 @@ import { readFile, writeFile, appendFile } from "node:fs/promises";
 import { join } from "node:path";
 import { defineSandbox } from "eve/sandbox";
 import { docker } from "eve/sandbox/docker";
+import { diffAnchors } from "../src/review/diff.ts";
 import { readJob } from "../src/job.ts";
 import { runSandboxCommand } from "../src/sandbox-command.ts";
 
@@ -32,6 +33,7 @@ export default defineSandbox({
       content: JSON.stringify(
         {
           ...job.repository,
+          changes: diffAnchors(await readFile(join(job.directory, "change.diff"), "utf8")),
           checks: job.profile.checks,
           browser: job.profile.browser,
           connections: Object.keys(job.profile.connections),
