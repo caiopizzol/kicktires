@@ -21,6 +21,13 @@ export async function snapshotRepository(
       "git",
       ["-c", "core.fsmonitor=false", "-c", "core.hooksPath=/dev/null", ...args],
       repo,
+      undefined,
+      {
+        PATH: process.env.PATH,
+        GIT_CONFIG_GLOBAL: "/dev/null",
+        GIT_CONFIG_NOSYSTEM: "1",
+        GIT_TERMINAL_PROMPT: "0",
+      },
     );
   const resolve = (ref: string) =>
     git("rev-parse", "--verify", "--end-of-options", `${ref}^{commit}`)
@@ -125,7 +132,7 @@ export async function snapshotRepository(
       repo,
       undefined,
       // AppleDouble metadata creates extra ._ source files when extracted on Linux.
-      { ...process.env, COPYFILE_DISABLE: "1" },
+      { PATH: process.env.PATH, COPYFILE_DISABLE: "1" },
     );
     const archive = await readFile(join(destination, `${revision}.tar`));
     if (archive.length > 25 * 1024 * 1024)

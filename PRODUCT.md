@@ -7,7 +7,8 @@ The first version runs an explicit review of pinned Git revisions, provisions a
 writable isolated environment, supplies trusted skills and tools, and returns
 findings with recorded execution evidence. A command-line workflow is the initial
 interface. It must work on real repositories, with configurable test commands,
-browser checks and optional context connections.
+browser checks and optional context connections. A thin GitHub Actions adapter may
+trigger this same workflow and publish validated findings against the pinned PR head.
 
 Eve owns agent execution, tool dispatch, skill discovery and session lifecycle.
 This application owns review input preparation, trusted configuration, evidence,

@@ -1,5 +1,7 @@
 # Agent instructions
 
+Active migration: [.goals/workflow-migration.md](.goals/workflow-migration.md).
+
 Product scope: [PRODUCT.md](PRODUCT.md).
 Build record: [.goals/build.md](.goals/build.md).
 Deployment goal: [.goals/hetzner-trial.md](.goals/hetzner-trial.md).

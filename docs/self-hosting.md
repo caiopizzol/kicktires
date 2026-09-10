@@ -65,5 +65,5 @@ to a host-side launcher that puts it in the child process environment. Do not pu
 values in command-line arguments, profiles, shell history or repository files. Supply
 credentials again for later runs if using this temporary approach.
 
-Automatic PR triggers, GitHub publishing and subscription authentication are separate
-from this verified manual deployment path; see [adoption](adoption.md).
+For PR triggers and inline publishing, install the [GitHub adapter](github-actions.md).
+Subscription authentication remains separate; see [adoption](adoption.md).

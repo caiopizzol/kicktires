@@ -1,0 +1,28 @@
+name: Agent review
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: agent-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    name: Agent review
+    if: >-
+      github.event.repository.private == true &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, agent-review]
+    timeout-minutes: 35
+    steps:
+      - name: Review the pinned pull request
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          FIREWORKS_API_KEY: ${{ secrets.FIREWORKS_API_KEY }}
+        run: /opt/agent-review/bin/review-pr INSTALLED_COMMIT /etc/agent-review/profile.json

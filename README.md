@@ -3,8 +3,9 @@
 Self-hosted code reviews with real terminal checks, optional browser verification,
 and your own model, skills, and MCP context tools. Built on [Eve](https://github.com/vercel/eve).
 
-This first version is a CLI: give it a local Git repository, two revisions and a
-trusted profile. It returns a JSON report with findings, verification gaps and tool
+Use the CLI with a local Git repository, two revisions and a trusted profile, or
+connect it to [GitHub PR workflows](docs/github-actions.md) on your self-hosted runner.
+The CLI returns a JSON report with findings, verification gaps and tool
 evidence. Reviewed code runs in disposable Docker workspaces.
 
 ## Start
@@ -100,5 +101,5 @@ out of source control; this application does not require a committed `dist/` bun
 service's native skill loader. That service supplies its own tools and credentials;
 it does not need this application or Eve. See the [package README](packages/review-skills/README.md).
 
-Slack functionality, a settings UI, GitHub comment publishing, automatic fixes and
-automatic approvals are outside this first version.
+Slack functionality, a settings UI, automatic fixes and automatic approvals remain
+outside this product.

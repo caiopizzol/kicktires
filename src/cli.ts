@@ -52,11 +52,10 @@ assertModelAccess(profile.model);
 for (const connection of Object.values(profile.connections))
   if (connection.tokenEnv && !process.env[connection.tokenEnv])
     throw new Error(`Missing connection credential: ${connection.tokenEnv}`);
-for (const path of [join(root, ".runs"), join(root, ".eve")]) {
-  await mkdir(path, { recursive: true, mode: 0o700 });
-  await chmod(path, 0o700);
-}
-const directory = await mkdtemp(join(root, ".runs", "review-"));
+const runs = resolve(process.env.AGENT_REVIEW_RUNS_DIR ?? join(root, ".runs"));
+await mkdir(runs, { recursive: true, mode: 0o700 });
+await chmod(runs, 0o700);
+const directory = await mkdtemp(join(runs, "review-"));
 let outcome: ReturnType<typeof validateReport> | undefined;
 let server: ChildProcess | undefined;
 let log: FileHandle | undefined;

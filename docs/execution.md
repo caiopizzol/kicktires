@@ -69,7 +69,6 @@ CLI commands from the README under a dedicated OS account with the selected cred
 The API models still send supplied review context to their providers; self-hosting this
 application does not mean self-hosting the model. No public HTTP listener is needed.
 
-This version is a local CLI worker, not a webhook server or shared queue. Do not rebuild
-the application while reviews are running. GitHub publishing and a production job
-scheduler can be added later as review-product features without moving shared skills
-into this application.
+The CLI worker can also run through the [GitHub Actions adapter](github-actions.md).
+It is not a webhook server or shared queue. Do not rebuild the application while reviews
+are running. Shared skills remain independent of GitHub and the job scheduler.
