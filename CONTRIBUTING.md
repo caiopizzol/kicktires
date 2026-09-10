@@ -21,12 +21,13 @@ Tests need neither Docker nor model keys.
 Rebuild after source changes; profile changes need no build.
 
 For agent, skill, model or sandbox changes, also run the paid integration test with
-Docker and `OPENAI_API_KEY`:
+Docker and `OPENAI_API_KEY` (or a trusted Codex profile):
 
 ```sh
 bun run sandbox
 bun run build
 bun run test:integration
+# Or: bun run test:integration --profile /absolute/codex-profile.json
 ```
 
 The integration test reviews a harmless change and a seeded browser regression. It checks terminal

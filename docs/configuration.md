@@ -33,12 +33,13 @@ Replace the example commands, skill path and MCP endpoint with real ones. Omit
 
 ## Models and authentication
 
-| Provider    | Credential          | Integration                   |
-| ----------- | ------------------- | ----------------------------- |
-| `openai`    | `OPENAI_API_KEY`    | Direct OpenAI API             |
-| `anthropic` | `ANTHROPIC_API_KEY` | Direct Anthropic API          |
-| `xai`       | `XAI_API_KEY`       | Direct xAI API for Grok       |
-| `chatgpt`   | Eve login file      | Subscription path; unverified |
+| Provider    | Credential            | Integration                          |
+| ----------- | --------------------- | ------------------------------------ |
+| `openai`    | `OPENAI_API_KEY`      | Direct OpenAI API                    |
+| `anthropic` | `ANTHROPIC_API_KEY`   | Direct Anthropic API                 |
+| `xai`       | `XAI_API_KEY`         | Direct xAI API for Grok              |
+| `chatgpt`   | Eve login file        | Subscription path; unverified        |
+| `codex`     | Dedicated Codex login | CLI adapter; live validation pending |
 
 API adapters are typechecked; see the current validation limits before deployment.
 Live end-to-end validation of these direct providers is pending. Earlier Fireworks
@@ -54,6 +55,36 @@ Sign in as the account running the reviewer. Credentials live in
 `~/.eve/auth/chatgpt.json`, separately from Codex; review configuration changes and
 rebuild if needed. Eve managed deployment rejects this local login path.
 Claude Code subscriptions and Meta Muse execution are not implemented.
+
+## Codex subscription
+
+Create a dedicated login home as the account running reviews:
+
+```sh
+mkdir -p "$HOME/.local/share/kicktires/codex"
+chmod 700 "$HOME/.local/share/kicktires/codex"
+CODEX_HOME="$HOME/.local/share/kicktires/codex" bunx --no-install codex login --device-auth
+```
+
+Set `model` in the trusted profile (use an absolute path):
+
+```json
+{
+  "provider": "codex",
+  "id": "gpt-5.6-terra",
+  "codexHome": "/home/runner/.local/share/kicktires/codex"
+}
+```
+
+The pinned CLI manages its login and token refresh. No API key or GitHub secret is
+needed for the model. Keep `auth.json` private (mode `600`); never put it in a PR,
+profile or sandbox. Use a dedicated home without personal configuration or plugins.
+Do not share one login file between concurrent worker accounts.
+
+Codex proposes responses; Eve still executes tools and validates evidence. Each step
+starts a fresh Codex thread with the conversation supplied by Eve. This costs more
+context than a persistent CLI session. The adapter uses an experimental app-server
+API pinned to CLI 0.154.0. Subscription limits and reauthentication still apply.
 
 ## Checks and browser
 

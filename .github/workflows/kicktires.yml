@@ -24,5 +24,4 @@ jobs:
       - name: Review the pinned pull request
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: /opt/kicktires/bin/review-pr /etc/kicktires/kicktires.json

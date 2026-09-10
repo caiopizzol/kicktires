@@ -1,3 +1,5 @@
+import { assertCodexHome } from "./codex.ts";
+import { codexModel } from "./codex-model.ts";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { createAnthropic } from "@ai-sdk/anthropic";
@@ -7,7 +9,9 @@ import { chatgpt } from "eve/models/openai";
 import { modelCredentialEnv, type Profile } from "./profile.ts";
 
 export function assertModelAccess(model: Profile["model"]) {
-  if (model.provider === "chatgpt") {
+  if (model.provider === "codex") {
+    assertCodexHome(model.codexHome);
+  } else if (model.provider === "chatgpt") {
     if (!existsSync(`${homedir()}/.eve/auth/chatgpt.json`))
       throw new Error(
         "ChatGPT requires an Eve login. Sign in through Eve's /model > Provider > ChatGPT subscription flow; Codex credentials are separate.",
@@ -19,6 +23,7 @@ export function assertModelAccess(model: Profile["model"]) {
 }
 export function resolveModel(model: Profile["model"]) {
   assertModelAccess(model);
+  if (model.provider === "codex") return codexModel(model.id, model.codexHome!);
   if (model.provider === "chatgpt") return chatgpt(model.id);
   const apiKey = process.env[modelCredentialEnv(model)!];
   if (model.provider === "anthropic") return createAnthropic({ apiKey })(model.id);
