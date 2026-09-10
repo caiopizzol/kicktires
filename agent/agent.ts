@@ -6,9 +6,10 @@ export default defineAgent({
   model: defineDynamic({
     events: {
       "step.started": () => {
-        const { model } = readJob().profile;
+        const job = readJob();
+        const { model } = job.profile;
         return {
-          model: resolveModel(model),
+          model: resolveModel(model, job.directory),
           modelContextWindowTokens: model.contextWindow,
         };
       },

@@ -66,7 +66,8 @@ review remains incomplete.
 
 Each run prints its private `.runs/review-*/` directory. `report.json` contains the
 result; `response.json`, `events.jsonl`, `setup.jsonl`, screenshots and `server.log`
-retain supporting data. Run workflow state lives in that directory's `.eve/`;
+retain supporting data. Codex validation failures also save bounded rejected proposals
+in private `codex-rejections.jsonl`; they are never published to GitHub. Run workflow state lives in that directory's `.eve/`;
 the checkout's `.eve/` holds build data. Keep these files out of Git.
 
 Normal completion, failure and cancellation remove the sandbox. If hooks cannot
