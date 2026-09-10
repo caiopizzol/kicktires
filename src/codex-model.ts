@@ -66,7 +66,12 @@ export function proposedResponse(
   };
 }
 
-export function codexModel(model: string, home: string, respond = codexResponse): LanguageModelV4 {
+export function codexModel(
+  model: string,
+  home: string,
+  reasoningEffort?: string,
+  respond = codexResponse,
+): LanguageModelV4 {
   async function generate(options: LanguageModelV4CallOptions) {
     const cli = process.env.KICKTIRES_CODEX_CLI;
     if (!cli) throw new Error("Codex CLI path was not supplied by the review launcher");
@@ -96,6 +101,7 @@ export function codexModel(model: string, home: string, respond = codexResponse)
         cli,
         home,
         model,
+        reasoningEffort,
         prompt: JSON.stringify({ ...conversation, correction }),
         schema: z.toJSONSchema(proposalSchema),
         signal,

@@ -224,3 +224,21 @@ test("a failing required check remains incomplete even when the model claims suc
   expect(result.status).toBe("incomplete");
   expect(result.gaps).toContain("Required check exited 1 for head: npm test");
 });
+
+test("published model settings come from the trusted job and omit credentials", () => {
+  const configured = {
+    ...job,
+    profile: profileSchema.parse({
+      model: {
+        provider: "codex",
+        id: "test",
+        reasoningEffort: "high",
+        codexHome: "/private/login",
+      },
+      checks: ["npm test"],
+    }),
+  };
+  const result = validateReport({ ...report, model: { id: "forged" } }, events(), configured, diff);
+  expect(result.model).toEqual({ provider: "codex", id: "test", reasoningEffort: "high" });
+  expect(JSON.stringify(result)).not.toContain("/private/login");
+});

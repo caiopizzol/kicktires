@@ -15,6 +15,13 @@ export const reportSchema = z.object({
   findings: z.array(findingSchema.extend({ evidenceRefs: z.array(z.string()).min(1) })),
 });
 export const reportJSONSchema = z.toJSONSchema(reportSchema);
+export const modelSettingsSchema = z.object({
+  provider: z.string(),
+  id: z.string(),
+  reasoningEffort: z.string().optional(),
+});
+export const publishedReportSchema = reportSchema.extend({ model: modelSettingsSchema.optional() });
+
 const eventSchema = z.object({
   type: z.string(),
   data: z.record(z.string(), z.unknown()),
@@ -178,6 +185,7 @@ export function validateReport(data: unknown, rawEvents: unknown[], job: ReviewJ
     gaps.push("A required capability failed; inspect tool evidence");
   return {
     ...report,
+    model: modelSettingsSchema.parse(job.profile.model),
     findings: normalized.findings,
     status: gaps.length || report.status === "incomplete" ? "incomplete" : "reviewed",
     gaps: [...new Set(gaps)],
