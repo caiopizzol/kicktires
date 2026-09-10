@@ -40,6 +40,7 @@ Module._load = function(id, ...args) {
       "require('node:http').createServer((_,res)=>res.end('ok')).listen(process.env.PORT, '127.0.0.1');",
     );
     const run = async (script: string) => {
+      await rm(join(directory, "closed"), { force: true });
       const config = join(directory, "config.json");
       await writeFile(
         config,
@@ -72,6 +73,9 @@ Module._load = function(id, ...args) {
     expect(invalid.stderr.indexOf("TypeError")).toBeLessThan(
       invalid.stderr.indexOf("Target page has been closed"),
     );
+    const dangling = await run("page.locator('output').textContent(); assert.equal(1, 1);");
+    expect(dangling.exit).toBe(1);
+    expect(dangling.stderr).toContain("Target page has been closed");
     expect((await run("assert.equal(0, 1);")).exit).toBe(1);
     expect((await run("assert.equal(await Promise.resolve('0'), '0');")).exit).toBe(0);
   } finally {
