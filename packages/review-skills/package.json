@@ -1,0 +1,17 @@
+{
+  "name": "@agent-review/skills",
+  "version": "0.1.0",
+  "type": "module",
+  "files": [
+    "review-code",
+    "get-context",
+    "verify-change",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    "./package.json": "./package.json",
+    "./*": "./*"
+  },
+  "license": "MIT"
+}

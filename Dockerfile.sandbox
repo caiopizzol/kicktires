@@ -1,0 +1,9 @@
+FROM node:24.14.0-bookworm
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN npm install --prefix /opt/browser playwright@1.58.2 \
+    && /opt/browser/node_modules/.bin/playwright install --with-deps chromium \
+    && npm install --global bun@1.3.14 \
+    && chmod -R a+rX /ms-playwright /opt/browser
+COPY sandbox/browser-check.cjs /opt/browser/check.cjs
+RUN mkdir -p /workspace && chown node:node /workspace
+USER node
