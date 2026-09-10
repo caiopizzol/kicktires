@@ -1,11 +1,11 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset=".github/assets/logo-dark.svg">
-    <img src=".github/assets/logo-light.svg" width="80" height="80" alt="Kick Tires">
+    <img src=".github/assets/logo-light.svg" width="80" height="80" alt="kicktires">
   </picture>
 </p>
 
-<h1 align="center">Kick Tires</h1>
+<h1 align="center">kicktires</h1>
 
 <p align="center">
   <strong>Code review that runs your code.</strong>
