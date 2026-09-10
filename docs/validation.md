@@ -85,3 +85,16 @@ adding exact-coordinate instructions, both smoke fixtures passed, with the regre
 retained at the changed line. This verifies the path, not consistent model accuracy.
 Meta's final consultation supported limited manual adoption and preserving strict
 validation; automatic PR publishing remains a separate increment.
+
+## Linux VM end-to-end trial
+
+A separate Ubuntu x86_64 VM passed installation, formatting, types, 17 tests / 55
+assertions, Eve compilation and a native sandbox build with Node 24.14.0, Bun 1.3.14
+and Docker 29.1.3. The model was the same Fireworks router used locally.
+
+Both live MCP/browser smoke cases passed. Sequential real-project reviews reproduced
+the local outcomes: one completed with all required tests passing and no findings;
+the other retained the known defect with its required failing test. All review services
+and containers stopped afterward, and the host's existing services remained running.
+No public listener or persistent API-key file was added. This validates the manual
+worker path; it does not add automatic GitHub reviews or subscription interoperability.

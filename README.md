@@ -86,6 +86,8 @@ scripts/                 live integration validation
 tests/                  focused regression tests
 ```
 
+For a remote worker, see [Linux VM setup](docs/self-hosting.md).
+
 See [adoption](docs/adoption.md) for current parity with Codex Reviewer,
 [PRODUCT.md](PRODUCT.md) for scope and [validation](docs/validation.md) for measured
 results and known gaps. Keep generated builds (`.output/`, `.eve/`) and run artifacts

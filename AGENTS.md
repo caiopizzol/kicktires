@@ -2,6 +2,7 @@
 
 Product scope: [PRODUCT.md](PRODUCT.md).
 Build record: [.goals/build.md](.goals/build.md).
+Deployment goal: [.goals/hetzner-trial.md](.goals/hetzner-trial.md).
 Trial record: [.goals/project-trials.md](.goals/project-trials.md).
 
 Build a focused review application on Eve. Keep reusable skills independent of the
