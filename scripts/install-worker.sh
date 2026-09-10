@@ -27,7 +27,7 @@ for tool in node bun; do
     install -m 755 "$(command -v "$tool")" "$root/runtime/bin/$tool"
   fi
 done
-export PATH="$root/runtime/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+export PATH="$root/runtime/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 node -e 'if (+process.versions.node.split(".")[0] < 24) process.exit(1)' || { echo 'Upgrade the installed worker Node runtime to 24+.' >&2; exit 1; }
 bun --no-env-file -e 'const [a,b,c]=Bun.version.split(".").map(Number); if(a<1 || (a===1 && (b<3 || (b===3 && c<12)))) process.exit(1)' || { echo 'Upgrade the installed worker Bun runtime to 1.3.12+.' >&2; exit 1; }
 

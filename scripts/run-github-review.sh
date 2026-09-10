@@ -9,7 +9,7 @@ case "$release" in
 esac
 [ "${#release}" -eq 40 ] || exit 1
 
-export PATH=/opt/agent-review/runtime/bin:/usr/bin:/bin
+export PATH=/opt/agent-review/runtime/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 export AGENT_REVIEW_RUNS_DIR="$HOME/agent-review-runs"
 installation="/opt/agent-review/releases/$release"
 entry="$installation/src/github/cli.ts"
