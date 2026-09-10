@@ -11,9 +11,9 @@
     "review": "bun src/cli.ts",
     "test": "bun test tests",
     "check": "prettier --check . && tsc --noEmit && bun run test",
-    "sandbox": "docker build -t agent-review-sandbox:0.1.0 -f Dockerfile.sandbox .",
+    "sandbox": "docker build -t kicktires-sandbox:0.1.0 -f Dockerfile.sandbox .",
     "format": "prettier --write .",
-    "smoke": "bun scripts/smoke.ts",
+    "test:integration": "bun tests/integration/review.ts",
     "doctor": "bun --no-env-file scripts/doctor.ts"
   },
   "dependencies": {

@@ -63,7 +63,7 @@ await check("Docker access", () =>
 await check("Review sandbox image", () =>
   run(
     "docker",
-    ["image", "inspect", "agent-review-sandbox:0.1.0"],
+    ["image", "inspect", "kicktires-sandbox:0.1.0"],
     "Run bun run sandbox on the worker.",
   ),
 );
@@ -106,20 +106,20 @@ await check("Trusted profile and skills", async () => {
 let installation = resolve(import.meta.dir, "..");
 if (values.worker) {
   await check("Worker release and launcher", async () => {
-    const commit = (await readFile("/etc/agent-review/release", "utf8")).trim();
+    const commit = (await readFile("/etc/kicktires/release", "utf8")).trim();
     if (!/^[a-f0-9]{40}$/.test(commit))
-      throw new Error("Expected a full commit in /etc/agent-review/release.");
-    installation = `/opt/agent-review/releases/${commit}`;
+      throw new Error("Expected a full commit in /etc/kicktires/release.");
+    installation = `/opt/kicktires/releases/${commit}`;
     for (const path of [
-      "/etc/agent-review/release",
-      "/opt/agent-review/bin/review-pr",
+      "/etc/kicktires/release",
+      "/opt/kicktires/bin/review-pr",
       profilePath,
       installation,
-      "/opt/agent-review",
-      "/opt/agent-review/releases",
-      "/opt/agent-review/bin",
-      "/opt/agent-review/runtime/bin",
-      "/etc/agent-review",
+      "/opt/kicktires",
+      "/opt/kicktires/releases",
+      "/opt/kicktires/bin",
+      "/opt/kicktires/runtime/bin",
+      "/etc/kicktires",
     ]) {
       const info = await stat(path);
       if (info.uid !== 0 || info.mode & 0o022)
@@ -127,22 +127,22 @@ if (values.worker) {
           `Make ${path} root-owned and not group/world-writable.`,
         );
     }
-    await access("/opt/agent-review/bin/review-pr", constants.X_OK);
+    await access("/opt/kicktires/bin/review-pr", constants.X_OK);
     if (
-      !(await readFile("/opt/agent-review/bin/review-pr")).equals(
-        await readFile(join(installation, "scripts/run-github-review.sh")),
+      !(await readFile("/opt/kicktires/bin/review-pr")).equals(
+        await readFile(join(installation, "scripts/review-pr.sh")),
       )
     )
       throw new Error(
         "Installed launcher differs from the active release. Update it during release activation.",
       );
     run(
-      "/opt/agent-review/runtime/bin/node",
+      "/opt/kicktires/runtime/bin/node",
       ["-e", 'if (+process.versions.node.split(".")[0] < 24) process.exit(1)'],
       "Upgrade worker Node to 24+.",
     );
     run(
-      "/opt/agent-review/runtime/bin/bun",
+      "/opt/kicktires/runtime/bin/bun",
       [
         "--no-env-file",
         "-e",
@@ -152,19 +152,16 @@ if (values.worker) {
     );
   });
   await check("Shared review lock", async () => {
-    await access("/var/lock/agent-review/review.lock", constants.W_OK);
-    const parent = await stat("/var/lock/agent-review");
+    await access("/var/lock/kicktires/review.lock", constants.W_OK);
+    const parent = await stat("/var/lock/kicktires");
     if (parent.uid !== 0 || parent.mode & 0o022)
       throw new Error(
         "Make the lock directory root-owned and not group/world-writable.",
       );
-    const tmpfiles = await readFile(
-      "/etc/tmpfiles.d/agent-review.conf",
-      "utf8",
-    );
+    const tmpfiles = await readFile("/etc/tmpfiles.d/kicktires.conf", "utf8");
     if (
       !tmpfiles.includes(
-        "f /run/lock/agent-review/review.lock 0660 root agent-review -",
+        "f /run/lock/kicktires/review.lock 0660 root kicktires -",
       )
     )
       throw new Error(

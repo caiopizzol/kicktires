@@ -1,6 +1,6 @@
 # GitHub reviews
 
-Kick Tires supports private github.com repositories and same-repository PR branches.
+kicktires supports private github.com repositories and same-repository PR branches.
 It runs on a self-hosted runner and posts one `COMMENT` review with inline findings.
 It never approves, requests changes, merges or modifies the branch.
 
@@ -13,14 +13,14 @@ First [install the worker](self-hosting.md). Each repository needs its own runne
 As the worker administrator:
 
 ```sh
-useradd --create-home --shell /bin/bash agent-review-example
-chmod 700 /home/agent-review-example
-usermod -aG docker,agent-review agent-review-example
+useradd --create-home --shell /bin/bash kicktires-example
+chmod 700 /home/kicktires-example
+usermod -aG docker,kicktires kicktires-example
 ```
 
 In GitHub, open **Settings → Actions → Runners → New self-hosted runner**. Follow
 its download and checksum instructions for Linux. Run `config.sh` as the new account,
-select the repository URL and add the `agent-review` label. Keep registration tokens
+select the repository URL and add the `kicktires` label. Keep registration tokens
 out of scripts and Git.
 
 [Install the runner service](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/configure-the-application)
@@ -29,7 +29,7 @@ running repository code directly on this account bypasses the sandbox.
 
 ### 2. Install a profile
 
-Copy [the example](../examples/profile.json) to `/etc/agent-review/your-project.json`,
+Copy [the example](../examples/profile.json) to `/etc/kicktires/your-project.json`,
 owned by root with mode `644`. Set the model, setup commands and checks your project
 actually provides. Test those commands in the sandbox without review-time networking.
 Add needed runtimes to the image; do not assume production services are available.
@@ -47,7 +47,7 @@ environment mapping. GitHub supplies the publication token; keep it out of the p
 Keep `pull_request_target`, the private/same-repository guards, and cancellation disabled.
 Never check out PR code or load its profile on the host. Match the installed runner
 label and profile path. Existing required check names must remain until branch
-protection is deliberately updated; see [compatibility](compatibility.md).
+protection is deliberately updated; see [upgrading](upgrading.md).
 
 ### 4. Validate
 
@@ -65,7 +65,7 @@ review advisory until this path works.
 Findings alone do not fail the check. Failed or missing required verification does.
 To block merging after successful CI and reviewer trials, configure branch protection:
 
-- Require PRs and the exact observed CI and reviewer job names (`Kick Tires` in the example).
+- Require PRs and the exact observed CI and reviewer job names (`kicktires` in the example).
   Bind checks to the observed GitHub Actions app where available.
 - Require resolved review conversations. Solo maintainers can use zero required approvals.
 - Apply rules to administrators if they must also be blocked. Preserve stronger rules,
@@ -77,7 +77,7 @@ correct trusted configuration. A published incomplete review remains incomplete 
 same-base/head reruns; use a new revision after correction. Summary prose is not a
 resolvable thread. Do not bypass failed checks with automatic approvals.
 
-Kick Tires does not configure these rules. See [GitHub branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule).
+kicktires does not configure these rules. See [GitHub branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule).
 
 ## Move a repository to another worker
 

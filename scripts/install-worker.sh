@@ -16,11 +16,11 @@ bun --no-env-file -e 'const [a,b,c]=Bun.version.split(".").map(Number); if(a<1 |
 docker info >/dev/null
 commit=$(git -C "$source" rev-parse --verify HEAD)
 git -C "$source" diff --quiet HEAD -- || { echo 'Commit tracked changes first; the installer uses HEAD.' >&2; exit 1; }
-[ -f "$source/src/github/cli.ts" ] || { echo 'Expected a Kick Tires checkout.' >&2; exit 1; }
+[ -f "$source/src/github/cli.ts" ] || { echo 'Expected a kicktires checkout.' >&2; exit 1; }
 
-root=/opt/agent-review
+root=/opt/kicktires
 release="$root/releases/$commit"
-install -d -m 755 "$root/releases" "$root/bin" "$root/runtime/bin" /etc/agent-review
+install -d -m 755 "$root/releases" "$root/bin" "$root/runtime/bin" /etc/kicktires
 exec 9>"$root/install.lock"
 flock --exclusive --wait 600 9
 for tool in node bun; do
@@ -33,7 +33,7 @@ node -e 'if (+process.versions.node.split(".")[0] < 24) process.exit(1)' || { ec
 bun --no-env-file -e 'const [a,b,c]=Bun.version.split(".").map(Number); if(a<1 || (a===1 && (b<3 || (b===3 && c<12)))) process.exit(1)' || { echo 'Upgrade the installed worker Bun runtime to 1.3.12+.' >&2; exit 1; }
 
 if [ -e "$release" ]; then
-  [ -f "$release/.agent-review-installed" ] || { echo "Unverified existing release: $release. Inspect it before retrying." >&2; exit 1; }
+  [ -f "$release/.kicktires-installed" ] || { echo "Unverified existing release: $release. Inspect it before retrying." >&2; exit 1; }
 else
   mkdir "$release"
   trap 'rm -rf "$release"' EXIT HUP INT TERM
@@ -45,14 +45,14 @@ else
   bun run check
   bun run build
   chmod -R go-w .
-  printf '%s\n' "$commit" > .agent-review-installed
-  chmod 644 .agent-review-installed
+  printf '%s\n' "$commit" > .kicktires-installed
+  chmod 644 .kicktires-installed
   trap - EXIT HUP INT TERM
 fi
 
-if docker image inspect agent-review-sandbox:0.1.0 >/dev/null 2>&1; then
-  if [ -f /etc/agent-review/release ]; then
-    active=$(cat /etc/agent-review/release)
+if docker image inspect kicktires-sandbox:0.1.0 >/dev/null 2>&1; then
+  if [ -f /etc/kicktires/release ]; then
+    active=$(cat /etc/kicktires/release)
     case "$active" in ''|*[!0-9a-f]*) echo 'Invalid active release.' >&2; exit 1 ;; esac
     [ "${#active}" -eq 40 ] || exit 1
     for file in Dockerfile.sandbox sandbox/browser-check.cjs; do
@@ -63,30 +63,30 @@ if docker image inspect agent-review-sandbox:0.1.0 >/dev/null 2>&1; then
     done
   else
     echo 'Resuming first installation: rebuild the sandbox from the pinned source.'
-    docker build -t agent-review-sandbox:0.1.0 -f "$release/Dockerfile.sandbox" "$release"
+    docker build -t kicktires-sandbox:0.1.0 -f "$release/Dockerfile.sandbox" "$release"
   fi
 else
-  docker build -t agent-review-sandbox:0.1.0 -f "$release/Dockerfile.sandbox" "$release"
+  docker build -t kicktires-sandbox:0.1.0 -f "$release/Dockerfile.sandbox" "$release"
 fi
-getent group agent-review >/dev/null || groupadd --system agent-review
+getent group kicktires >/dev/null || groupadd --system kicktires
 install -d -m 755 /etc/tmpfiles.d
-cat > /etc/tmpfiles.d/agent-review.conf <<'TMPFILES'
-d /run/lock/agent-review 0755 root root -
-f /run/lock/agent-review/review.lock 0660 root agent-review -
+cat > /etc/tmpfiles.d/kicktires.conf <<'TMPFILES'
+d /run/lock/kicktires 0755 root root -
+f /run/lock/kicktires/review.lock 0660 root kicktires -
 TMPFILES
-install -d -m 755 /var/lock/agent-review
-touch /var/lock/agent-review/review.lock
-chown root:agent-review /var/lock/agent-review/review.lock
-chmod 660 /var/lock/agent-review/review.lock
+install -d -m 755 /var/lock/kicktires
+touch /var/lock/kicktires/review.lock
+chown root:kicktires /var/lock/kicktires/review.lock
+chmod 660 /var/lock/kicktires/review.lock
 
-if [ ! -e /etc/agent-review/release ]; then
-  install -m 755 "$release/scripts/run-github-review.sh" "$root/bin/review-pr"
-  printf '%s\n' "$commit" > /etc/agent-review/release.next
-  chmod 644 /etc/agent-review/release.next
-  mv /etc/agent-review/release.next /etc/agent-review/release
+if [ ! -e /etc/kicktires/release ]; then
+  install -m 755 "$release/scripts/review-pr.sh" "$root/bin/review-pr"
+  printf '%s\n' "$commit" > /etc/kicktires/release.next
+  chmod 644 /etc/kicktires/release.next
+  mv /etc/kicktires/release.next /etc/kicktires/release
   echo "Activated first worker release: $commit"
 else
   echo "Installed release: $commit"
-  echo "Active release unchanged: $(cat /etc/agent-review/release)"
+  echo "Active release unchanged: $(cat /etc/kicktires/release)"
 fi
 printf '\nNext: register a repository runner and install its trusted profile.\nSee %s/docs/github-actions.md\n' "$release"

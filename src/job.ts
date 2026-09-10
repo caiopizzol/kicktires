@@ -23,10 +23,10 @@ export const jobSchema = z.object({
 });
 export type ReviewJob = z.infer<typeof jobSchema>;
 export function readJob(): ReviewJob {
-  const path = process.env.AGENT_REVIEW_JOB;
+  const path = process.env.KICKTIRES_JOB;
   if (!path)
     throw new Error(
-      "Start reviews with the Kick Tires CLI; AGENT_REVIEW_JOB is missing",
+      "Start reviews with the kicktires CLI; KICKTIRES_JOB is missing",
     );
   return jobSchema.parse(JSON.parse(readFileSync(path, "utf8")));
 }

@@ -27,7 +27,7 @@ try {
   );
   const token = required("GITHUB_TOKEN");
   const temporary = required("RUNNER_TEMP");
-  const runs = resolve(required("AGENT_REVIEW_RUNS_DIR"));
+  const runs = resolve(required("KICKTIRES_RUNS_DIR"));
   if (!values.profile) throw new Error("Missing --profile");
   const profile = values.profile;
   await mkdir(runs, { recursive: true, mode: 0o700 });
@@ -55,7 +55,7 @@ try {
     review: (pr) =>
       executeReview({ pr, token, profile, temporary, runs, env: process.env }),
   });
-  const summary = `Kick Tires: ${result.result}${result.incomplete ? "; verification incomplete" : ""}.\n`;
+  const summary = `kicktires: ${result.result}${result.incomplete ? "; verification incomplete" : ""}.\n`;
   console.log(summary.trim());
   if (process.env.GITHUB_STEP_SUMMARY)
     await appendFile(process.env.GITHUB_STEP_SUMMARY, summary);

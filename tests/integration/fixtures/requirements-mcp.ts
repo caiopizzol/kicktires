@@ -49,9 +49,3 @@ export function startContextServer(port = 0) {
   });
   return app.listen(port, "127.0.0.1");
 }
-if (import.meta.main) {
-  const server = startContextServer(Number(process.env.PORT ?? 8788));
-  server.on("listening", () =>
-    console.log("Context fixture listening on", server.address()),
-  );
-}

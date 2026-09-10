@@ -16,7 +16,7 @@ export function reviewEnvironment(
     PATH: env.PATH,
     HOME: env.HOME,
     TMPDIR: env.TMPDIR,
-    AGENT_REVIEW_RUNS_DIR: runs,
+    KICKTIRES_RUNS_DIR: runs,
   };
   const keys = [
     modelCredentialEnv(profile.model),
@@ -46,7 +46,7 @@ export async function executeReview(options: {
   const profile = profileSchema.parse(
     JSON.parse(await readFile(profilePath, "utf8")),
   );
-  const directory = await mkdtemp(join(temporary, "agent-review-input-"));
+  const directory = await mkdtemp(join(temporary, "kicktires-input-"));
   const repository = join(directory, "repository.git");
   const gitEnv = {
     PATH: env.PATH,

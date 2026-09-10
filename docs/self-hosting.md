@@ -1,8 +1,7 @@
 # Install on a VM
 
 Use a dedicated Linux machine with Docker. No public port or domain is needed.
-Serverless platforms without Docker are unsupported. Worker paths retain their
-original `agent-review` names; see [compatibility](compatibility.md).
+Serverless platforms without Docker are unsupported. For existing installations, read [upgrading](upgrading.md) first.
 
 ## Install
 
@@ -36,12 +35,12 @@ installs add releases without replacing the active release, runtimes, launcher o
 existing image. If an incomplete release exists, inspect its exact path before
 removing it and retrying. Changed sandbox source requires a planned image upgrade.
 
-| Path                                | Contents                    |
-| ----------------------------------- | --------------------------- |
-| `/opt/agent-review/releases/COMMIT` | Root-owned source and build |
-| `/opt/agent-review/runtime/bin`     | Node and Bun                |
-| `/opt/agent-review/bin/review-pr`   | GitHub launcher             |
-| `/etc/agent-review/release`         | Active commit               |
+| Path                             | Contents                    |
+| -------------------------------- | --------------------------- |
+| `/opt/kicktires/releases/COMMIT` | Root-owned source and build |
+| `/opt/kicktires/runtime/bin`     | Node and Bun                |
+| `/opt/kicktires/bin/review-pr`   | GitHub launcher             |
+| `/etc/kicktires/release`         | Active commit               |
 
 A shared lock serializes reviews; a tmpfiles rule recreates it after reboot.
 Docker access controls the host daemon. There are no per-review CPU/memory quotas;
@@ -58,10 +57,10 @@ profile, secret and workflow. Each repository needs its own registration, not a 
 Run preflight as the runner account, using the installed release:
 
 ```sh
-export PATH=/opt/agent-review/runtime/bin:$PATH
-release=$(cat /etc/agent-review/release)
-bun --no-env-file /opt/agent-review/releases/$release/scripts/doctor.ts \
-  --worker --profile /etc/agent-review/your-project.json
+export PATH=/opt/kicktires/runtime/bin:$PATH
+release=$(cat /etc/kicktires/release)
+bun --no-env-file /opt/kicktires/releases/$release/scripts/doctor.ts \
+  --worker --profile /etc/kicktires/your-project.json
 ```
 
 Preflight checks runtimes, Docker/image access, profile/skills, build, ownership,
@@ -73,7 +72,7 @@ Validate a real PR afterward.
 ## Upgrade and operate
 
 Test a candidate release through its CLI before activation. With reviews stopped,
-install its launcher and atomically replace `/etc/agent-review/release`. That file
+install its launcher and atomically replace `/etc/kicktires/release`. That file
 selects the release for every repository on the worker. Retain the old release for
 rollback and refresh skills containing launcher snapshots.
 
@@ -81,7 +80,7 @@ Runtimes and the shared sandbox image require separate tested upgrades. Update a
 verify download versions/checksums when changing bootstrap runtimes. Existing Fireworks
 profiles must switch provider and secrets before upgrading to this version.
 
-Private reports remain in `~/agent-review-runs/`; apply an appropriate retention policy.
+Private reports remain in `~/kicktires-runs/`; apply an appropriate retention policy.
 After interrupted cleanup, use a run's `sandbox.json` to identify its exact container.
 Never prune other applications' containers. External providers receive model context;
 self-contained repository tests do not need production credentials.

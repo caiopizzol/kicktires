@@ -52,7 +52,7 @@ assertModelAccess(profile.model);
 for (const connection of Object.values(profile.connections))
   if (connection.tokenEnv && !process.env[connection.tokenEnv])
     throw new Error(`Missing connection credential: ${connection.tokenEnv}`);
-const runs = resolve(process.env.AGENT_REVIEW_RUNS_DIR ?? join(root, ".runs"));
+const runs = resolve(process.env.KICKTIRES_RUNS_DIR ?? join(root, ".runs"));
 await mkdir(runs, { recursive: true, mode: 0o700 });
 await chmod(runs, 0o700);
 const directory = await mkdtemp(join(runs, "review-"));
@@ -108,8 +108,8 @@ try {
       WORKFLOW_LOCAL_BASE_URL: host,
       WORKFLOW_LOCAL_DATA_DIR: join(directory, ".eve/.workflow-data"),
       NODE_ENV: "production",
-      AGENT_REVIEW_JOB: join(directory, "job.json"),
-      AGENT_REVIEW_PASSWORD: password,
+      KICKTIRES_JOB: join(directory, "job.json"),
+      KICKTIRES_PASSWORD: password,
     },
     stdio: ["ignore", log.fd, log.fd],
     detached: true,

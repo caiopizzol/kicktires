@@ -13,7 +13,7 @@ import { command } from "../src/process.ts";
 import { safePath, snapshotRepository } from "../src/repository.ts";
 
 test("pins committed revisions and excludes dirty working-tree files", async () => {
-  const root = await mkdtemp(join(tmpdir(), "agent-review-git-"));
+  const root = await mkdtemp(join(tmpdir(), "kicktires-git-"));
   const repo = join(root, "repo"),
     out = join(root, "snapshots");
   try {
@@ -101,7 +101,7 @@ test("rejects paths that escape the snapshot or Git metadata", () => {
 
 test("rejects escaping, directory and chained repository links", async () => {
   const { mkdir } = await import("node:fs/promises");
-  const root = await mkdtemp(join(tmpdir(), "agent-review-links-")),
+  const root = await mkdtemp(join(tmpdir(), "kicktires-links-")),
     repo = join(root, "repo");
   try {
     command("git", ["init", "-q", repo], root);

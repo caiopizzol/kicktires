@@ -47,7 +47,7 @@ function eligible(pr: PullRequest, repository: string) {
 }
 
 export function marker(pr: PullRequest) {
-  return `<!-- agent-review:${pr.base.sha}:${pr.head.sha} -->`;
+  return `<!-- kicktires:${pr.base.sha}:${pr.head.sha} -->`;
 }
 
 async function previousReview(api: Api, endpoint: string, pr: PullRequest) {
@@ -62,7 +62,11 @@ async function previousReview(api: Api, endpoint: string, pr: PullRequest) {
       .parse(await api(`${endpoint}/reviews?per_page=100&page=${page}`));
     const previous = reviews.find(
       (r) =>
-        r.user.login === "github-actions[bot]" && r.body?.includes(marker(pr)),
+        r.user.login === "github-actions[bot]" &&
+        (r.body?.includes(marker(pr)) ||
+          r.body?.includes(
+            `<!-- agent-review:${pr.base.sha}:${pr.head.sha} -->`,
+          )),
     );
     if (previous) return previous.body!;
     if (reviews.length < 100) return null;
@@ -82,14 +86,14 @@ function text(value: string, limit: number) {
 
 export function renderReview(pr: PullRequest, report: Report) {
   const body = [
-    "## Kick Tires",
+    "## kicktires",
     `Revision: ${pr.head.sha}`,
     `Verification: **${report.status}** · ${report.findings.length} finding(s).`,
     text(report.summary, 12000),
     ...report.gaps.slice(0, 20).map((gap) => `- ${text(gap, 1000)}`),
     "Automated review with recorded tool evidence; not an approval.",
     marker(pr),
-    `<!-- agent-review-status:${report.status} -->`,
+    `<!-- kicktires-status:${report.status} -->`,
   ].join("\n\n");
   const comments = report.findings.map((f) => ({
     path: f.file,
@@ -126,7 +130,7 @@ export async function reviewPullRequest(options: {
   if (duplicate)
     return {
       result: "duplicate",
-      incomplete: duplicate.includes("<!-- agent-review-status:incomplete -->"),
+      incomplete: isIncomplete(duplicate),
     };
   const report = reportSchema.parse(await review(current));
   // Repeat after the slow model call. commit_id also anchors the unavoidable API race.
@@ -142,8 +146,13 @@ export async function reviewPullRequest(options: {
   if (published)
     return {
       result: "duplicate",
-      incomplete: published.includes("<!-- agent-review-status:incomplete -->"),
+      incomplete: isIncomplete(published),
     };
   await api(`${endpoint}/reviews`, renderReview(current, report));
   return { result: "published", incomplete: report.status === "incomplete" };
+}
+
+// Read old reviews during migration; all new reviews use kicktires markers.
+function isIncomplete(body: string) {
+  return /<!-- (?:kicktires|agent-review)-status:incomplete -->/.test(body);
 }

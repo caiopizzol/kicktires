@@ -6,7 +6,7 @@ umask 022
   echo 'Usage: sudo sh install.sh --source /path/to/kicktires' >&2; exit 1;
 }
 [ "$(id -u)" -eq 0 ] || { echo 'Run as root on the worker VM.' >&2; exit 1; }
-export PATH=/opt/agent-review/runtime/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export PATH=/opt/kicktires/runtime/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 . /etc/os-release
 case "$ID:$VERSION_ID" in ubuntu:24.04|ubuntu:26.04) ;; *) echo 'Supported: Ubuntu 24.04 or 26.04.' >&2; exit 1 ;; esac
 case "$(dpkg --print-architecture)" in
@@ -15,7 +15,7 @@ case "$(dpkg --print-architecture)" in
   *) echo 'Supported architectures: amd64 and arm64.' >&2; exit 1 ;;
 esac
 checkout=$(cd "$2" && pwd)
-[ -f "$checkout/scripts/install-worker.sh" ] || { echo 'Expected a Kick Tires source checkout.' >&2; exit 1; }
+[ -f "$checkout/scripts/install-worker.sh" ] || { echo 'Expected a kicktires source checkout.' >&2; exit 1; }
 if command -v git >/dev/null; then
   git -C "$checkout" rev-parse --verify HEAD >/dev/null
   git -C "$checkout" diff --quiet HEAD -- || { echo 'Commit tracked source changes before installing.' >&2; exit 1; }
@@ -25,15 +25,15 @@ apt-get update
 apt-get install -y ca-certificates curl git gnupg diffutils tar unzip xz-utils util-linux coreutils
 if ! command -v docker >/dev/null; then
   install -d -m 755 /etc/apt/keyrings
-  curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/agent-review-docker.asc
-  chmod 644 /etc/apt/keyrings/agent-review-docker.asc
-  printf 'deb [arch=%s signed-by=/etc/apt/keyrings/agent-review-docker.asc] https://download.docker.com/linux/ubuntu %s stable\n' "$(dpkg --print-architecture)" "$VERSION_CODENAME" > /etc/apt/sources.list.d/agent-review-docker.list
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/kicktires-docker.asc
+  chmod 644 /etc/apt/keyrings/kicktires-docker.asc
+  printf 'deb [arch=%s signed-by=/etc/apt/keyrings/kicktires-docker.asc] https://download.docker.com/linux/ubuntu %s stable\n' "$(dpkg --print-architecture)" "$VERSION_CODENAME" > /etc/apt/sources.list.d/kicktires-docker.list
   apt-get update
   apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin
 fi
 systemctl enable --now docker
 docker info >/dev/null
-runtime=/opt/agent-review/runtime/bin
+runtime=/opt/kicktires/runtime/bin
 install -d -m 755 "$runtime"
 temporary=$(mktemp -d)
 trap 'rm -rf "$temporary"' EXIT HUP INT TERM

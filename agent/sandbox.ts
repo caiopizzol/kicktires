@@ -6,7 +6,7 @@ import { readJob } from "../src/job.ts";
 import { runSandboxCommand } from "../src/sandbox-command.ts";
 
 const backend = docker({
-  image: "agent-review-sandbox:0.1.0",
+  image: "kicktires-sandbox:0.1.0",
   pullPolicy: "never",
   networkPolicy: "deny-all",
 });

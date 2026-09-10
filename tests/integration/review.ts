@@ -3,10 +3,10 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { once } from "node:events";
 import assert from "node:assert/strict";
-import { command, quote } from "../src/process.ts";
-import { startContextServer } from "./context-server.ts";
+import { command, quote } from "../../src/process.ts";
+import { startContextServer } from "./fixtures/requirements-mcp.ts";
 
-const directory = await mkdtemp(join(tmpdir(), "agent-review-smoke-"));
+const directory = await mkdtemp(join(tmpdir(), "kicktires-smoke-"));
 const server = startContextServer();
 await once(server, "listening");
 const address = server.address();
@@ -42,7 +42,7 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
   const base = git("rev-parse", "HEAD");
   const profile = JSON.parse(
     await readFile(
-      new URL("../examples/profile.json", import.meta.url),
+      new URL("../../examples/profile.json", import.meta.url),
       "utf8",
     ),
   );
@@ -96,7 +96,7 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
         "Use requirements MCP get_requirement with exact ID COUNTER-1. Run run_checks on both revisions, then browser_check to assert output starts at 0 and becomes 1 after clicking Increment on both revisions. Do not change source to make assertions pass; report bugs and verification gaps.",
       ],
       {
-        cwd: new URL("..", import.meta.url).pathname,
+        cwd: new URL("../..", import.meta.url).pathname,
         stdout: "pipe",
         stderr: "pipe",
       },

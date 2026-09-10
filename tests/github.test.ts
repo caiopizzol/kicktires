@@ -126,7 +126,7 @@ test("deduplication paginates, trusts only the Actions bot and preserves incompl
       [
         {
           user: { login: "github-actions[bot]" },
-          body: `${marker(pr)}\n<!-- agent-review-status:incomplete -->`,
+          body: `${marker(pr)}\n<!-- kicktires-status:incomplete -->`,
         },
       ],
     ],
@@ -187,16 +187,16 @@ test("incomplete evidence is published before returning failure", async () => {
 test("rendering bounds text and neutralizes mentions and forged status markers", () => {
   const payload = renderReview(pr, {
     ...report,
-    summary: "@someone <script> <!-- agent-review-status:incomplete -->",
+    summary: "@someone <script> <!-- kicktires-status:incomplete -->",
     gaps: Array(100).fill(">".repeat(3000)),
   });
-  expect(payload.body).toStartWith("## Kick Tires\n");
+  expect(payload.body).toStartWith("## kicktires\n");
   expect(payload.body).toContain(
-    `<!-- agent-review:${pr.base.sha}:${pr.head.sha} -->`,
+    `<!-- kicktires:${pr.base.sha}:${pr.head.sha} -->`,
   );
   expect(payload.body).not.toContain("@someone");
   expect(payload.body).not.toContain("<script>");
-  expect(payload.body).not.toContain("<!-- agent-review-status:incomplete -->");
+  expect(payload.body).not.toContain("<!-- kicktires-status:incomplete -->");
   expect(payload.body.length).toBeLessThan(65536);
 });
 
@@ -253,7 +253,7 @@ test("preparation failures retain diagnostics but cannot publish findings or cla
   const { mkdtemp, writeFile, rm } = await import("node:fs/promises");
   const { tmpdir } = await import("node:os");
   const { join } = await import("node:path");
-  const run = await mkdtemp(join(tmpdir(), "agent-review-preparation-"));
+  const run = await mkdtemp(join(tmpdir(), "kicktires-preparation-"));
   const failure = {
     ...report,
     status: "incomplete",
@@ -323,5 +323,23 @@ test("provider credentials remain selected after configuration cleanup", () => {
     );
     expect(env.CUSTOM_KEY).toBe("custom");
     expect(env[key]).toBeUndefined();
+  }
+});
+
+test("historical reviews are deduplicated without changing their incomplete status", async () => {
+  for (const incomplete of [false, true]) {
+    const old = scenario({
+      pages: [
+        [
+          {
+            user: { login: "github-actions[bot]" },
+            body: `<!-- agent-review:${pr.base.sha}:${pr.head.sha} -->\n<!-- agent-review-status:${incomplete ? "incomplete" : "reviewed"} -->`,
+          },
+        ],
+      ],
+    });
+    expect(await old.run()).toEqual({ result: "duplicate", incomplete });
+    expect(old.runs()).toBe(0);
+    expect(old.posts).toHaveLength(0);
   }
 });

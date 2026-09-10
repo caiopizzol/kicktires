@@ -1,13 +1,13 @@
 # Product scope
 
-Kick Tires is a self-hosted code reviewer with configurable models, skills and tools.
+kicktires is a self-hosted code reviewer with configurable models, skills and tools.
 It reviews pinned Git revisions in a disposable sandbox, investigates changes, and
 reports findings with recorded evidence and verification gaps.
 
 The CLI and GitHub adapter share one review workflow. GitHub support currently covers
 private repositories and same-repository PR branches.
 
-Kick Tires owns inputs, trusted configuration, evidence validation and reporting.
+kicktires owns inputs, trusted configuration, evidence validation and reporting.
 Eve owns agent execution, tool dispatch, skill discovery and session lifecycle.
 Portable skills remain independent of Eve and can be reused by other applications.
 
