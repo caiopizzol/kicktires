@@ -5,6 +5,7 @@ set -eu
 [ "$#" -eq 1 ] || { echo 'Usage: sudo install-worker.sh CHECKOUT' >&2; exit 1; }
 [ "$(id -u)" -eq 0 ] || { echo 'Run this installer as root on the worker.' >&2; exit 1; }
 [ "$(uname -s)" = Linux ] || { echo 'The worker requires Linux and Docker.' >&2; exit 1; }
+export PATH="$PATH:/usr/sbin:/sbin"
 source=$(cd "$1" && pwd)
 for tool in git tar node bun docker flock groupadd getent install cmp; do
   command -v "$tool" >/dev/null || { echo "Install $tool before running this installer." >&2; exit 1; }
@@ -26,7 +27,7 @@ for tool in node bun; do
     install -m 755 "$(command -v "$tool")" "$root/runtime/bin/$tool"
   fi
 done
-export PATH="$root/runtime/bin:/usr/bin:/bin"
+export PATH="$root/runtime/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 node -e 'if (+process.versions.node.split(".")[0] < 24) process.exit(1)' || { echo 'Upgrade the installed worker Node runtime to 24+.' >&2; exit 1; }
 bun --no-env-file -e 'const [a,b,c]=Bun.version.split(".").map(Number); if(a<1 || (a===1 && (b<3 || (b===3 && c<12)))) process.exit(1)' || { echo 'Upgrade the installed worker Bun runtime to 1.3.12+.' >&2; exit 1; }
 
