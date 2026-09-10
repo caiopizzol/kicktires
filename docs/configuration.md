@@ -1,28 +1,25 @@
-# Review configuration
+# Configuration
 
-Pass an explicit trusted JSON file with `--profile`. Never accept this configuration
-from an untrusted PR: it selects setup commands, model credentials and MCP endpoints.
-Unknown fields fail validation. Additional skill paths resolve relative to the profile.
+Pass a trusted JSON file with `--profile`. It selects commands, credentials and MCP
+endpoints; never load it from a PR head. Unknown fields fail validation. Skill paths
+resolve relative to the profile.
+
+Start with [examples/profile.json](../examples/profile.json), then add capabilities:
 
 ```json
 {
-  "model": {
-    "provider": "fireworks",
-    "id": "accounts/fireworks/routers/deepseek-v4-flash-0731-us",
-    "apiKeyEnv": "FIREWORKS_API_KEY",
-    "contextWindow": 100000
-  },
-  "skills": ["./skills/review-accessibility"],
+  "model": { "provider": "openai", "id": "gpt-5.6-terra" },
   "setup": {
     "commands": ["bun install --frozen-lockfile --ignore-scripts"],
     "network": "allow-all"
   },
   "checks": ["bun test"],
+  "skills": ["./skills/review-accessibility"],
   "browser": { "start": "bun run dev --host 127.0.0.1 --port $PORT" },
   "connections": {
     "project-context": {
       "url": "https://your-context-service.example/mcp",
-      "description": "Read project requirements by exact issue ID",
+      "description": "Read requirements by exact issue ID",
       "tools": ["get_issue"],
       "tokenEnv": "PROJECT_CONTEXT_TOKEN"
     }
@@ -31,67 +28,57 @@ Unknown fields fail validation. Additional skill paths resolve relative to the p
 }
 ```
 
-The skill directory and MCP URL above are placeholders. Omit `skills` and `connections`
-until you have real ones. Set `browser` to `false` for non-browser repositories.
+Replace the example commands, skill path and MCP endpoint with real ones. Omit
+`skills` and `connections` until needed; set `browser` to `false` to disable it.
 
 ## Models and authentication
 
-| Provider    | Default credential     | Status                                                                           |
-| ----------- | ---------------------- | -------------------------------------------------------------------------------- |
-| `fireworks` | `FIREWORKS_API_KEY`    | Live reviews verified with the example DeepSeek router and US inference endpoint |
-| `openai`    | `OPENAI_API_KEY`       | Official AI SDK adapter wired and typechecked; live call not verified here       |
-| `anthropic` | `ANTHROPIC_API_KEY`    | Official AI SDK adapter wired and typechecked; live call not verified here       |
-| `chatgpt`   | Eve's local login file | Eve-supported path wired; live call unavailable because no Eve login was present |
+| Provider    | Credential          | Integration                   |
+| ----------- | ------------------- | ----------------------------- |
+| `openai`    | `OPENAI_API_KEY`    | Direct OpenAI API             |
+| `anthropic` | `ANTHROPIC_API_KEY` | Direct Anthropic API          |
+| `xai`       | `XAI_API_KEY`       | Direct xAI API for Grok       |
+| `chatgpt`   | Eve login file      | Subscription path; unverified |
 
-Use a model ID supported by the selected provider and capable of tools and structured
-outputs. `apiKeyEnv` changes the environment variable name; it never contains a key.
-`contextWindow` defaults to 100000 and must reflect the actual model's capacity.
+API adapters are typechecked; see the current validation limits before deployment.
+Live end-to-end validation of these direct providers is pending. Earlier Fireworks
+trials do not validate them. Fireworks is no longer supported; migrate profiles and
+secrets before upgrading an existing worker.
 
-Eve documents ChatGPT subscription login through `eve dev`, then `/model` → Provider →
-ChatGPT subscription. This stores a private `~/.eve/auth/chatgpt.json`, separate from
-Codex login. Perform login on the self-hosted machine under the account running Eve;
-review any model-configuration changes made by `/model` and rebuild when necessary.
-Kick Tires never copies or translates Codex credentials. Local subscription login
-is not a deployable API credential; Eve's managed deployment rejects it.
+Choose a provider model with tool calling and structured output support. `apiKeyEnv`
+overrides the credential variable name, never its value. `contextWindow` defaults to
+100,000 tokens; set it to the model's capacity. Custom endpoints are not supported.
 
-Claude Code subscription reuse is **not implemented or verified**. An Anthropic API
-key works through the API adapter; a Claude subscription is not an API key. This first
-version therefore does not yet provide interchangeable Codex/Claude CLI subscription
-execution. That is an explicit remaining product limitation.
+ChatGPT uses Eve's `eve dev` → `/model` → Provider → ChatGPT subscription login.
+Sign in as the account running the reviewer. Credentials live in
+`~/.eve/auth/chatgpt.json`, separately from Codex; review configuration changes and
+rebuild if needed. Eve managed deployment rejects this local login path.
+Claude Code subscriptions and Meta Muse execution are not implemented.
 
-## Skills, tools and context
+## Checks and browser
 
-The three bundled skills form the required review workflow. Extra skill directories
-must contain YAML frontmatter with `name` and `description`. Supporting text files are
-loaded alongside the Markdown. Duplicate names and symlinks fail explicitly. UTF-8
-text files are limited to 1 MiB each, with at most 256 files and 8 MiB across all skills.
+Required checks run verbatim on both revisions and retain exit codes and bounded
+output. Nonzero exits leave verification incomplete; they do not establish a new bug.
+The agent can run additional commands and temporary reproductions in the sandbox.
 
-Required checks run on both revisions. Their exit codes and bounded output are recorded.
-A nonzero required check leaves verification incomplete; it does not by itself establish
-a new regression. Additional terminal commands
-are permitted for investigation. The container includes Node, Bun, Git and Chromium;
-add other language runtimes to `Dockerfile.sandbox` and rebuild the image as needed.
+The image includes Node, Bun, Git and Chromium. Add other runtimes to
+`Dockerfile.sandbox` and rebuild. Browser mode starts the app with `PORT` and provides
+Playwright's `page`, Node's `assert` and `origin`. Assertions run on both revisions;
+successful browser checks save screenshots. See [execution limits](execution.md).
 
-Browser mode supplies `PORT` to the configured start command and opens the app on
-isolated localhost. The model writes a Playwright script with `page`, Node's `assert`
-and `origin`. It must test both revisions; a failed assertion leaves verification
-incomplete and may support a finding. Successful checks save screenshots.
+## Skills and context
 
-MCP connections use Eve's native dynamic factory and discovery tool. `tools` is the
-explicit allowlist; use read-only context tools for reviews. Authentication tokens are
-resolved in the host service, not put into the sandbox. External tools run outside the
-review container's network policy. Their permissions are those of the configured
-credential, so the operator controls the actual data/action boundary.
+The bundled `review-code`, `get-context` and `verify-change` skills are required.
+Additional directories need `SKILL.md` with YAML `name` and `description` fields.
+Supporting files must be UTF-8 text. Limits: 1 MiB per file, 256 files and 8 MiB total.
+Duplicate names and symlinks are rejected. Skills guide behavior; they do not install
+runtimes, grant tools or create connections. See [portable skills](../packages/review-skills/README.md).
 
-Portable skills and native MCP are supported. Arbitrary Codex/Claude plugin manifests,
-plugin marketplaces and standalone MCP resource browsing are not implemented. Expose
-needed resources through allowed MCP tools. Pass exact issue IDs or context references
-in `--context`; the reviewer is instructed not to invent them.
+MCP `tools` is an explicit allowlist. Use read-only context tools and pass exact issue
+IDs or references through `--context`. Tokens are resolved on the host. MCP tools run
+outside sandbox networking rules and inherit their credential's permissions.
 
-## Add a trusted tool
-
-Use Eve's native `agent/tools/<name>.ts` files, as the built-in `run_command` and
-`browser_check` tools do, then rebuild. Keep reviewed code execution behind
-`ctx.getSandbox()`; a host `child_process` call would change the isolation boundary.
-Use MCP for separately hosted context integrations. There is no second tool/plugin
-registration framework to configure in this application.
+Arbitrary plugin manifests, marketplaces and standalone MCP resource browsing are
+unsupported. Expose resources through allowed tools. To add a built-in tool, use
+`agent/tools/<name>.ts` and rebuild. Execute reviewed code through `ctx.getSandbox()`;
+use MCP for separately hosted integrations.

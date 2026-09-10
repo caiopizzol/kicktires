@@ -203,7 +203,7 @@ test("rendering bounds text and neutralizes mentions and forged status markers",
 test("model process receives selected credentials but no GitHub or runner environment", () => {
   const profile = profileSchema.parse({
     checks: ["bun test"],
-    model: { provider: "fireworks", id: "model" },
+    model: { provider: "openai", id: "model" },
     connections: {
       context: {
         url: "https://example.com/mcp",
@@ -222,14 +222,14 @@ test("model process receives selected credentials but no GitHub or runner enviro
       ACTIONS_RUNTIME_TOKEN: "runtime",
       GIT_CONFIG_VALUE_0: "git-auth",
       RUNNER_TRACKING_ID: "tracking",
-      FIREWORKS_API_KEY: "model",
+      OPENAI_API_KEY: "model",
       CONTEXT_KEY: "context",
       OTHER_SECRET: "other",
     },
     profile,
     "/private/runs",
   );
-  expect(env.FIREWORKS_API_KEY).toBe("model");
+  expect(env.OPENAI_API_KEY).toBe("model");
   expect(env.CONTEXT_KEY).toBe("context");
   for (const key of [
     "GITHUB_TOKEN",
@@ -297,7 +297,7 @@ test("preparation failures retain diagnostics but cannot publish findings or cla
 
 test("provider credentials remain selected after configuration cleanup", () => {
   for (const [provider, key] of [
-    ["fireworks", "FIREWORKS_API_KEY"],
+    ["xai", "XAI_API_KEY"],
     ["openai", "OPENAI_API_KEY"],
     ["anthropic", "ANTHROPIC_API_KEY"],
   ] as const) {

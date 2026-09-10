@@ -1,22 +1,18 @@
-# Kick Tires
+# Product scope
 
-Kick Tires is a self-hosted code-review application for people who want to use
-an agent with their own models, review skills, tools and repository context.
+Kick Tires is a self-hosted code reviewer with configurable models, skills and tools.
+It reviews pinned Git revisions in a disposable sandbox, investigates changes, and
+reports findings with recorded evidence and verification gaps.
 
-The first version runs an explicit review of pinned Git revisions, provisions a
-writable isolated environment, supplies trusted skills and tools, and returns
-findings with recorded execution evidence. A command-line workflow is the initial
-interface. It must work on real repositories, with configurable test commands,
-browser checks and optional context connections. The GitHub Actions adapter triggers
-this workflow for private, same-repository PRs and publishes findings against the pinned
-head after checking report coordinates and recorded evidence references.
+The CLI and GitHub adapter share one review workflow. GitHub support currently covers
+private repositories and same-repository PR branches.
 
+Kick Tires owns inputs, trusted configuration, evidence validation and reporting.
 Eve owns agent execution, tool dispatch, skill discovery and session lifecycle.
-This application owns review input preparation, trusted configuration, evidence,
-findings and reporting. Authentication support is documented from verified behavior;
-API models and subscription-backed agents must not be conflated.
+Portable skills remain independent of Eve and can be reused by other applications.
 
-Reusable skills are independently packaged Markdown and supporting files. Other
-agent applications can install them without depending on this review application.
-Slack insights, a generic agent platform, a settings dashboard, automated fixes and
-automatic approvals are outside the initial product.
+Report authentication support from tested behavior. API keys and subscription logins
+are not interchangeable. Evidence references do not prove a finding is correct.
+
+A general agent platform, Slack integration, dashboard, automatic fixes and automatic
+approvals are outside the current scope.

@@ -16,5 +16,5 @@ Report introduced correctness, security, data-loss or material performance defec
 Avoid style comments, speculative problems and changes already enforced by checks.
 Each finding needs a precise changed-file location, concrete trigger, consequence,
 fix direction, and references to the evidence you actually gathered. Explain gaps.
-A failed setup or unavailable tool is an incomplete review, not a clean bill of health.
+A failed setup or unavailable tool is an incomplete review, not a completed review.
 Do not edit branches, publish comments or approve changes from inside the agent.

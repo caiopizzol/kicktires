@@ -17,10 +17,10 @@
     "doctor": "bun --no-env-file scripts/doctor.ts"
   },
   "dependencies": {
-    "@kicktires/skills": "workspace:*",
     "@ai-sdk/anthropic": "4.0.52",
-    "@ai-sdk/fireworks": "3.0.50",
     "@ai-sdk/openai": "4.0.36",
+    "@ai-sdk/xai": "4.0.57",
+    "@kicktires/skills": "workspace:*",
     "eve": "0.52.5",
     "yaml": "2.8.2",
     "zod": "4.4.3"

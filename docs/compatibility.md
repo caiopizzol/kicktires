@@ -1,7 +1,7 @@
 # Naming and compatibility
 
 The product is **Kick Tires**. Its source package is `kicktires`; portable skills are
-`@kicktires/skills`. These are source workspace names, not a claim of registry publication.
+`@kicktires/skills`. Neither package is published to a registry.
 
 Existing workers were installed as Agent Review. The following identifiers remain
 stable so source upgrades do not silently create a second installation or duplicate
@@ -17,9 +17,8 @@ previously published reviews:
 | Installed release marker         | `.agent-review-installed`                                            |
 | GitHub review markers            | `agent-review:BASE:HEAD`, `agent-review-status:STATUS`               |
 
-A checkout directory can be named `kicktires`; it does not select the worker paths.
-The installer continues using the stable paths above on both new and existing workers.
-Renaming these contracts requires an explicit migration and validation.
+These paths apply to new and existing workers regardless of checkout name.
+Changing them requires a tested migration.
 
 New workflow examples display **Kick Tires**. Existing required check names such as
 **Agent review** or **Codex review** must remain until the operator deliberately updates

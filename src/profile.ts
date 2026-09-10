@@ -5,7 +5,7 @@ export const profileSchema = z
   .object({
     model: z
       .object({
-        provider: z.enum(["fireworks", "openai", "anthropic", "chatgpt"]),
+        provider: z.enum(["xai", "openai", "anthropic", "chatgpt"]),
         id: z.string().min(1),
         apiKeyEnv: z
           .string()
@@ -63,7 +63,7 @@ export function modelCredentialEnv(
   return (
     model.apiKeyEnv ??
     {
-      fireworks: "FIREWORKS_API_KEY",
+      xai: "XAI_API_KEY",
       openai: "OPENAI_API_KEY",
       anthropic: "ANTHROPIC_API_KEY",
     }[model.provider]

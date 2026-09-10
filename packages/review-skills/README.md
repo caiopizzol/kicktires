@@ -1,11 +1,9 @@
-# Reusable review skills
+# Review skills
 
-Portable Markdown skills and supporting files. This package has no Eve dependency.
-Install a pinned version and expose each directory through your agent's skill loader.
-`review-code` depends on `get-context` and `verify-change`, included here.
+Portable Markdown with no Eve dependency. Copy a pinned version into your agent's
+skill loader. `review-code` requires the included `get-context` and `verify-change`.
 
-The consuming application must supply repository/diff reading, bounded terminal
-execution and writable disposable test space. Browser verification requires a browser
-tool and application startup mechanism. External context requires explicitly configured
-connections. Provide a capability guide mapping these requirements to actual tools.
-Credentials, repository selection and deployment configuration belong to the application.
+The consuming application supplies tools for reading source/diffs, bounded commands
+and temporary tests. Browser checks need a browser tool and app startup; external
+context needs configured connections. Provide a guide mapping capabilities to tools.
+Skills do not supply credentials, runtimes or deployment configuration.

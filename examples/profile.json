@@ -1,7 +1,7 @@
 {
   "model": {
-    "provider": "fireworks",
-    "id": "accounts/fireworks/routers/deepseek-v4-flash-0731-us"
+    "provider": "openai",
+    "id": "gpt-5.6-terra"
   },
   "checks": ["node --test"],
   "setup": { "commands": [], "network": "deny-all" },

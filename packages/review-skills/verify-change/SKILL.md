@@ -10,8 +10,7 @@ real assertions; printing PASS/FAIL labels does not test behavior.
 
 You may write temporary tests in the disposable workspace. Preserve reviewed source
 when reproducing; if a modification is necessary, state it and reset the workspace
-before drawing conclusions about the pinned revision. Never infer test execution
-from reading source. Record actual command exits, assertion failures and limitations.
+before drawing conclusions about the pinned revision. Reading source does not establish test execution. Record actual command exits, assertion failures and limitations.
 
 For browser behavior, start the application using the supplied mechanism and inspect
 it with the available browser tool. A screenshot alone does not establish an

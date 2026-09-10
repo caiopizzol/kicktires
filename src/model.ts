@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { createFireworks } from "@ai-sdk/fireworks";
+import { createXai } from "@ai-sdk/xai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { chatgpt } from "eve/models/openai";
 import { modelCredentialEnv, type Profile } from "./profile.ts";
@@ -26,8 +26,5 @@ export function resolveModel(model: Profile["model"]) {
     return createAnthropic({ apiKey })(model.id);
   return model.provider === "openai"
     ? createOpenAI({ apiKey })(model.id)
-    : createFireworks({
-        apiKey,
-        baseURL: "https://us.api.fireworks.ai/inference/v1",
-      })(model.id);
+    : createXai({ apiKey })(model.id);
 }

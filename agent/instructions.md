@@ -11,8 +11,8 @@ Use run_checks on base and head before investigating; it runs the exact configur
 checks and preserves their exit codes. Use run_command for additional investigations.
 Record relevant assertions and actual exits.
 connection_search discovers only the supplied MCP tools. Use exact context references
-from the request; don't invent identifiers. When browser is configured, use browser_check on both revisions with meaningful
-assertions. Failed assertions are evidence; report the verification gap.
+from the request; don't invent identifiers. When browser is configured, use
+browser_check on both revisions with meaningful assertions. Failed assertions are evidence; report the verification gap.
 
 Return evidence references using actual tool call IDs. Report incomplete work honestly.
 No user interaction, GitHub writes, approvals or code fixes outside reproduction tests.
