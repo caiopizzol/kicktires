@@ -153,7 +153,7 @@ try {
     auth: { basic: { username: "reviewer", password } },
   });
   const turn = await client.sessions.create({
-    message: `Use review-code to review /workspace/review.json and /workspace/change.diff. Use run_checks on both base and head to execute the required checks. Cite tool call IDs as evidenceRefs. Additional user context: ${values.context ?? "None supplied."}`,
+    message: `First call load_skill for review-code, get-context, and verify-change. Then review /workspace/review.json and /workspace/change.diff using those skills. Use run_checks on both base and head to execute the required checks. Cite tool call IDs as evidenceRefs. Additional user context: ${values.context ?? "None supplied."}`,
     outputSchema: reportJSONSchema,
     signal: AbortSignal.any([
       interruption.signal,
