@@ -16,9 +16,13 @@ case "$(dpkg --print-architecture)" in
 esac
 checkout=$(cd "$2" && pwd)
 [ -f "$checkout/scripts/install-worker.sh" ] || { echo 'Expected an Agent Review source checkout.' >&2; exit 1; }
+if command -v git >/dev/null; then
+  git -C "$checkout" rev-parse --verify HEAD >/dev/null
+  git -C "$checkout" diff --quiet HEAD -- || { echo 'Commit tracked source changes before installing.' >&2; exit 1; }
+fi
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y ca-certificates curl git gnupg tar unzip xz-utils util-linux coreutils
+apt-get install -y ca-certificates curl git gnupg diffutils tar unzip xz-utils util-linux coreutils
 if ! command -v docker >/dev/null; then
   install -d -m 755 /etc/apt/keyrings
   curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/agent-review-docker.asc
