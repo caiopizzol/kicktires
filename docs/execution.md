@@ -8,8 +8,9 @@ as the working directory, isolating its persisted workflows. It listens on loopb
 password, creates a session, collects its report and retires the service. Eve runs
 the model, supplies skills/connections and owns the Docker sandbox lifecycle.
 
-Repositories are limited to 5000 files and 25 MiB per snapshot. Relative symlinks to tracked regular files inside the same snapshot are preserved.
-Escaping, dangling, directory and chained links, submodules and unsafe paths are rejected. Dirty work is excluded. Snapshots contain no `.git`
+Repositories are limited to 5000 files and 25 MiB per snapshot. Relative links to files inside the same snapshot are preserved, including dangling
+links whose targets are missing. Existing directory targets, link traversal, escaping
+links, submodules and unsafe paths are rejected. Dirty work is excluded. Snapshots contain no `.git`
 directory; use the supplied diff and file inventory instead of assuming Git commands
 will work in the sandbox. The CLI does not fetch remote branches.
 

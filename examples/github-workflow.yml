@@ -25,4 +25,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           FIREWORKS_API_KEY: ${{ secrets.FIREWORKS_API_KEY }}
-        run: /opt/agent-review/bin/review-pr INSTALLED_COMMIT /etc/agent-review/profile.json
+        run: /opt/agent-review/bin/review-pr /etc/agent-review/profile.json

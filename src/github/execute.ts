@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { command } from "../process.ts";
 import { profileSchema, type Profile } from "../profile.ts";
 import { jobSchema } from "../job.ts";
-import { validateReport } from "../review/report.ts";
+import { validateReport, reportSchema } from "../review/report.ts";
 import type { PullRequest, Report } from "./review.ts";
 
 export function reviewEnvironment(
@@ -156,25 +156,46 @@ export async function executeReview(options: {
     const run = resolve(output.directory);
     if (!run.startsWith(`${resolve(runs)}/review-`))
       throw new Error("Unexpected report directory");
-    const job = jobSchema.parse(
-      JSON.parse(await readFile(join(run, "job.json"), "utf8")),
-    );
-    if (job.repository.base !== base || job.repository.head !== pr.head.sha)
-      throw new Error("Report revisions do not match the pinned pull request");
-    const report = JSON.parse(await readFile(join(run, "report.json"), "utf8"));
-    const response = await readFile(join(run, "response.json"), "utf8")
-      .then((data) => JSON.parse(data))
-      .catch((error: NodeJS.ErrnoException) => {
-        if (error.code !== "ENOENT") throw error;
-        return { events: [] };
-      });
-    return validateReport(
-      report,
-      response.events,
-      job,
-      await readFile(join(run, "change.diff"), "utf8"),
-    );
+    return readValidatedReport(run, base, pr.head.sha);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+}
+
+export async function readValidatedReport(
+  run: string,
+  base: string,
+  head: string,
+): Promise<Report> {
+  const report = reportSchema.parse(
+    JSON.parse(await readFile(join(run, "report.json"), "utf8")),
+  );
+  const rawJob = await readFile(join(run, "job.json"), "utf8").catch(
+    (error: NodeJS.ErrnoException) => {
+      if (error.code !== "ENOENT") throw error;
+      return null;
+    },
+  );
+  if (rawJob === null) {
+    if (report.status !== "incomplete" || report.findings.length)
+      throw new Error(
+        "A preparation failure cannot contain findings or claim completion",
+      );
+    return report;
+  }
+  const job = jobSchema.parse(JSON.parse(rawJob));
+  if (job.repository.base !== base || job.repository.head !== head)
+    throw new Error("Report revisions do not match the pinned pull request");
+  const response = await readFile(join(run, "response.json"), "utf8")
+    .then((data) => JSON.parse(data))
+    .catch((error: NodeJS.ErrnoException) => {
+      if (error.code !== "ENOENT") throw error;
+      return { events: [] };
+    });
+  return validateReport(
+    report,
+    response.events,
+    job,
+    await readFile(join(run, "change.diff"), "utf8"),
+  );
 }

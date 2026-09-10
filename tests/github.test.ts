@@ -8,7 +8,10 @@ import {
   type Api,
   type Report,
 } from "../src/github/review.ts";
-import { reviewEnvironment } from "../src/github/execute.ts";
+import {
+  reviewEnvironment,
+  readValidatedReport,
+} from "../src/github/execute.ts";
 import { profileSchema } from "../src/profile.ts";
 
 const repository = "example/project";
@@ -240,4 +243,50 @@ test("model process receives selected credentials but no GitHub or runner enviro
       "/runs",
     ),
   ).toThrow();
+});
+
+test("preparation failures retain diagnostics but cannot publish findings or claim completion", async () => {
+  const { mkdtemp, writeFile, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const run = await mkdtemp(join(tmpdir(), "agent-review-preparation-"));
+  const failure = {
+    ...report,
+    status: "incomplete",
+    gaps: ["Unsupported repository entry"],
+  };
+  try {
+    await writeFile(join(run, "report.json"), JSON.stringify(failure));
+    expect(await readValidatedReport(run, pr.base.sha, pr.head.sha)).toEqual(
+      failure,
+    );
+    await writeFile(join(run, "report.json"), JSON.stringify(report));
+    await expect(
+      readValidatedReport(run, pr.base.sha, pr.head.sha),
+    ).rejects.toThrow("preparation failure");
+    await writeFile(
+      join(run, "report.json"),
+      JSON.stringify({
+        ...failure,
+        findings: [
+          {
+            severity: "P1",
+            file: "file.ts",
+            line: 1,
+            side: "RIGHT",
+            title: "Unsupported",
+            explanation: "No job",
+            evidence: "No evidence",
+            suggestion: "None",
+            evidenceRefs: ["fake"],
+          },
+        ],
+      }),
+    );
+    await expect(
+      readValidatedReport(run, pr.base.sha, pr.head.sha),
+    ).rejects.toThrow("preparation failure");
+  } finally {
+    await rm(run, { recursive: true, force: true });
+  }
 });

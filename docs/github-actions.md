@@ -14,11 +14,14 @@ in the same repository. Keep its workflow on the trusted base branch with
 
 Build the application as described in [self-hosting](self-hosting.md). Install an
 exact commit under `/opt/agent-review/releases/COMMIT`, including dependencies and the
-Linux-built Eve output. The release must be root-owned and readable but not writable
-by runner accounts. Put pinned Node and Bun executables in
+Linux-built Eve output. Store its full commit SHA in the root-owned
+`/etc/agent-review/release` file. The release must be readable but not writable by
+runner accounts. Select a new tested release by atomically replacing that file; future
+worker fixes do not require repository workflow edits. Put pinned Node and Bun executables in
 `/opt/agent-review/runtime/bin`, also controlled by the host administrator.
 
 Install `scripts/run-github-review.sh` as `/opt/agent-review/bin/review-pr`. This wrapper
+starts Bun from the trusted release directory with dotenv loading disabled and
 uses a shared `flock` to serialize reviews across repositories, waits at most ten
 minutes for the lock and allows twenty minutes for execution plus shutdown. Provision
 `/var/lock/agent-review/review.lock` as a root-owned file writable by a dedicated group
@@ -32,8 +35,8 @@ supports `AGENT_REVIEW_RUNS_DIR` for other installations with read-only applicat
 
 ## Enable a workflow
 
-Copy [the example](../examples/github-workflow.yml), replace `INSTALLED_COMMIT` with
-the full installed SHA, and select the existing runner label and trusted profile.
+Copy [the example](../examples/github-workflow.yml) and select the existing runner
+label and trusted profile. The launcher logs the actual worker release for each run.
 Set `FIREWORKS_API_KEY` as a repository Actions secret, or configure the selected
 provider's credential environment variable. GitHub supplies a repository-scoped job
 token with `contents: read` and `pull-requests: write`.

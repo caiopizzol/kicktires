@@ -27,3 +27,16 @@ Existing runner registrations were preserved. Their idle services were restarted
 adding Docker/shared-lock group membership; runtime files are root-owned under /opt.
 Workflows are being prepared in isolated private worktrees. The existing required check
 name is retained to preserve branch protection without modifying repository settings.
+
+Live validation exposed a dangling instruction link on the second project's current
+main (the earlier trial revisions had its target). Preserve contained dangling links
+without dereferencing; reject directory targets and traversal through other links.
+Preparation failures now retain their diagnostics without inventing findings. Exact
+current base/head snapshots succeeded locally after the correction; 26 tests passed.
+Meta reviewed the correction against materialization and archive behavior.
+
+Release selection is moving to a root-owned worker file rather than per-repository
+SHA arguments: the old worker otherwise blocks the very PR needed to update its pin.
+Releases remain immutable and individually tested; workflow invocation stays stable.
+The initial migration PRs merged; follow-up launcher changes and final live validation
+are still pending. Private delivery state is in `.runs/migration/`.

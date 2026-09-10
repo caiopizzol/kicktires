@@ -39,6 +39,7 @@ test("pins committed revisions and excludes dirty working-tree files", async () 
     );
     await writeFile(join(repo, "version.txt"), "$Format:%H$\n");
     await symlink("source.txt", join(repo, "AGENTS.md"));
+    await symlink("removed.md", join(repo, "DANGLING.md"));
     git("add", ".");
     git("commit", "-qm", "base");
     const base = git("rev-parse", "HEAD");
@@ -48,6 +49,14 @@ test("pins committed revisions and excludes dirty working-tree files", async () 
     await writeFile(join(repo, "source.txt"), "dirty secret\n");
     const snapshot = await snapshotRepository(repo, base, head, out);
     expect(snapshot.base).toBe(base);
+    expect(await readlink(join(out, "head", "DANGLING.md"))).toBe("removed.md");
+    await expect(readFile(join(out, "head", "DANGLING.md"))).rejects.toThrow(
+      "ENOENT",
+    );
+    const extracted = join(root, "extracted");
+    await (await import("node:fs/promises")).mkdir(extracted);
+    command("tar", ["-xf", join(out, "head.tar"), "-C", extracted], root);
+    expect(await readlink(join(extracted, "DANGLING.md"))).toBe("removed.md");
     expect(
       (await readFile(join(out, "head.tar"))).includes(
         Buffer.from("._source.txt"),
@@ -90,7 +99,7 @@ test("rejects paths that escape the snapshot or Git metadata", () => {
   expect(safePath("src/file name.ts")).toBe(true);
 });
 
-test("rejects escaping, dangling, directory and chained repository links", async () => {
+test("rejects escaping, directory and chained repository links", async () => {
   const { mkdir } = await import("node:fs/promises");
   const root = await mkdtemp(join(tmpdir(), "agent-review-links-")),
     repo = join(root, "repo");
@@ -120,9 +129,10 @@ test("rejects escaping, dangling, directory and chained repository links", async
     for (const [index, target] of [
       "../outside.txt",
       "/etc/passwd",
-      "missing",
+      ".",
       "nested",
       "another",
+      "another/../source.txt",
       "link",
     ].entries()) {
       await rm(join(repo, "link"), { force: true });

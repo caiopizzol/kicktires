@@ -16,18 +16,19 @@ export async function snapshotRepository(
   headRef: string,
   destination: string,
 ) {
+  const gitEnv = {
+    PATH: process.env.PATH,
+    GIT_CONFIG_GLOBAL: "/dev/null",
+    GIT_CONFIG_NOSYSTEM: "1",
+    GIT_TERMINAL_PROMPT: "0",
+  };
   const git = (...args: string[]) =>
     command(
       "git",
       ["-c", "core.fsmonitor=false", "-c", "core.hooksPath=/dev/null", ...args],
       repo,
       undefined,
-      {
-        PATH: process.env.PATH,
-        GIT_CONFIG_GLOBAL: "/dev/null",
-        GIT_CONFIG_NOSYSTEM: "1",
-        GIT_TERMINAL_PROMPT: "0",
-      },
+      gitEnv,
     );
   const resolve = (ref: string) =>
     git("rev-parse", "--verify", "--end-of-options", `${ref}^{commit}`)
@@ -62,15 +63,22 @@ export async function snapshotRepository(
         mode: meta.startsWith("100755") ? 0o755 : 0o644,
       };
     });
-    const regularPaths = new Set(
-      paths.filter((p) => !p.isLink).map((p) => p.path),
-    );
+    const linkPaths = new Set(paths.filter((p) => p.isLink).map((p) => p.path));
+    const directories = new Set<string>(["."]);
+    for (const entry of paths)
+      for (
+        let dir = posix.dirname(entry.path);
+        dir !== ".";
+        dir = posix.dirname(dir)
+      )
+        directories.add(dir);
     const links: { path: string; target: string }[] = [];
     const bodies = command(
       "git",
       ["cat-file", "--batch"],
       repo,
       paths.map((p) => p.oid).join("\n") + "\n",
+      gitEnv,
     );
     let offset = 0,
       total = 0;
@@ -96,16 +104,22 @@ export async function snapshotRepository(
         const resolved = posix.normalize(
           posix.join(posix.dirname(entry.path), target),
         );
+        let cursor = posix.dirname(entry.path);
+        const traversesLink = target.split("/").some((part) => {
+          cursor = posix.normalize(posix.join(cursor, part));
+          return linkPaths.has(cursor);
+        });
         if (
           !target ||
           target.includes("\0") ||
           target.includes("\\") ||
           posix.isAbsolute(target) ||
           !safePath(resolved) ||
-          !regularPaths.has(resolved)
+          directories.has(resolved) ||
+          traversesLink
         )
           throw new Error(
-            `Unsupported repository symlink: ${entry.path} must target a tracked regular file inside the snapshot`,
+            `Unsupported repository symlink: ${entry.path} must stay inside the snapshot without directory or link traversal`,
           );
         links.push({ path: entry.path, target });
       } else {
