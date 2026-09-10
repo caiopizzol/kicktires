@@ -1,18 +1,35 @@
 # Fresh repository onboarding
 
-Onboard copilot-contabil on the existing authorized Hetzner worker and improve Agent
-Review so a user who did not build it can install and operate it from documented,
-repeatable steps. Keep the implementation small and validate improvements through
-this real installation. Reuse Eve capabilities and retain sandbox/credential boundaries.
+Completed application onboarding and installation DX improvements on 2026-09-10.
+Copilot-contabil now runs Agent Review on a dedicated runner on the existing Hetzner
+worker. Existing reviews retain their active application release and sandbox image.
 
-- [ ] Record concrete first-install friction and choose smallest useful improvements.
-- [ ] Implement and verify repeatable setup and actionable prerequisite/config checks.
-- [ ] Validate copilot-contabil checks inside the actual sandbox; keep original dirty work.
-- [ ] Register dedicated repository runner, trusted profile/model credential and workflow.
-- [ ] Merge workflow and validate actual GitHub review with retained evidence and cleanup.
-- [ ] Document fresh VM/cloud-VM instructions, tested limits and remaining distribution gaps.
+- [x] Identify concrete first-install friction through Meta/Grok consultations and trial.
+- [x] Implement repeated worker installation and actionable preflight checks.
+- [x] Validate target checks inside Docker, preserving original dirty working files.
+- [x] Register repository runner, trusted profile/model credential and workflow.
+- [x] Merge workflow, validate clean and regression GitHub reviews, close fixture.
+- [x] Document Linux VM/cloud-VM setup, verification evidence and distribution limits.
 
-Consult Meta and Grok for design, then review material implementation uncertainty.
-Private exact installation/delivery evidence stays under `.runs/onboarding/`.
-No production finance/DB credentials or application deployments are needed.
-No branch-protection changes without explicit scope. Existing two reviewers stay working.
+Installer validation: additive install and repeat preserve active release; fresh Linux
+filesystem install/repeat pass using a separate image tag and real host Docker daemon.
+No fresh cloud VM provisioning or reboot was tested. Doctor passed under runner account
+and rejected missing model credentials without values or paid calls. Trials fixed PATH
+handling for administrator/local commands and inaccessible current directories.
+
+Target verification:573base/head tests and all configured type/generated-type/build
+checks passed for clean revision. Intentional classification regression produced10head
+test failures and a changed-line finding; fixture closed-unmerged and remote branch
+removed. Initial workflow PR55 merged, CI passed. No branch protection was changed.
+GitHub merged immediately when auto-merge was requested on this unprotected repository;
+CI completed successfully afterward. Do not claim CI was a configured merge gate.
+
+Private evidence and exact revisions: `.runs/onboarding/delivery.json`,
+`validation-reviews.json`, `validation-comments.json`, and `summary.md`.
+Consultation artifacts: `/tmp/agent-review/consult/onboarding/`.
+
+User was asked whether to publish caiopizzol/agent-review publicly or privately; no
+answer yet. No remote created. Source distribution remains a documented gap; do not
+publish without the requested visibility decision. An obsolete monitor for the now
+verified/closed regression fixture, fc52eb99-9304-4de7-ae16-f4eebb54a7ca, may still wake;
+read once only on its queued event, then no fixture mutations are needed.
