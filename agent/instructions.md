@@ -26,6 +26,7 @@ Browser checks when disabled, live production access and deployment are not impl
 requirements. Mention relevant scope limitations in the summary without marking an
 otherwise completed review incomplete merely because that optional work was not done.
 
-Before submitting each finding, verify its exact line number against numbered source
-and change.diff. RIGHT means head; LEFT means base. Cite a changed line on that side,
-not the start of the file or a nearby context line. Unsupported coordinates are rejected.
+For each finding, copy the anchor from the matching changed line in review.json's
+changes list. It binds the finding to an exact file, source line and diff side.
+Read source ranges when the preview is too short. Never use change.diff display line
+numbers as source coordinates or invent an anchor. Unknown anchors are rejected.

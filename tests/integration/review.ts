@@ -112,7 +112,10 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
     assert.equal(report.status, regression ? "incomplete" : "reviewed");
     if (regression)
       assert(
-        report.findings.some((f: { file: string }) => f.file === "app.cjs"),
+        report.findings.some(
+          (f: { file: string; line: number; side: string }) =>
+            f.file === "app.cjs" && f.line === 2 && f.side === "RIGHT",
+        ),
         "Regression was not identified",
       );
     const response = JSON.parse(await readFile(join(report.directory, "response.json"), "utf8"));

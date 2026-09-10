@@ -1,4 +1,6 @@
 import { expect, test } from "bun:test";
+import { join } from "node:path";
+import { diffAnchors } from "../src/review/diff.ts";
 import { profileSchema } from "../src/profile.ts";
 import type { ReviewJob } from "../src/job.ts";
 import { validateReport } from "../src/review/report.ts";
@@ -80,13 +82,18 @@ test("retains finding evidence and rejects fabricated references", () => {
     explanation: "Behavior fails",
     evidence: "Test input",
     suggestion: "Fix condition",
+    anchor: diffAnchors(diff).find((a) => a.side === "RIGHT")!.anchor,
     evidenceRefs: ["head"],
   };
   const valid = validateReport({ ...report, findings: [finding] }, events(), job, diff);
   expect(valid.findings[0]).toHaveProperty("evidenceRefs", ["head"]);
   expect(
-    validateReport({ ...report, findings: [{ ...finding, line: 2 }] }, events(), job, diff)
-      .findings,
+    validateReport(
+      { ...report, findings: [{ ...finding, anchor: "invented" }] },
+      events(),
+      job,
+      diff,
+    ).findings,
   ).toEqual([]);
   const unsupported = validateReport(
     { ...report, findings: [{ ...finding, evidenceRefs: ["invented"] }] },
@@ -98,8 +105,12 @@ test("retains finding evidence and rejects fabricated references", () => {
   expect(unsupported.findings).toEqual([]);
   expect(unsupported.executions).toHaveLength(2);
   expect(
-    validateReport({ ...report, findings: [{ ...finding, file: "other.ts" }] }, events(), job, diff)
-      .status,
+    validateReport(
+      { ...report, findings: [{ ...finding, anchor: "other-file" }] },
+      events(),
+      job,
+      diff,
+    ).status,
   ).toBe("incomplete");
 });
 test("failed turns and token-limit pauses cannot become completed reviews", () => {
@@ -288,6 +299,7 @@ test("findings citing interrupted commands remain visible until complete evidenc
     explanation: "Behavior fails",
     evidence: "Test input",
     suggestion: "Fix condition",
+    anchor: diffAnchors(diff).find((a) => a.side === "RIGHT")!.anchor,
     evidenceRefs: ["explore"],
   };
   for (const interrupted of interruptedCommands) {
@@ -330,5 +342,40 @@ test("interrupted required checks remain gaps even with complete replacement che
     expect(result.gaps).toContain(
       "Required check output was truncated or execution timed out: npm test",
     );
+  }
+});
+
+test("host resolves source coordinates and revalidates persisted anchors for GitHub", async () => {
+  const { mkdtemp, writeFile, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { readValidatedReport } = await import("../src/github/execute.ts");
+  const sourceDiff =
+    "diff --git a/a.ts b/a.ts\nindex 123..456 100644\n--- a/a.ts\n+++ b/a.ts\n@@ -1,3 +1,3 @@\n first\n-old\n+new\n last\n";
+  const anchor = diffAnchors(sourceDiff).find((a) => a.side === "RIGHT")!.anchor;
+  const finding = {
+    anchor,
+    severity: "P1",
+    title: "Counter decrements",
+    explanation: "Expected +1, observed -1",
+    evidence: "Browser comparison",
+    suggestion: "Restore addition",
+    evidenceRefs: ["head"],
+    file: "invented.ts",
+    line: 8,
+    side: "LEFT",
+  };
+  const result = validateReport({ ...report, findings: [finding] }, events(), job, sourceDiff);
+  expect(result.findings[0]).toMatchObject({ file: "a.ts", line: 2, side: "RIGHT", anchor });
+  const directory = await mkdtemp(join(tmpdir(), "kicktires-anchors-"));
+  try {
+    await writeFile(join(directory, "job.json"), JSON.stringify(job));
+    await writeFile(join(directory, "report.json"), JSON.stringify(result));
+    await writeFile(join(directory, "response.json"), JSON.stringify({ events: events() }));
+    await writeFile(join(directory, "change.diff"), sourceDiff);
+    const replay = await readValidatedReport(directory, job.repository.base, job.repository.head);
+    expect(replay.findings).toEqual(result.findings);
+    expect(replay.status).toBe("reviewed");
+  } finally {
+    await rm(directory, { recursive: true, force: true });
   }
 });

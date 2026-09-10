@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publishedReportSchema, type validateReport } from "../review/report.ts";
+import { publishedReportSchema } from "../review/report.ts";
 
 const sha = z.string().regex(/^[a-f0-9]{40}$/);
 const repositorySchema = z.object({
@@ -20,10 +20,7 @@ const eventSchema = z.object({
   pull_request: pullRequestSchema,
 });
 export type PullRequest = z.infer<typeof pullRequestSchema>;
-export type Report = Pick<
-  ReturnType<typeof validateReport>,
-  "summary" | "status" | "gaps" | "findings"
-> & { model?: ReturnType<typeof validateReport>["model"] };
+export type Report = z.infer<typeof publishedReportSchema>;
 export type Api = (path: string, body?: unknown) => Promise<unknown>;
 
 export function parseEvent(value: unknown, repository: string) {

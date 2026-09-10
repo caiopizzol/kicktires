@@ -30,3 +30,6 @@ or run old and new workers concurrently. Their locks and image names differ.
 
 This source change does not migrate deployed VMs or GitHub settings. End-to-end worker
 migration must be validated before retiring an existing installation.
+
+Use the originating release to revalidate private reports created before change anchors;
+existing GitHub reviews and duplicate detection are unaffected.
