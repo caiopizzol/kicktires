@@ -1,3 +1,5 @@
+import { rejects } from "node:assert/strict";
+import { join } from "node:path";
 import { z } from "zod";
 import { expect, test } from "bun:test";
 import { codexModel, proposedResponse } from "../src/codex-model.ts";
@@ -260,7 +262,6 @@ send({method:'turn/completed',params:{turn:{status:'completed'}}});
 
 test("Codex resolves paginated model defaults and rejects unsupported settings before a turn", async () => {
   const { mkdtemp, writeFile, readFile, rm } = await import("node:fs/promises");
-  const { join } = await import("node:path");
   const { tmpdir } = await import("node:os");
   const { resolveCodexSettings, codexResponse } = await import("../src/codex.ts");
   const home = await mkdtemp(join(tmpdir(), "kicktires-model-test-"));
@@ -289,12 +290,11 @@ if(m.method==='turn/start'){send({id:m.id,result:{}});send({method:'thread/token
       id: "beta",
       reasoningEffort: "low",
     });
-    await expect(resolveCodexSettings({ ...base, reasoningEffort: "invalid" })).rejects.toThrow(
-      "Supported: low, high",
+    await rejects(
+      resolveCodexSettings({ ...base, reasoningEffort: "invalid" }),
+      /Supported: low, high/,
     );
-    await expect(resolveCodexSettings({ ...base, model: "unknown" })).rejects.toThrow(
-      "Available: alpha, beta",
-    );
+    await rejects(resolveCodexSettings({ ...base, model: "unknown" }), /Available: alpha, beta/);
     const before = (await readFile(requests, "utf8"))
       .split("\n")
       .filter(Boolean)
@@ -307,16 +307,14 @@ if(m.method==='turn/start'){send({id:m.id,result:{}});send({method:'thread/token
     ).toBe(true);
     const turn = { ...base, reasoningEffort: "high", prompt: "ready", schema: {} };
     expect((await codexResponse(turn)).text).toBe("ready");
-    await expect(codexResponse({ ...turn, model: "mismatch" })).rejects.toThrow("did not accept");
-    await expect(codexResponse({ ...turn, model: "locked" })).rejects.toThrow(
-      "unavailable for this account",
-    );
+    await rejects(codexResponse({ ...turn, model: "mismatch" }), /did not accept/);
+    await rejects(codexResponse({ ...turn, model: "locked" }), /unavailable for this account/);
     const after = (await readFile(requests, "utf8"))
       .split("\n")
       .filter(Boolean)
       .map((line) => JSON.parse(line));
     expect(after.filter((r) => r.method === "turn/start")).toHaveLength(1);
-    await expect(resolveCodexSettings({ ...base, signal: AbortSignal.abort() })).rejects.toThrow();
+    await rejects(resolveCodexSettings({ ...base, signal: AbortSignal.abort() }));
   } finally {
     await rm(home, { recursive: true, force: true });
   }
