@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { expect, test } from "bun:test";
-import { proposedResponse } from "../src/codex-model.ts";
+import { codexModel, proposedResponse } from "../src/codex-model.ts";
 import { assertCodexHome } from "../src/codex.ts";
 import type { LanguageModelV4CallOptions } from "@ai-sdk/provider";
 
@@ -58,6 +58,104 @@ test("Codex proposals reject unavailable tools, invalid arguments and forged res
 test("Codex requires an explicit dedicated login home", () => {
   expect(() => assertCodexHome(undefined)).toThrow("absolute");
   expect(() => assertCodexHome("relative")).toThrow("absolute");
+});
+
+test("Codex corrects one invalid proposal atomically and counts both attempts", async () => {
+  const previous = process.env.KICKTIRES_CODEX_CLI;
+  process.env.KICKTIRES_CODEX_CLI = "test";
+  try {
+    const command = "printf '%s\\n' '{\"quoted\":true}'\n# browser source can contain quotes";
+    const prompts: string[] = [];
+    const signals: AbortSignal[] = [];
+    const model = codexModel("test", "unused", async (request) => {
+      prompts.push(request.prompt);
+      signals.push(request.signal!);
+      return {
+        text: JSON.stringify({
+          toolCalls:
+            prompts.length === 1
+              ? [
+                  { name: "run_checks", input: '{"revision":"base"}' },
+                  { name: "run_checks", input: "{'revision':'head'}" },
+                ]
+              : [{ name: "run_command", input: JSON.stringify({ revision: "head", command }) }],
+          text: "",
+        }),
+        usage: {
+          inputTokens: 20,
+          cachedInputTokens: 5,
+          outputTokens: 10,
+          reasoningOutputTokens: 3,
+        },
+      };
+    });
+    const tool = (await import("../agent/tools/run_command.ts")).default;
+    const result = await model.doGenerate({
+      ...options,
+      tools: [
+        ...options.tools!,
+        {
+          type: "function",
+          name: "run_command",
+          inputSchema: z.toJSONSchema(tool.inputSchema as z.ZodType),
+        },
+      ],
+    });
+    expect(prompts).toHaveLength(2);
+    expect(JSON.parse(prompts[1]!).correction).toContain("No proposed calls were executed");
+    expect(signals[0]).toBe(signals[1]);
+    expect(result.content).toHaveLength(1);
+    expect(result.content[0]).toMatchObject({
+      type: "tool-call",
+      toolName: "run_command",
+      input: JSON.stringify({ revision: "head", command }),
+    });
+    expect(result.usage).toMatchObject({
+      inputTokens: { total: 40, noCache: 30, cacheRead: 10 },
+      outputTokens: { total: 20, text: 14, reasoning: 6 },
+    });
+  } finally {
+    if (previous === undefined) delete process.env.KICKTIRES_CODEX_CLI;
+    else process.env.KICKTIRES_CODEX_CLI = previous;
+  }
+});
+
+test("Codex stops after two invalid proposals and honors cancellation before retry", async () => {
+  const previous = process.env.KICKTIRES_CODEX_CLI;
+  process.env.KICKTIRES_CODEX_CLI = "test";
+  try {
+    for (const cancel of [false, true]) {
+      let calls = 0;
+      const controller = new AbortController();
+      const model = codexModel("test", "unused", async () => {
+        calls++;
+        if (cancel) controller.abort();
+        return {
+          text: JSON.stringify({
+            toolCalls: [{ name: "run_checks", input: "{broken}" }],
+            text: "",
+          }),
+          usage: {
+            inputTokens: 20,
+            cachedInputTokens: 0,
+            outputTokens: 10,
+            reasoningOutputTokens: 0,
+          },
+        };
+      });
+      let failure: unknown;
+      try {
+        await model.doGenerate({ ...options, abortSignal: controller.signal });
+      } catch (error) {
+        failure = error;
+      }
+      expect(failure).toBeInstanceOf(Error);
+      expect(calls).toBe(cancel ? 1 : 2);
+    }
+  } finally {
+    if (previous === undefined) delete process.env.KICKTIRES_CODEX_CLI;
+    else process.env.KICKTIRES_CODEX_CLI = previous;
+  }
 });
 
 test("Codex app-server rejects host actions and cleans up the child", async () => {

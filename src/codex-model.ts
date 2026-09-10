@@ -66,28 +66,53 @@ export function proposedResponse(
   };
 }
 
-export function codexModel(model: string, home: string): LanguageModelV4 {
+export function codexModel(model: string, home: string, respond = codexResponse): LanguageModelV4 {
   async function generate(options: LanguageModelV4CallOptions) {
     const cli = process.env.KICKTIRES_CODEX_CLI;
     if (!cli) throw new Error("Codex CLI path was not supplied by the review launcher");
-    const prompt = JSON.stringify({
+    const conversation = {
       instructions:
         "Continue this agent conversation. Propose tool calls using only the supplied function tools, or return the final text. Use the owning runtime's tool call IDs from the conversation as evidence references. Do not claim you ran proposed calls. Encode tool arguments as JSON strings. For a JSON final response, encode it in text.",
       conversation: options.prompt,
       tools: options.tools ?? [],
       toolChoice: options.toolChoice ?? { type: "auto" },
       responseFormat: options.responseFormat,
-    });
-    const response = await codexResponse({
-      cli,
-      home,
-      model,
-      prompt,
-      schema: z.toJSONSchema(proposalSchema),
-      signal: options.abortSignal,
-    });
-    const result = proposedResponse(response.text, options);
-    const usage = response.usage!;
+    };
+    const signal = AbortSignal.any([
+      ...(options.abortSignal ? [options.abortSignal] : []),
+      AbortSignal.timeout(180000),
+    ]);
+    const usage = {
+      inputTokens: 0,
+      cachedInputTokens: 0,
+      outputTokens: 0,
+      reasoningOutputTokens: 0,
+    };
+    let result: LanguageModelV4GenerateResult | undefined;
+    let correction: string | undefined;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      signal.throwIfAborted();
+      const response = await respond({
+        cli,
+        home,
+        model,
+        prompt: JSON.stringify({ ...conversation, correction }),
+        schema: z.toJSONSchema(proposalSchema),
+        signal,
+      });
+      signal.throwIfAborted();
+      for (const key of Object.keys(usage) as (keyof typeof usage)[])
+        usage[key] += response.usage![key];
+      try {
+        result = proposedResponse(response.text, options);
+        break;
+      } catch (error) {
+        if (attempt === 1) throw error;
+        const detail = error instanceof Error ? error.message : String(error);
+        correction = `Your previous proposal failed validation: ${detail.slice(0, 2000)}. No proposed calls were executed. Return a corrected complete proposal. Encode each tool input as a valid JSON string matching its supplied schema.`;
+      }
+    }
+    if (!result) throw new Error("Codex did not produce a valid proposal");
     result.usage = {
       inputTokens: {
         total: usage.inputTokens,
