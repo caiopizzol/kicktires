@@ -1,7 +1,7 @@
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
-  fmt: { ignorePatterns: ["bun.lock"] },
+  fmt: { ignorePatterns: ["bun.lock", "CHANGELOG.md"] },
   staged: { "*": "vp check --fix" },
   lint: {
     jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],
