@@ -9,7 +9,8 @@ or run old and new workers concurrently. Their locks and image names differ.
 
 1. Stop the repository's old runner with no queued or active reviews. Keep its
    installation and private reports for rollback.
-2. Run the [installer](self-hosting.md) from the new committed source. It creates
+2. Run the [hosted installer](self-hosting.md) at `https://kicktires.dev/install.sh`.
+   Use `--version FULL_COMMIT_SHA` to select a release. It creates
    `/opt/kicktires`, `/etc/kicktires`, the `kicktires` group and lock, and
    `kicktires-sandbox:0.1.0`. Completed releases use `.kicktires-installed`.
 3. Copy trusted profiles to `/etc/kicktires`. Update absolute skill paths and launcher

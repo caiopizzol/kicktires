@@ -19,37 +19,25 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
 </p>
 
-## Requirements
+## Install
 
-Git, Node 24+, Bun 1.3.12+, Docker and a model.
-
-## Quick start
-
-```sh
-git clone https://github.com/caiopizzol/kicktires.git
-cd kicktires
-bun install --frozen-lockfile
-bun run sandbox
-bun run build
-```
-
-Copy [the example profile](examples/profile.json) to a trusted location outside the
-reviewed repository. Set its model and check commands, then configure
-[authentication](docs/configuration.md#models-and-authentication).
+Use an Ubuntu 24.04 or 26.04 VM (amd64 or arm64) and a model. While this repository
+is private, set `GH_TOKEN` with repository read access before installing.
 
 ```sh
-bun run review --repo /path/to/repository \
-  --base main --head feature \
-  --profile /path/to/profile.json
+curl -fsSL https://kicktires.dev/install.sh -o /tmp/kicktires-install.sh
+sudo --preserve-env=GH_TOKEN sh /tmp/kicktires-install.sh
 ```
 
-The CLI reviews committed changes and saves `report.json` and supporting evidence
-in a private `.runs/review-*/` directory. A completed review is not an approval.
+The installer sets up prerequisites, Docker and a pinned worker release. Then
+[connect your repository](docs/github-actions.md#add-a-new-repository) and
+[configure your model](docs/configuration.md#models-and-authentication).
+See [VM setup](docs/self-hosting.md) for installation details.
 
 ## Documentation
 
 - [Configure models, skills and tools](docs/configuration.md)
-- [Install on a VM](docs/self-hosting.md)
+- [Review locally](docs/local-review.md)
 - [Review GitHub PRs](docs/github-actions.md) — private, same-repository branches only
 - [Execution and privacy](docs/execution.md)
 - [Contribute](CONTRIBUTING.md)

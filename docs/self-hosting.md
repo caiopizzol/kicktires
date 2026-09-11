@@ -5,20 +5,15 @@ Serverless platforms without Docker are unsupported. For existing installations,
 
 ## Install
 
-On Ubuntu 24.04 or 26.04, amd64 or arm64:
+On Ubuntu 24.04 or 26.04, amd64 or arm64. While the repository is private,
+set `GH_TOKEN` with repository read access before installing:
 
 ```sh
 curl -fsSL https://kicktires.dev/install.sh -o /tmp/kicktires-install.sh
-sudo sh /tmp/kicktires-install.sh
-```
-
-The hosted script downloads a pinned source commit. While the repository is private,
-set `GH_TOKEN` with repository read access and preserve it when running the installer:
-
-```sh
 sudo --preserve-env=GH_TOKEN sh /tmp/kicktires-install.sh
 ```
 
+The hosted script downloads a pinned source commit.
 Use `--version FULL_COMMIT_SHA` to select another commit, or
 `--source /path/to/kicktires` to install an existing checkout.
 
@@ -27,16 +22,9 @@ official APT repository, and checksum-verified Node 24.14.0 and Bun 1.3.14 binar
 It enables Docker at boot, tests/builds committed source and creates the sandbox image.
 It does not register runners, collect secrets or upgrade the whole OS.
 
-If prerequisites are already installed (Git, Node 24+, Bun 1.3.12+, Docker and standard
-Linux tools including `tar`, `flock`, `timeout`, `groupadd`), use:
-
-```sh
-sudo env PATH="$PATH" sh scripts/install-worker.sh "$PWD"
-```
-
-Both installers require root. Tracked edits must be committed; untracked files are
-excluded. Do not copy `node_modules`, `.output` or `.eve` from another machine.
-Distribution is source-based; the hosted installer fetches source from GitHub.
+For source development, see [contributing](../CONTRIBUTING.md). Source installs
+require committed changes; untracked files are excluded. Do not copy `node_modules`,
+`.output` or `.eve` from another machine.
 
 The first install activates the release. Repeats preserve completed installs. Later
 installs add releases without replacing the active release, runtimes, launcher or
@@ -97,4 +85,4 @@ After interrupted cleanup, use a run's `sandbox.json` to identify its exact cont
 Never prune other applications' containers. External providers receive model context;
 self-contained repository tests do not need production credentials.
 
-For developer-machine reviews, use the [CLI quickstart](../README.md).
+For developer-machine reviews, use the [local review guide](local-review.md).
