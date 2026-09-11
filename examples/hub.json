@@ -1,0 +1,7 @@
+{
+  "repository": "your-account/kicktires-worker",
+  "reviewer": "your-kicktires-app[bot]",
+  "profiles": {
+    "your-account/project": "/etc/kicktires/project.json"
+  }
+}
