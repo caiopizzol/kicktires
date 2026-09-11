@@ -89,4 +89,4 @@ else
   echo "Installed release: $commit"
   echo "Active release unchanged: $(cat /etc/kicktires/release)"
 fi
-printf '\nNext: register a repository runner and install its trusted profile.\nSee %s/docs/github-actions.md\n' "$release"
+printf '\nNext: connect your repository and install its trusted profile.\nSee %s/docs/self-hosting.md\n' "$release"

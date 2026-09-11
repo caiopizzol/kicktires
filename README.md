@@ -30,7 +30,7 @@ sudo --preserve-env=GH_TOKEN sh /tmp/kicktires-install.sh
 ```
 
 The installer sets up prerequisites, Docker and a pinned worker release. Then
-[connect your repository](docs/github-actions.md#add-a-new-repository) and
+[connect your repository](docs/self-hosting.md#add-a-repository) and
 [configure your model](docs/configuration.md#models-and-authentication).
 See [VM setup](docs/self-hosting.md) for installation details.
 
@@ -38,7 +38,7 @@ See [VM setup](docs/self-hosting.md) for installation details.
 
 - [Configure models, skills and tools](docs/configuration.md)
 - [Review locally](docs/local-review.md)
-- [Review GitHub PRs](docs/github-actions.md) — same-repository branches; public repositories use a private hub
+- [Review GitHub PRs with shared workers](docs/shared-workers.md)
 - [Execution and privacy](docs/execution.md)
 - [Contribute](CONTRIBUTING.md)
 

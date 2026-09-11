@@ -87,5 +87,20 @@ Ctrl-C requests cleanup; a hard kill or machine failure may prevent it. Use the 
 `sandbox.json` to identify its container. Never prune unrelated containers.
 
 Reports may contain private source and context. Apply a retention policy after runs
-stop. Do not rebuild while reviews are active. The [GitHub adapter](github-actions.md)
-uses the same CLI; it is not a webhook server or shared queue.
+stop. Do not rebuild while reviews are active.
+
+## GitHub publication
+
+The GitHub adapter fetches pinned commits into a temporary bare repository and
+reviews the merge base against the head through the same CLI. No checkout, hooks
+or tests run on the host. GitHub credentials are used only for fetch and publication;
+they are not passed to the model.
+
+Before publishing, the adapter revalidates the report and refetches the PR. A changed
+head, base, repository or open state prevents publication. The final check and API
+write are separate, so a concurrent change can leave an old-commit review.
+
+The adapter checks the configured reviewer's base/head marker before investigation
+and publication. Reruns preserve published results. Only summaries, findings and
+gaps are published; raw evidence stays private. Reviews never approve, request
+changes, merge or modify the branch.

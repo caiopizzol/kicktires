@@ -8,7 +8,7 @@ permissions: {}
 
 jobs:
   submit:
-    name: Submit review
+    name: queue review
     if: >-
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest

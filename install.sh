@@ -84,4 +84,4 @@ if [ ! -e "$runtime/bun" ]; then
   mv "$runtime/bun.next" "$runtime/bun"
 fi
 sh "$checkout/scripts/install-worker.sh" "$checkout"
-echo 'Worker installed. Add a trusted profile and repository runner using docs/github-actions.md.'
+echo 'Worker installed. Connect your repository using docs/self-hosting.md.'

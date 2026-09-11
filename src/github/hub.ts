@@ -60,18 +60,22 @@ export async function reviewHubRequest(options: {
   review: (pr: PullRequest, profile: string) => Promise<Report>;
 }) {
   const { request, pr, profile, stale } = await resolveHubRequest(options);
-  const status = (state: "pending" | "success" | "failure" | "error", description: string) =>
-    options.api(`/repos/${request.repository}/statuses/${request.head}`, {
+  const status = (state: "pending" | "success" | "failure" | "error", description: string) => {
+    const characters = Array.from(description.replace(/\s+/g, " ").trim());
+    return options.api(`/repos/${request.repository}/statuses/${request.head}`, {
       state,
-      description,
+      description:
+        characters.length > 140 ? `${characters.slice(0, 137).join("")}...` : characters.join(""),
       context: "kicktires",
       target_url: options.runUrl,
     });
+  };
   if (stale) {
-    await status("error", "Review request superseded by a newer revision");
+    await status("error", "Superseded by a newer revision.");
     return { result: "stale", incomplete: true, findings: 0 };
   }
   let result;
+  let report: Report | undefined;
   try {
     result = await reviewPullRequest({
       repository: request.repository,
@@ -79,24 +83,32 @@ export async function reviewHubRequest(options: {
       api: options.api,
       reviewer: options.config.reviewer,
       review: async (revision) => {
-        await status("pending", "Investigating the pull request");
-        return options.review(revision, profile);
+        await status("pending", `Reviewing ${revision.head.sha.slice(0, 7)}.`);
+        report = await options.review(revision, profile);
+        return report;
       },
     });
   } catch (error) {
-    await status("error", "Review could not finish; inspect the worker run").catch(() => {
+    await status("error", "Review could not finish. Inspect the worker run.").catch(() => {
       console.error("Could not publish the review failure status");
     });
     throw error;
   }
   if (result.result === "stale") {
-    await status("error", "Pull request changed during review");
+    await status("error", "PR changed. Review no longer applies to the current revision.");
   } else if (result.incomplete) {
-    await status("failure", "Investigation incomplete; inspect the review");
+    const gap = result.result === "published" ? report?.gaps.find((gap) => gap.trim()) : undefined;
+    await status(
+      "failure",
+      gap ? `Incomplete: ${gap}` : "Review incomplete. See verification gaps.",
+    );
   } else if (result.findings > 0) {
-    await status("failure", `${result.findings} finding(s); inspect the review`);
+    await status(
+      "failure",
+      `Review complete. ${result.findings} finding${result.findings === 1 ? "" : "s"}. Inspect the review.`,
+    );
   } else {
-    await status("success", "Investigation completed; no findings");
+    await status("success", "Review complete. No findings. Not an approval.");
   }
   return result;
 }

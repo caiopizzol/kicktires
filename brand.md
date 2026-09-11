@@ -61,7 +61,7 @@ Is not: clever, hyped, reassuring, fast for its own sake, a judge.
 
 ### Promise
 
-- We run your code before we comment on it.
+- We investigate the change and show what we checked.
 - Every finding comes with the evidence.
 - We tell you what we could not verify.
 - The decision stays with you.
@@ -82,8 +82,8 @@ Litmus: if it claims something it did not run, it is wrong.
 
 ### Identity
 
-We are a code reviewer that runs the code. We take the two revisions you are about to
-merge, run your checks on both, poke at the change, and write down exactly what happened.
+We are a code reviewer that can run the code. We investigate the revisions you are about to
+merge, run relevant checks and compare results when needed, and write down what happened.
 When something fails, we show you the run. When we could not check something, we say so in
 the same breath.
 
@@ -113,14 +113,17 @@ Slogans:
 
 ### Message Pillars
 
-- **Runs.** The reviewer executes your checks on base and head before it forms an opinion.
+- **Runs.** The reviewer chooses relevant investigation. It runs checks and compares
+  base and head when needed; it does not run every check on every review.
 - **Evidence.** Every finding cites a recorded tool call and a changed line. Unsupported
   findings are dropped, not softened.
-- **Gaps.** What could not be verified is listed with its cause. Incomplete is a status,
-  not a failure.
+- **Gaps.** What could not be verified is listed with its cause. Incomplete means
+  verification is unfinished. It is not a verdict on your code.
 - **Yours.** Your model, your skills, your context, your infrastructure. Nothing leaves the
   host except what you send to your provider.
 - **You decide.** Comments only. Never approves, never requests changes, never pushes a fix.
+  The GitHub check blocks merging for findings or incomplete verification. A passing
+  check means the investigation completed without findings; it is not an approval.
 
 ### Phrases
 

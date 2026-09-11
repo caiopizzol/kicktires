@@ -51,8 +51,25 @@ configuration on the tested VM.
 
 ## Add a repository
 
-Follow [GitHub setup](github-actions.md#add-a-new-repository) for the runner, trusted
-profile, secret and workflow. Each repository needs its own registration, not a rebuild.
+For public repositories or several projects sharing a VM, use a private
+[shared-worker hub](shared-workers.md). Fork PRs are unsupported.
+
+To connect one private repository directly:
+
+1. Create a dedicated Unix account with a private home and membership in the
+   `docker` and `kicktires` groups. Register a repository runner through GitHub's
+   **Settings → Actions → Runners**, verify the download checksum, add the
+   `kicktires` label, and install its service under that account.
+2. Install a root-owned, mode `644` [profile](../examples/profile.json) at
+   `/etc/kicktires/your-project.json`. Configure its model, skills and available
+   checks; test setup and check commands in the sandbox.
+3. Set the repository Actions secret `OPENAI_API_KEY`, or map your provider's
+   secret in the workflow. Copy [the workflow](../examples/github-workflow.yml)
+   to `.github/workflows/kicktires.yml` and set its profile path and runner label.
+
+Keep `pull_request_target`, the private/same-repository guards and cancellation
+settings. Use the runner only for the trusted review workflow. Never check out PR
+code or load its profile on the host. Keep tokens out of profiles and scripts.
 
 Run preflight as the runner account, using the installed release:
 
@@ -67,7 +84,11 @@ Preflight checks runtimes, Docker/image access, profile/skills, build, ownership
 launcher, lock and private home. `--credentials` also checks that required variables
 exist without printing them. Actions secrets are normally available only inside jobs.
 Preflight does not call models, run repository code or prove credentials work.
-Validate a real PR afterward.
+After the workflow reaches the trusted base branch, validate a draft PR and rerun
+it to confirm duplicate prevention. Check the exact reviewed head and recorded
+evidence before requiring the check. Findings and incomplete reviews fail it;
+keep independent CI checks and require resolved conversations. Bind the required
+check to its observed app. See [retry behavior](shared-workers.md#retries-and-interruptions).
 
 ## Upgrade and operate
 
@@ -79,6 +100,12 @@ rollback and refresh skills containing launcher snapshots.
 Runtimes and the shared sandbox image require separate tested upgrades. Update and
 verify download versions/checksums when changing bootstrap runtimes. Existing Fireworks
 profiles must switch provider and secrets before upgrading to this version.
+
+To move a runner, install and preflight the destination with the same labels and
+trusted configuration, leaving its service stopped. Drain the old runner, stop it,
+and wait for GitHub to show it offline before starting the new service. Validate
+a draft PR and duplicate rerun before removing the old registration. For rollback,
+stop the new service before restarting the old one.
 
 Private reports remain in `~/kicktires-runs/`; apply an appropriate retention policy.
 After interrupted cleanup, use a run's `sandbox.json` to identify its exact container.
