@@ -7,7 +7,8 @@ project checks and their merge gates. The reviewer chooses relevant investigatio
 completion means the investigation finished, not that every test passed.
 
 The CLI and GitHub adapter share one review workflow. GitHub support currently covers
-public and private repositories with same-repository PR branches. Fork PRs are unsupported.
+private repositories directly and public repositories through a private hub.
+Only same-repository PR branches are supported; fork PRs are unsupported.
 
 kicktires owns inputs, trusted configuration, evidence validation and reporting.
 Eve owns the agent loop, tool dispatch, skill discovery and session lifecycle.

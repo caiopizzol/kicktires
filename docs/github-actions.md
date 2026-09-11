@@ -5,10 +5,11 @@ Fork PRs are unsupported.
 It runs on a self-hosted runner and posts one `COMMENT` review with inline findings.
 It never approves, requests changes, merges or modifies the branch.
 
-For several personal repositories sharing a VM, use [shared workers](shared-workers.md).
-The setup below connects a runner directly to one repository.
+Public repositories must use a private [shared-worker hub](shared-workers.md).
+The hub also supports several private repositories sharing a VM.
+The setup below connects a runner directly to one private repository.
 
-## Add a new repository
+## Add a private repository
 
 First [install the worker](self-hosting.md). Each repository needs its own runner.
 
@@ -48,7 +49,7 @@ Set the repository Actions secret `OPENAI_API_KEY`. Copy
 and replace its profile path. For another provider, change both the secret and its
 environment mapping. GitHub supplies the publication token; keep it out of the profile.
 
-Keep `pull_request_target`, the same-repository guard, and cancellation disabled.
+Keep `pull_request_target`, the private/same-repository guards, and cancellation disabled.
 Never check out PR code or load its profile on the host. Match the installed runner
 label and profile path.
 

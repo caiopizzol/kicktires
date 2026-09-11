@@ -5,8 +5,8 @@ GitHub queues the jobs. Each VM runs one hub runner, so a second VM adds a secon
 slot. No queue server or public endpoint is needed.
 
 The hub supports public and private same-owner source repositories with same-repository
-PRs. Fork PRs are unsupported. Keep the hub repository private. Keep project
-CI separate: the required `kicktires` status reports investigation completion, including
+PRs. Fork PRs are unsupported. Keep the hub repository private; never register a
+self-hosted runner on a public source repository. Keep project CI separate: the required `kicktires` status reports investigation completion, including
 reviews that find bugs.
 
 ## Set up the hub
