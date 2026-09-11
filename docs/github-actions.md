@@ -66,9 +66,9 @@ review advisory until this path works.
 
 ## Choose advisory or merge-blocking reviews
 
-The check reports whether the investigation finished, not whether tests passed.
-Findings and failing assertions can accompany a completed review; blocked investigation
-fails the check. Require independent CI checks for project-wide pass/fail gates.
+The check passes only when the investigation finishes with no findings. Any reported
+finding or incomplete investigation fails it. Require independent CI checks for
+project-wide pass/fail gates.
 To block merging after successful CI and reviewer trials, configure branch protection:
 
 - Require PRs and the exact observed CI and reviewer job names (`kicktires` in the example).
@@ -79,8 +79,8 @@ To block merging after successful CI and reviewer trials, configure branch prote
 
 To disagree with a finding, reply with your reasoning and resolve its inline thread.
 This does not turn a failed check green or prove correctness. Resolve the reported blocker or
-correct trusted configuration. A published incomplete review remains incomplete on
-same-base/head reruns; use a new revision after correction. Summary prose is not a
+correct trusted configuration. Reruns of the same base and head preserve the published
+findings and incomplete status; use a new revision after correction. Summary prose is not a
 resolvable thread. Do not bypass failed checks with automatic approvals.
 
 kicktires does not configure these rules. See [GitHub branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule).
