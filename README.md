@@ -43,3 +43,5 @@ See [VM setup](docs/self-hosting.md) for installation details.
 - [Contribute](CONTRIBUTING.md)
 
 [MIT licensed](LICENSE). Built on [Eve](https://github.com/vercel/eve).
+
+<!-- Temporary automatic hub submission validation. -->
