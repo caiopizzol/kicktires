@@ -50,8 +50,7 @@ environment mapping. GitHub supplies the publication token; keep it out of the p
 
 Keep `pull_request_target`, the same-repository guard, and cancellation disabled.
 Never check out PR code or load its profile on the host. Match the installed runner
-label and profile path. Existing required check names must remain until branch
-protection is deliberately updated; see [upgrading](upgrading.md).
+label and profile path.
 
 ### 4. Validate
 

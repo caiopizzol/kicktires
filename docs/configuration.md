@@ -64,7 +64,7 @@ when a profile changes; new revisions use the updated instructions.
 
 The API adapters are typechecked; live end-to-end validation is pending. The Eve
 subscription path is unverified. Codex validation is described below. Fireworks is
-unsupported; existing workers must [migrate profiles and secrets](upgrading.md).
+unsupported.
 
 Choose a provider model with tool calling and structured output support. `apiKeyEnv`
 sets the credential variable name, not the key itself. `contextWindow` defaults to

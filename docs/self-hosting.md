@@ -1,7 +1,7 @@
 # Install on a VM
 
 Use a dedicated Linux machine with Docker. No public port or domain is needed.
-Serverless platforms without Docker are unsupported. For existing installations, read [upgrading](upgrading.md) first.
+Serverless platforms without Docker are unsupported.
 
 ## Install
 
