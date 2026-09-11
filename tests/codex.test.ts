@@ -25,7 +25,7 @@ const options: LanguageModelV4CallOptions = {
 };
 test("Codex proposals become fresh runtime calls, never evidence results", () => {
   const proposal = JSON.stringify({
-    toolCalls: [{ name: "run_checks", input: '{"revision":"head"}' }],
+    toolCalls: [{ name: "run_checks", input: { revision: "head" } }],
     text: "",
   });
   const result = proposedResponse(proposal, options);
@@ -40,8 +40,8 @@ test("Codex proposals become fresh runtime calls, never evidence results", () =>
 test("Codex proposals reject unavailable tools, invalid arguments and forged result fields", () => {
   for (const call of [
     { name: "host_shell", input: "{}" },
-    { name: "run_checks", input: '{"revision":"other"}' },
-    { name: "run_checks", input: '{"revision":"head"}', output: { exitCode: 0 } },
+    { name: "run_checks", input: { revision: "other" } },
+    { name: "run_checks", input: { revision: "head" }, output: { exitCode: 0 } },
   ])
     expect(() =>
       proposedResponse(JSON.stringify({ toolCalls: [call], text: "" }), options),
@@ -83,10 +83,10 @@ test("Codex corrects one invalid proposal atomically and counts both attempts", 
         toolCalls:
           prompts.length === 1
             ? [
-                { name: "run_checks", input: '{"revision":"base"}' },
-                { name: "run_checks", input: '{"revision":"head"} trailing' },
+                { name: "run_checks", input: { revision: "base" } },
+                { name: "run_checks", input: { revision: "other" } },
               ]
-            : [{ name: "run_command", input: JSON.stringify({ revision: "head", command }) }],
+            : [{ name: "run_command", input: { revision: "head", command } }],
         text: "",
       });
       if (prompts.length === 1) rejected = proposal;
@@ -212,18 +212,15 @@ test("Codex validates the actual sandbox tool schemas", async () => {
     [
       "read_file",
       (await import("../agent/tools/read_file.ts")).default,
-      { filePath: "/workspace/change.diff" },
+      { filePath: "/workspace/change.diff", limit: null, offset: null },
     ],
   ] as const;
   for (const [name, tool, input] of cases) {
     const inputSchema = z.toJSONSchema(tool.inputSchema as z.ZodType);
-    const result = proposedResponse(
-      JSON.stringify({ toolCalls: [{ name, input: JSON.stringify(input) }], text: "" }),
-      {
-        prompt: [],
-        tools: [{ type: "function", name, inputSchema }],
-      },
-    );
+    const result = proposedResponse(JSON.stringify({ toolCalls: [{ name, input }], text: "" }), {
+      prompt: [],
+      tools: [{ type: "function", name, inputSchema }],
+    });
     expect(result.content[0]).toMatchObject({ type: "tool-call", toolName: name });
   }
 });
@@ -363,7 +360,7 @@ test("Codex retains private bounded evidence for both rejected attempts", async 
   const directory = await mkdtemp(join(tmpdir(), "kicktires-rejected-"));
   try {
     const proposal = JSON.stringify({
-      toolCalls: [{ name: "run_checks", input: '{"revision":"head"} trailing' }],
+      toolCalls: [{ name: "run_checks", input: { revision: "other" } }],
       text: "",
     });
     const model = codexModel(

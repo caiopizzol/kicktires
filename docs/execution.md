@@ -62,6 +62,13 @@ read_file ranges to obtain complete replacement evidence. Reviews default to
 24,000 output tokens, checked between calls; a final call may exceed them. A paused
 review remains incomplete.
 
+Codex uses native argument objects for supported closed tool schemas. Schemas with
+references, open objects, ambiguous unions, or optional nullable fields retain
+JSON-encoded arguments. Native optional fields use null to represent omission;
+the adapter restores omission and validates every call against its original schema
+before Eve executes any call. One rejected proposal may be corrected within the
+same deadline.
+
 ## Cleanup and retained data
 
 Each run prints its private `.runs/review-*/` directory. `report.json` contains the
