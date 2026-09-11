@@ -12,8 +12,8 @@ language: en
 ### Overview
 
 kicktires is a self-hosted, open-source code reviewer that executes the change it reviews.
-It snapshots base and head, runs the project's own checks on both inside a disposable
-sandbox, investigates, and posts findings with recorded evidence and an explicit list of
+It snapshots base and head, investigates with relevant commands inside a disposable
+sandbox, and posts findings with recorded evidence and an explicit list of
 what it could not verify.
 
 It grew out of a private runner for Codex and Claude reviews. The lesson from that tool:
@@ -23,8 +23,8 @@ The problem is not that automated review misses bugs. It is that every tool read
 and none of them show their work, so developers cannot tell a reproduced regression from a
 guess and learn to skim past all of it.
 
-Before: an AI leaves comments and you re-derive every one. After: the reviewer ran your
-tests on both revisions, shows you the failing run, and you decide.
+Before: an AI leaves comments and you re-derive every one. After: the reviewer shows what it investigated,
+what the evidence says, and what remains unknown. You decide.
 
 Ambition: the default reviewer for teams who want it on their machines with their models.
 
@@ -41,7 +41,7 @@ Shippie) sell model choice on the same diff. kicktires runs the code and reports
 
 Differentials:
 
-- Runs your configured checks on base and head in a sandbox, network off.
+- Investigates with sandboxed tools, network off; compares revisions to attribute regressions.
 - Every finding cites a recorded tool call and a changed line, or it is dropped.
 - Reports "incomplete" with the cause when required verification did not finish.
 - Your model key, your skills, your MCP context, your runner.
@@ -101,7 +101,7 @@ Alternatives:
 
 - Reviews with receipts.
 - Your reviewer, on your machines.
-- Same checks, both revisions.
+- Reproduce. Compare. Report.
 
 Slogans:
 
@@ -129,7 +129,7 @@ Slogans:
 - Not an approval.
 - Could not verify: [cause].
 - Keep this receipt.
-- Same checks, both revisions.
+- Reproduce. Compare. Report.
 - Findings you can re-run.
 
 ### Tonal Rules
@@ -158,7 +158,7 @@ Boundaries:
 | "Base passed, head failed: exit 1."               | "Tests are failing."             |
 | "Could not verify: browser check failed on head." | "Verification unavailable."      |
 | "Not an approval."                                | "Safe to merge."                 |
-| "Runs your checks on both revisions."             | "AI-powered code review."        |
+| "Investigates with your tools."                   | "AI-powered code review."        |
 | "Findings with recorded evidence."                | "Catches bugs before they ship." |
 | "Bring your own model."                           | "Powered by [model]."            |
 | "Incomplete: [cause]."                            | "Failed." (about the review)     |

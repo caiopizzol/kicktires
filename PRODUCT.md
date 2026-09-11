@@ -2,7 +2,9 @@
 
 kicktires is a self-hosted code reviewer with configurable models, skills and tools.
 It reviews pinned Git revisions in a disposable sandbox, investigates changes, and
-reports findings with recorded evidence and verification gaps.
+reports findings with recorded evidence and verification gaps. CI owns predefined
+project checks and their merge gates. The reviewer chooses relevant investigation;
+completion means the investigation finished, not that every test passed.
 
 The CLI and GitHub adapter share one review workflow. GitHub support currently covers
 private repositories and same-repository PR branches.

@@ -53,16 +53,18 @@ protection is deliberately updated; see [upgrading](upgrading.md).
 
 Merge the workflow through the normal process, then open a small draft PR. The
 installation PR may not run the workflow because it comes from the trusted base branch.
-Verify the runner and release, checks on both revisions, and one review on the exact
+Verify the runner and release, recorded investigation evidence, and one review on the exact
 head. Rerun to confirm duplicate prevention. Close disposable fixtures without merging.
 
 A queued job usually lacks an online matching runner. Preflight failures identify
-installation problems; incomplete reports explain review or check failures. Keep the
+installation problems; incomplete reports explain what blocked investigation. Keep the
 review advisory until this path works.
 
 ## Choose advisory or merge-blocking reviews
 
-Findings alone do not fail the check. Failed or missing required verification does.
+The check reports whether the investigation finished, not whether tests passed.
+Findings and failing assertions can accompany a completed review; blocked investigation
+fails the check. Require independent CI checks for project-wide pass/fail gates.
 To block merging after successful CI and reviewer trials, configure branch protection:
 
 - Require PRs and the exact observed CI and reviewer job names (`kicktires` in the example).
@@ -72,7 +74,7 @@ To block merging after successful CI and reviewer trials, configure branch prote
   disable force pushes/deletion, and check for additional rulesets.
 
 To disagree with a finding, reply with your reasoning and resolve its inline thread.
-This does not turn a failed check green or prove correctness. Fix failed checks or
+This does not turn a failed check green or prove correctness. Resolve the reported blocker or
 correct trusted configuration. A published incomplete review remains incomplete on
 same-base/head reruns; use a new revision after correction. Summary prose is not a
 resolvable thread. Do not bypass failed checks with automatic approvals.

@@ -13,7 +13,7 @@ escaping paths and submodules are rejected. Snapshots contain no `.git` director
 the agent uses the supplied diff and file inventory.
 
 Base and head share one disposable container. Both copies are writable for temporary
-reproductions. Required checks and browser checks restore tracked source first,
+reproductions. Check shortcuts and browser checks restore tracked source first,
 preserving dependencies and other untracked files. General commands do not restore
 source. Commit labels identify the input snapshot; they do not attest that execution
 was unaffected by untracked files or concurrent changes.
@@ -47,15 +47,19 @@ the supplied review context; self-hosting the worker does not self-host the mode
 | `1`      | Input or startup preflight failed                  |
 
 A completed review is not an approval. The validator requires recorded tool references,
-host-resolved change references and configured checks on both revisions.
+host-resolved change references and a completed agent session. Configured checks
+and browser access do not impose a mandatory test suite.
 The agent copies a changed line’s anchor from the review manifest; kicktires resolves
 it to the file, side and source line. Unknown anchors are rejected. It does not prove
-that the evidence supports a finding. Failed checks need not be new regressions.
+that the evidence supports a finding. A completed investigation can report bugs or
+failing tests. Missing evidence needed to finish the investigation remains a gap.
+Use CI for predefined project checks and their merge gate. Thrown tool errors
+currently keep a review incomplete even after a retry, except for file-read misses.
+The report names the failed tool; inspect its private run evidence on the worker.
 
 Commands default to 60 seconds (maximum 300) and retain 32 KiB per output stream.
-Required checks that time out or produce truncated output leave verification incomplete.
-A finding citing a truncated or timed-out command remains visible and makes the review
-incomplete. Uncited exploratory commands retain their exit codes and truncation flags
+A finding citing truncated or timed-out command or browser evidence remains visible
+and makes the review incomplete. Uncited executions retain their exit codes and truncation flags
 in the report but do not prevent completion. The agent can narrow a command or use
 read_file ranges to obtain complete replacement evidence. Reviews default to
 600 seconds (maximum 1,800). Eve's session limits are 2 million input tokens and

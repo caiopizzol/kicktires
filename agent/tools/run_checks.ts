@@ -6,7 +6,7 @@ import { runSandboxCommand } from "../../src/sandbox-command.ts";
 
 export default defineTool({
   description:
-    "Run every configured required check exactly as supplied on one revision. Use this on base and head before additional investigation; output is already bounded, so no shell pipes are needed.",
+    "Run all configured check commands on one revision when the suite is relevant. Use run_command for focused checks. Nonzero exits are evidence, not automatically review blockers; output is bounded.",
   inputSchema: z.strictObject({ revision: z.enum(["base", "head"]) }),
   async execute({ revision }, ctx) {
     const job = readJob(),

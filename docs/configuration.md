@@ -48,7 +48,7 @@ Upgrade the worker before adding this field; older releases reject it.
 The text is sent to your selected model. Use up to 16,000 characters.
 Omit the field when unnecessary; empty
 values are rejected. Instructions supplement the built-in review rules. They do
-not disable required checks, grant tools or relax evidence validation. Use optional
+not grant tools or relax evidence validation. Use optional
 skills for reusable guidance with supporting files. Existing reviews are not rerun
 when a profile changes; new revisions use the updated instructions.
 
@@ -104,8 +104,7 @@ to check the catalog without generating a response; account access is still chec
 when the model runs.
 
 The report records the selected provider, model and resolved effort. Codex must
-acknowledge those settings before generation. Higher effort does not replace required
-checks or guarantee a correct finding.
+acknowledge those settings before generation. Higher effort does not guarantee a correct finding.
 
 The CLI manages login and token refresh; the model needs no API key or GitHub
 secret. Keep `auth.json` private (mode `600`) and out of PRs, profiles and sandboxes.
@@ -123,14 +122,16 @@ and MCP context using a ChatGPT subscription.
 
 ## Checks and browser
 
-Required checks run verbatim on both revisions and retain exit codes and bounded
-output. Nonzero exits leave verification incomplete; they do not establish a new bug.
-The agent can run additional commands and temporary reproductions in the sandbox.
+`checks` is an optional list of command shortcuts, defaulting to `[]`. The agent can
+run the suite when relevant or choose focused commands and temporary reproductions.
+Results retain exit codes and bounded output. A failing test may support a finding;
+it makes the review incomplete only when it blocks necessary investigation.
+Keep project-wide pass/fail gates in CI.
 
 The image includes Node, Bun, Git and Chromium. Add other runtimes to
 `Dockerfile.sandbox` and rebuild. Browser mode starts the app with `PORT` and provides
-Playwright's `page`, Node's `assert` and `origin`. Assertions run on both revisions;
-successful browser checks save screenshots. See [execution limits](execution.md).
+Playwright's `page`, Node's `assert` and `origin`. The agent chooses when to use it
+and compares revisions when attributing a regression. Successful checks save screenshots. See [execution limits](execution.md).
 
 ## Skills and context
 

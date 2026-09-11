@@ -32,7 +32,7 @@ export const profileSchema = z
       })
       .strict()
       .default({ commands: [], network: "deny-all" }),
-    checks: z.array(z.string().min(1)).min(1),
+    checks: z.array(z.string().min(1)).default([]),
     browser: z
       .union([z.literal(false), z.object({ start: z.string().min(1) }).strict()])
       .default(false),
