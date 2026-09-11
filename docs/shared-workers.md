@@ -6,8 +6,8 @@ slot. No queue server or public endpoint is needed.
 
 The hub supports public and private same-owner source repositories with same-repository
 PRs. Fork PRs are unsupported. Keep the hub repository private; never register a
-self-hosted runner on a public source repository. Keep project CI separate: the required `kicktires` status reports investigation completion, including
-reviews that find bugs.
+self-hosted runner on a public source repository. The required `kicktires` status
+passes only when the investigation finishes with no findings. Findings and incomplete reviews block merging. Keep project CI separate.
 
 ## Set up the hub
 
@@ -56,8 +56,9 @@ Its job summary links to the hub run.
 
 Only the hub App writes the `kicktires` status. Before the first review starts, the
 required status is missing and blocks merging. During investigation it is pending;
-completed investigations succeed, and blocked investigations fail. Findings appear on
-the original PR. Duplicate completed reviews restore success without new inference.
+it succeeds only when the review finishes with no findings. Findings and incomplete
+reviews fail the status. Reviews appear on the original PR. Duplicate requests
+restore the published result without new inference.
 
 ## Migrate existing projects
 
@@ -76,8 +77,11 @@ the old listeners alongside the hub reintroduces hidden capacity contention.
 The hub serializes requests for each repository and PR. GitHub can queue jobs for up to
 24 hours. A lost worker or queue expiry can leave the required status missing or pending;
 it never becomes successful merely because dispatch worked. Inspect the hub run and
-rerun it after repairing the worker. Incomplete published reviews remain incomplete for
-the same base/head pair; follow [the recovery guidance](github-actions.md#choose-advisory-or-merge-blocking-reviews).
+rerun it after repairing the worker. Reruns of the same base/head pair preserve
+published findings and incomplete status.
+Resolve the reported blocker or correct trusted configuration, then review a new
+revision. Reply to disputed findings and resolve their threads; resolving a thread
+does not turn a failed status green. Do not bypass failed checks with automatic approvals.
 
 The shared VM lock remains a safety check. It is not the queue. Adding workers increases
 execution capacity, not the model account's usage allowance.
