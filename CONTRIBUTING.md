@@ -31,8 +31,8 @@ bun run test:integration
 # Or: bun run test:integration --profile /absolute/codex-profile.json
 ```
 
-The integration test reviews a harmless change, a seeded browser regression and a
-documentation change, then checks a setup failure. It checks terminal
+The integration test covers harmless and documentation changes, a seeded browser
+regression with and without prescribed checks, and setup and browser startup failures. It checks terminal
 and browser execution, MCP context, source restoration after setup, and separate
 workflow state per run. The regression must produce a finding and completed review status.
 Private reports stay in `.runs/`; temporary input repositories are removed. Investigate

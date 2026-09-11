@@ -158,8 +158,10 @@ export function validateReport(data: unknown, rawEvents: unknown[], job: ReviewJ
     if (citedEvidence.has(e.callId) && (e.truncated || [124, 137, 143].includes(e.exitCode)))
       gaps.push(`Cited browser output was truncated or execution timed out: ${e.callId}`);
   }
-  if (actions.some((a) => a.isError && a.toolName !== "read_file"))
-    gaps.push("A tool failed; inspect tool evidence");
+  for (const action of actions.filter((a) => a.isError && a.toolName !== "read_file"))
+    gaps.push(
+      `Tool ${action.toolName ?? "unknown"} failed; inspect the worker's private run evidence`,
+    );
   return {
     ...report,
     model: modelSettingsSchema.parse(job.profile.model),

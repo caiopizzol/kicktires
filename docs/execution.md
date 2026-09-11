@@ -53,7 +53,9 @@ The agent copies a changed line’s anchor from the review manifest; kicktires r
 it to the file, side and source line. Unknown anchors are rejected. It does not prove
 that the evidence supports a finding. A completed investigation can report bugs or
 failing tests. Missing evidence needed to finish the investigation remains a gap.
-Use CI for predefined project checks and their merge gate.
+Use CI for predefined project checks and their merge gate. Thrown tool errors
+currently keep a review incomplete even after a retry, except for file-read misses.
+The report names the failed tool; inspect its private run evidence on the worker.
 
 Commands default to 60 seconds (maximum 300) and retain 32 KiB per output stream.
 A finding citing truncated or timed-out command or browser evidence remains visible

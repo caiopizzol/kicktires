@@ -67,10 +67,20 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
     },
   });
   const profilePath = join(directory, "profile.json");
-  for (const scenario of ["clean", "regression", "docs", "blocked"]) {
-    const regression = scenario === "regression";
+  for (const scenario of [
+    "clean",
+    "regression",
+    "adaptive",
+    "docs",
+    "blocked",
+    "browser-blocked",
+  ]) {
+    git("checkout", "--detach", base);
+    const adaptive = scenario === "adaptive";
+    const browserBlocked = scenario === "browser-blocked";
+    const regression = scenario === "regression" || adaptive;
     const documentation = scenario === "docs" || scenario === "blocked";
-    const activeProfile = documentation
+    let activeProfile = documentation
       ? {
           ...profile,
           instructions:
@@ -78,6 +88,18 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
           setup: { network: "deny-all", commands: scenario === "blocked" ? ["exit 42"] : [] },
         }
       : profile;
+    if (adaptive)
+      activeProfile = {
+        ...profile,
+        setup: { network: "deny-all", commands: [] },
+        instructions: `Review this change using requirement ${requirementId} from requirements MCP get_requirement.`,
+      };
+    if (browserBlocked)
+      activeProfile = {
+        ...profile,
+        setup: { network: "deny-all", commands: [] },
+        browser: { start: 'case "$PWD" in */head) exit 42;; *) node app.cjs;; esac' },
+      };
     await writeFile(profilePath, JSON.stringify(activeProfile));
     await writeFile(
       join(directory, "app.cjs"),
@@ -119,11 +141,30 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
       new Response(child.stderr).text(),
       child.exited,
     ]);
-    assert.equal(exit, scenario === "blocked" ? 2 : 0, stderr || stdout);
+    assert.equal(exit, scenario === "blocked" || browserBlocked ? 2 : 0, stderr || stdout);
     const report = JSON.parse(stdout);
-    if (scenario === "blocked") {
+    if (scenario === "blocked" || browserBlocked) {
       assert.equal(report.status, "incomplete");
       assert(report.gaps.length > 0);
+      assert.equal(
+        report.findings.length,
+        0,
+        "Infrastructure failure was reported as a code defect",
+      );
+      if (browserBlocked) {
+        assert(
+          report.browserExecutions.some(
+            (e: { revision: string; exitCode: number }) =>
+              e.revision === "base" && e.exitCode === 0,
+          ),
+        );
+        assert(
+          report.browserExecutions.some(
+            (e: { revision: string; exitCode: number }) =>
+              e.revision === "head" && e.exitCode !== 0,
+          ),
+        );
+      }
       console.log(JSON.stringify({ scenario, status: report.status, directory: report.directory }));
       continue;
     }
@@ -155,7 +196,12 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
       console.log(JSON.stringify({ scenario, status: report.status, directory: report.directory }));
       continue;
     }
-    for (const revision of ["base", "head"]) {
+    if (adaptive)
+      assert(
+        report.browserExecutions.length > 0 || report.executions.length > 0,
+        "The reviewer did not investigate the behavioral regression with execution",
+      );
+    for (const revision of adaptive ? [] : ["base", "head"]) {
       assert(
         report.executions.some(
           (e: { revision: string; tool: string }) =>

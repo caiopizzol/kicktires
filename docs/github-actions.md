@@ -57,7 +57,7 @@ Verify the runner and release, recorded investigation evidence, and one review o
 head. Rerun to confirm duplicate prevention. Close disposable fixtures without merging.
 
 A queued job usually lacks an online matching runner. Preflight failures identify
-installation problems; incomplete reports explain review or check failures. Keep the
+installation problems; incomplete reports explain what blocked investigation. Keep the
 review advisory until this path works.
 
 ## Choose advisory or merge-blocking reviews
@@ -74,7 +74,7 @@ To block merging after successful CI and reviewer trials, configure branch prote
   disable force pushes/deletion, and check for additional rulesets.
 
 To disagree with a finding, reply with your reasoning and resolve its inline thread.
-This does not turn a failed check green or prove correctness. Fix failed checks or
+This does not turn a failed check green or prove correctness. Resolve the reported blocker or
 correct trusted configuration. A published incomplete review remains incomplete on
 same-base/head reruns; use a new revision after correction. Summary prose is not a
 resolvable thread. Do not bypass failed checks with automatic approvals.
