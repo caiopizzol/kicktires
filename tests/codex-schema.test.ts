@@ -167,7 +167,7 @@ test("dynamic browser uses Eve input serialization and native arguments", async 
         id: "schema-test",
         directory,
         profile: {
-          model: { provider: "codex", id: "test", home: "/login" },
+          model: { id: "test", home: "/login" },
           checks: ["true"],
           browser: { start: "unused" },
         },

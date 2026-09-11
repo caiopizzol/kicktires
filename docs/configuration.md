@@ -60,8 +60,7 @@ when a profile changes; new revisions use the updated instructions.
 
 ## Models and authentication
 
-Codex is the supported provider and the default when `provider` is omitted.
-It uses a dedicated CLI login. Choose a model
+Reviews use Codex with a dedicated CLI login. Choose a model
 available to that account. `contextWindow` defaults to 100,000 tokens; set it to
 the model's capacity.
 

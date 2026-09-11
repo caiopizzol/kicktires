@@ -5,29 +5,12 @@ export const profileSchema = z
   .object({
     model: z
       .object({
-        provider: z.literal("codex").default("codex"),
         id: z.string().min(1),
-        home: z.string().min(1).optional(),
+        home: z.string().min(1),
         effort: z.string().min(1).optional(),
-        codexHome: z.string().min(1).optional(),
-        reasoningEffort: z.string().min(1).optional(),
         contextWindow: z.number().int().min(8192).default(100000),
       })
-      .strict()
-      .refine(
-        (model) => model.home === undefined || model.codexHome === undefined,
-        "Use model.home only once; do not also set codexHome",
-      )
-      .refine(
-        (model) => model.effort === undefined || model.reasoningEffort === undefined,
-        "Use model.effort only once; do not also set reasoningEffort",
-      )
-      .transform(({ home, effort, ...model }) => ({
-        ...model,
-        codexHome: home ?? model.codexHome,
-        reasoningEffort: effort ?? model.reasoningEffort,
-      }))
-      .refine((model) => !!model.codexHome, "codex requires model.home"),
+      .strict(),
     instructions: z.string().trim().min(1).max(16000).optional(),
     skills: z.array(z.string().min(1)).default([]),
     setup: z

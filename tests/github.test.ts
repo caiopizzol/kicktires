@@ -232,7 +232,7 @@ test("rendering bounds text and neutralizes mentions and forged status markers",
 test("model process receives MCP credentials but no API keys or GitHub environment", () => {
   const profile = profileSchema.parse({
     checks: ["bun test"],
-    model: { provider: "codex", id: "model", home: "/login" },
+    model: { id: "model", home: "/login" },
     connections: {
       context: {
         url: "https://example.com/mcp",

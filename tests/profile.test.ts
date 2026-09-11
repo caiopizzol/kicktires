@@ -11,7 +11,7 @@ test("rejects unsupported providers and unknown configuration", () => {
   ).toThrow();
   expect(() =>
     profileSchema.parse({
-      model: { provider: "codex", id: "gpt", home: "/login" },
+      model: { id: "gpt", home: "/login" },
       checks: ["npm test"],
       skipSafety: true,
     }),
@@ -19,7 +19,7 @@ test("rejects unsupported providers and unknown configuration", () => {
 });
 test("defaults to offline setup and bounded execution", () => {
   const profile = profileSchema.parse({
-    model: { provider: "codex", id: "gpt", home: "/login" },
+    model: { id: "gpt", home: "/login" },
     checks: ["npm test"],
   });
   expect(profile.setup.network).toBe("deny-all");
@@ -58,7 +58,7 @@ test("rejects duplicate, symlinked and oversized supplied skills", async () => {
 test("connection names follow Eve's kebab-case contract", () => {
   expect(() =>
     profileSchema.parse({
-      model: { provider: "codex", id: "test", home: "/login" },
+      model: { id: "test", home: "/login" },
       checks: ["npm test"],
       connections: {
         repo_docs: {
@@ -71,37 +71,24 @@ test("connection names follow Eve's kebab-case contract", () => {
   ).toThrow();
 });
 
-test("concise Codex settings preserve the existing adapter configuration", async () => {
+test("concise Codex settings survive job serialization", async () => {
   const model = { id: "test", home: "/login", effort: "high" };
   const current = profileSchema.parse({ model }).model;
-  const legacy = profileSchema.parse({
-    model: { provider: "codex", id: "test", codexHome: "/login", reasoningEffort: "high" },
-  }).model;
-  expect(current).toEqual(legacy);
-  expect(profileSchema.parse({ model: current }).model).toEqual(current);
-  expect(current).toEqual({
-    provider: "codex",
-    id: "test",
-    codexHome: "/login",
-    reasoningEffort: "high",
-    contextWindow: 100000,
-  });
+  expect(current).toEqual({ ...model, contextWindow: 100000 });
+  expect(profileSchema.parse(JSON.parse(JSON.stringify({ model: current }))).model).toEqual(
+    current,
+  );
   expect(
-    profileSchema.parse({ model: { id: "test", home: "/login" } }).model.reasoningEffort,
-  ).toBeUndefined();
-  expect(
-    profileSchema.parse({ model: { id: "test", codexHome: "/login" } }).model.reasoningEffort,
+    profileSchema.parse({ model: { id: "test", home: "/login" } }).model.effort,
   ).toBeUndefined();
   const example = await Bun.file(new URL("../examples/profile.json", import.meta.url)).json();
-  expect(profileSchema.parse(example).model).toMatchObject({
-    provider: "codex",
-    reasoningEffort: "high",
-  });
+  expect(profileSchema.parse(example).model).toMatchObject({ id: "gpt-5.6-terra", effort: "high" });
 });
 
-test("rejects ambiguous and invalid Codex settings", () => {
+test("rejects legacy, unsupported and invalid model settings", () => {
   const model = { id: "test", home: "/login", effort: "high" };
   for (const overrides of [
+    { provider: "codex" },
     { codexHome: "/login" },
     { reasoningEffort: "high" },
     { home: "" },
@@ -110,11 +97,14 @@ test("rejects ambiguous and invalid Codex settings", () => {
     { path: "/login" },
   ])
     expect(profileSchema.safeParse({ model: { ...model, ...overrides } }).success).toBe(false);
-  expect(() => profileSchema.parse({ model: { id: "test" } })).toThrow("model.home");
+  expect(profileSchema.safeParse({ model: { id: "test" } }).success).toBe(false);
+  expect(profileSchema.safeParse({ model: { id: "test", codexHome: "/login" } }).success).toBe(
+    false,
+  );
 });
 
 test("custom instructions are optional, bounded project guidance", () => {
-  const base = { model: { provider: "codex", id: "test", home: "/login" }, checks: ["true"] };
+  const base = { model: { id: "test", home: "/login" }, checks: ["true"] };
   expect(profileSchema.parse(base).instructions).toBeUndefined();
   expect(
     profileSchema.parse({ ...base, instructions: "  Check tenant isolation.\n  " }).instructions,
@@ -127,7 +117,7 @@ test("custom instructions are optional, bounded project guidance", () => {
 });
 
 test("check shortcuts are optional and still accept existing profiles", () => {
-  const model = { provider: "codex", id: "test", home: "/login" };
+  const model = { id: "test", home: "/login" };
   expect(profileSchema.parse({ model }).checks).toEqual([]);
   expect(profileSchema.parse({ model, checks: [] }).checks).toEqual([]);
   expect(profileSchema.parse({ model, checks: ["bun test"] }).checks).toEqual(["bun test"]);

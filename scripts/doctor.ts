@@ -70,13 +70,13 @@ await check("Trusted profile and skills", async () => {
   if (credentialNames.some((name) => name && /^(GITHUB_|GH_|ACTIONS_|GIT_)/.test(name)))
     throw new Error("MCP credentials cannot use GitHub, Actions or Git variable names.");
   await loadSkills(profile.skills.map((path) => resolve(dirname(profilePath), path)));
-  assertCodexHome(profile.model.codexHome);
+  assertCodexHome(profile.model.home);
   if (values.credentials) {
     const settings = await resolveCodexSettings({
       cli: fileURLToPath(import.meta.resolve("@openai/codex/bin/codex.js")),
-      home: profile.model.codexHome,
+      home: profile.model.home,
       model: profile.model.id,
-      reasoningEffort: profile.model.reasoningEffort,
+      reasoningEffort: profile.model.effort,
     });
     console.log(`Codex: ${settings.id} · effort: ${settings.reasoningEffort}`);
     for (const name of credentialNames)

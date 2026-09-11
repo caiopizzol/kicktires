@@ -3,9 +3,9 @@ import { codexModel } from "./codex-model.ts";
 import type { Profile } from "./profile.ts";
 
 export function assertModelAccess(model: Profile["model"]) {
-  assertCodexHome(model.codexHome);
+  assertCodexHome(model.home);
 }
 export function resolveModel(model: Profile["model"], directory?: string) {
   assertModelAccess(model);
-  return codexModel(model.id, model.codexHome!, model.reasoningEffort, undefined, directory);
+  return codexModel(model.id, model.home, model.effort, undefined, directory);
 }
