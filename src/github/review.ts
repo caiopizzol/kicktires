@@ -152,5 +152,5 @@ export async function reviewPullRequest(options: {
 
 // Read old reviews during migration; all new reviews use kicktires markers.
 function isIncomplete(body: string) {
-  return /<!-- (?:kicktires|agent-review)-status:incomplete -->/.test(body);
+  return /<!-- (?:kicktires|agent-review)-status:reviewed -->/.test(body);
 }
