@@ -23,6 +23,14 @@ case "$(dpkg --print-architecture)" in
   arm64) arch=arm64; bunarch=aarch64; nodehash=e7adfca03d9173276114a6f2219df1a7d25e1bfd6bbd771d3f839118a2053094; bunhash=a27ffb63a8310375836e0d6f668ae17fa8d8d18b88c37c821c65331973a19a3b ;;
   *) echo 'Supported architectures: amd64 and arm64.' >&2; exit 1 ;;
 esac
+validate_checkout() {
+  [ -f "$checkout/scripts/install-worker.sh" ] || { echo 'Expected a kicktires source checkout.' >&2; exit 1; }
+  if command -v git >/dev/null; then
+    git -C "$checkout" rev-parse --verify HEAD >/dev/null
+    git -C "$checkout" diff --quiet HEAD -- || { echo 'Commit tracked source changes before installing.' >&2; exit 1; }
+  fi
+}
+if [ -n "$checkout" ]; then validate_checkout; fi
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y ca-certificates curl git gnupg diffutils tar unzip xz-utils util-linux coreutils
@@ -48,9 +56,7 @@ ASKPASS
   [ "$(git -C "$checkout" rev-parse HEAD)" = "$version" ] || exit 1
 fi
 unset GH_TOKEN GIT_ASKPASS
-[ -f "$checkout/scripts/install-worker.sh" ] || { echo 'Expected a kicktires source checkout.' >&2; exit 1; }
-git -C "$checkout" rev-parse --verify HEAD >/dev/null
-git -C "$checkout" diff --quiet HEAD -- || { echo 'Commit tracked source changes before installing.' >&2; exit 1; }
+validate_checkout
 if ! command -v docker >/dev/null; then
   install -d -m 755 /etc/apt/keyrings
   curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/kicktires-docker.asc
