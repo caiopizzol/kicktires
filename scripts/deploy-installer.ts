@@ -9,10 +9,10 @@ const account = "b16758fcd7c22125ce096808f3b01523";
 const zone = "7678da37839cc554bbcd23a5057099e6";
 const service = "kicktires-installer";
 const source = execFileSync("git", ["show", `${version}:install.sh`], { encoding: "utf8" });
-const script = source.replace(
-  "#!/bin/sh\n",
-  `#!/bin/sh\nKICKTIRES_VERSION=\${KICKTIRES_VERSION:-${version}}\n`,
-);
+const versionDefault = "\nversion=${KICKTIRES_VERSION:-}\n";
+if (!source.startsWith("#!/bin/sh\n") || !source.includes(versionDefault))
+  throw new Error("Selected installer does not support hosted deployment");
+const script = source.replace(versionDefault, `\nversion=\${KICKTIRES_VERSION:-${version}}\n`);
 const build = await Bun.build({
   entrypoints: [new URL("installer-worker.ts", import.meta.url).pathname],
   target: "browser",
