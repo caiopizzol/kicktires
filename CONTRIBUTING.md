@@ -97,3 +97,14 @@ Set `CF_TOKEN` in the environment or the ignored `.env`. The token needs Worker 
 custom-domain and zone access. The deployed script contains no credentials; private
 source downloads use the installer's own `GH_TOKEN`. Verify the published script and
 `X-Kicktires-Version` header after deployment.
+
+## Releases
+
+Release Please opens a version and changelog PR after releasable conventional commits
+reach `main`. Merge that PR to publish a GitHub pre-release and version tag. It does
+not publish to npm or deploy workers or the hosted installer.
+
+The `release` workflow uses `RELEASE_PLEASE_TOKEN`, a fine-grained token for this
+repository with Contents, Issues and Pull requests read/write. Its PRs run normal
+CI and KickTires checks. Keep the hosted installer pinned to a tested release using
+the deployment command above.
