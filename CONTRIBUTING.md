@@ -41,18 +41,17 @@ Linux; shell syntax alone does not verify installation.
 
 ## Structure
 
-| Path               | Purpose                                                  |
-| ------------------ | -------------------------------------------------------- |
-| `agent/`           | Eve definitions, instructions, hooks and tools           |
-| `src/cli.ts`       | Review orchestration and service lifecycle               |
-| `src/`             | Profiles, models, skills, snapshots and sandbox helpers  |
-| `src/review/`      | Diff coordinates, report schemas and evidence validation |
-| `src/github/`      | GitHub events, execution and publication                 |
-| `sandbox/`         | Browser helper installed in the Docker image             |
-| `packages/skills/` | Portable Markdown skills                                 |
-| `scripts/`         | Installation, preflight and live validation              |
-| `tests/`           | Regression tests                                         |
-| `examples/`        | Starting profile and workflow                            |
+| Path          | Purpose                                                  |
+| ------------- | -------------------------------------------------------- |
+| `agent/`      | Eve definitions, instructions, hooks and tools           |
+| `src/cli.ts`  | Review orchestration and service lifecycle               |
+| `src/`        | Profiles, models, skills, snapshots and sandbox helpers  |
+| `src/review/` | Diff coordinates, report schemas and evidence validation |
+| `src/github/` | GitHub events, execution and publication                 |
+| `sandbox/`    | Browser helper installed in the Docker image             |
+| `scripts/`    | Installation, preflight and live validation              |
+| `tests/`      | Regression tests                                         |
+| `examples/`   | Starting profile and workflow                            |
 
 Use kebab-case filenames except Eve tool files, whose snake_case names become tool IDs.
 Keep modules direct and fixtures near their tests. `tests/integration/` contains the

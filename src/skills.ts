@@ -1,12 +1,10 @@
 import { readdir, readFile, lstat } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { parse } from "yaml";
 import { z } from "zod";
 import type { ReviewJob } from "./job.ts";
 
-export async function loadSkills(extraDirectories: string[]) {
-  const bundled = dirname(fileURLToPath(import.meta.resolve("@kicktires/skills/package.json")));
+export async function loadSkills(directories: string[]) {
   const skills: ReviewJob["skills"] = {};
   let fileCount = 0,
     totalBytes = 0;
@@ -20,9 +18,7 @@ export async function loadSkills(extraDirectories: string[]) {
       throw new Error("Supplied skills exceed 256 files or 8 MiB");
     return new TextDecoder("utf-8", { fatal: true }).decode(await readFile(path));
   }
-  for (const directory of ["review-code", "get-context", "verify-change"]
-    .map((name) => join(bundled, name))
-    .concat(extraDirectories)) {
+  for (const directory of directories) {
     const markdown = await readText(join(directory, "SKILL.md"));
     const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/.exec(markdown);
     if (!match) throw new Error(`Skill needs YAML frontmatter: ${directory}`);

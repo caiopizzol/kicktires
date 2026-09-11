@@ -25,10 +25,8 @@ test("defaults to offline setup and bounded execution", () => {
   expect(profile.setup.network).toBe("deny-all");
   expect(profile.limits.commandSeconds).toBe(60);
 });
-test("loads the independently packaged skills with explicit dependencies present", async () => {
-  const skills = await loadSkills([]);
-  expect(Object.keys(skills).sort()).toEqual(["get-context", "review-code", "verify-change"]);
-  expect(skills["review-code"]?.markdown).toContain("verify-change");
+test("loads no skills by default", async () => {
+  expect(await loadSkills([])).toEqual({});
 });
 
 test("rejects duplicate, symlinked and oversized supplied skills", async () => {
@@ -41,7 +39,8 @@ test("rejects duplicate, symlinked and oversized supplied skills", async () => {
       join(directory, "SKILL.md"),
       "---\nname: review-code\ndescription: duplicate\n---\nText",
     );
-    await expect(loadSkills([directory])).rejects.toThrow("Duplicate skill");
+    expect(Object.keys(await loadSkills([directory]))).toEqual(["review-code"]);
+    await expect(loadSkills([directory, directory])).rejects.toThrow("Duplicate skill");
     await writeFile(
       join(directory, "SKILL.md"),
       "---\nname: extra\ndescription: additional skill\n---\nText",
