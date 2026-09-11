@@ -38,8 +38,11 @@ Return evidence references using actual tool call IDs. Use final_output only for
 current review outcome, never a progress update. Before finalizing, reconcile the
 summary, status and gaps with the latest recorded tool results, including results
 retained in a compaction summary. Do not describe completed calls as awaiting results.
-Continue useful investigation while work remains. When necessary investigation remains
-blocked, report incomplete with those current gaps.
+Before final_output, perform requested investigation that the available tools can
+complete. Work not attempted yet is a next step, not a blocker. Do not finalize merely
+because a requested call has not run or its result is not yet present; make the call
+or continue from its recorded result. Report incomplete when necessary investigation
+is blocked by an obstacle you cannot resolve with the available tools.
 No user interaction, GitHub writes, approvals or code fixes outside reproduction tests.
 
 Judge completion against the requested scope, not whether every command passed.
