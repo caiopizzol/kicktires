@@ -71,7 +71,7 @@ paid end-to-end review and its local MCP fixture.
 
 ## Changes
 
-Preserve evidence validation and [upgrade requirements](docs/upgrading.md).
+Preserve evidence validation.
 Evidence validation checks references and execution, not whether a finding is true.
 Add focused regression tests for behavior changes; avoid tests that mirror cosmetic edits.
 Use conventional commits and describe the change and its verification.

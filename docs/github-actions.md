@@ -1,13 +1,15 @@
 # GitHub reviews
 
-kicktires supports private github.com repositories and same-repository PR branches.
+kicktires supports public and private github.com repositories with same-repository PR branches.
+Fork PRs are unsupported.
 It runs on a self-hosted runner and posts one `COMMENT` review with inline findings.
 It never approves, requests changes, merges or modifies the branch.
 
-For several personal repositories sharing a VM, use [shared workers](shared-workers.md).
-The setup below connects a runner directly to one repository.
+Public repositories must use a private [shared-worker hub](shared-workers.md).
+The hub also supports several private repositories sharing a VM.
+The setup below connects a runner directly to one private repository.
 
-## Add a new repository
+## Add a private repository
 
 First [install the worker](self-hosting.md). Each repository needs its own runner.
 
@@ -49,8 +51,7 @@ environment mapping. GitHub supplies the publication token; keep it out of the p
 
 Keep `pull_request_target`, the private/same-repository guards, and cancellation disabled.
 Never check out PR code or load its profile on the host. Match the installed runner
-label and profile path. Existing required check names must remain until branch
-protection is deliberately updated; see [upgrading](upgrading.md).
+label and profile path.
 
 ### 4. Validate
 

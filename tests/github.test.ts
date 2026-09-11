@@ -27,19 +27,32 @@ const report: Report = {
   gaps: [],
   findings: [],
 };
-const event = { action: "opened", repository: repo, pull_request: pr };
-
-test("only trusted private same-repository PR events are accepted", () => {
-  expect(parseEvent(event, repository)).toEqual(pr);
+test.each([true, false])("same-repository eligibility with private=%s", (isPrivate) => {
+  const source = { ...repo, private: isPrivate };
+  const revision = {
+    ...pr,
+    base: { ...pr.base, repo: source },
+    head: { ...pr.head, repo: source },
+  };
+  const event = { action: "opened", repository: source, pull_request: revision };
+  expect(parseEvent(event, repository)).toEqual(revision);
   for (const value of [
-    { ...event, repository: { ...repo, private: false } },
+    { ...event, repository: { ...source, full_name: "other/project" } },
     { ...event, action: "edited" },
-    { ...event, pull_request: { ...pr, head: { ...pr.head, repo: null } } },
+    { ...event, pull_request: { ...revision, state: "closed" } },
+    { ...event, pull_request: { ...revision, head: { ...revision.head, repo: null } } },
     {
       ...event,
       pull_request: {
-        ...pr,
-        head: { ...pr.head, repo: { ...repo, full_name: "fork/project" } },
+        ...revision,
+        head: { ...revision.head, repo: { ...source, full_name: "fork/project" } },
+      },
+    },
+    {
+      ...event,
+      pull_request: {
+        ...revision,
+        base: { ...revision.base, repo: { ...source, full_name: "other/project" } },
       },
     },
   ])

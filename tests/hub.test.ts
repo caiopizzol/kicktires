@@ -59,9 +59,8 @@ test("hub rejects untrusted routing before calling GitHub", async () => {
   }
 });
 
-test("hub preserves private same-repository eligibility and stale-head detection", async () => {
+test("hub preserves same-repository eligibility and stale-head detection", async () => {
   for (const value of [
-    { ...pr, base: { ...pr.base, repo: { ...repo, private: false } } },
     { ...pr, head: { ...pr.head, repo: { ...repo, full_name: "fork/project" } } },
     { ...pr, number: 2 },
   ]) {
@@ -91,8 +90,15 @@ function hubScenario(
     failStatus?: boolean | "success" | "error";
     changeAtRead?: number;
     changeBase?: boolean;
+    public?: boolean;
   } = {},
 ) {
+  const source = { ...repo, private: !options.public };
+  const revision = {
+    ...pr,
+    base: { ...pr.base, repo: source },
+    head: { ...pr.head, repo: source },
+  };
   const statuses: { path: string; body: { state: string } }[] = [];
   let reviews = 0;
   let publications = 0;
@@ -131,7 +137,9 @@ function hubScenario(
           const side = options.changeBase ? "base" : "head";
           return { ...pr, [side]: { ...pr[side], sha: "c".repeat(40) } };
         }
-        return options.stale ? { ...pr, head: { ...pr.head, sha: "c".repeat(40) } } : pr;
+        return options.stale
+          ? { ...revision, head: { ...revision.head, sha: "c".repeat(40) } }
+          : revision;
       },
       review: async () => {
         reviews++;
@@ -146,6 +154,14 @@ function hubScenario(
     });
   return { run, statuses, reviews: () => reviews, publications: () => publications };
 }
+
+test("hub publishes reviews and completion statuses for configured public repositories", async () => {
+  const s = hubScenario({ public: true });
+  expect(await s.run()).toEqual({ result: "published", incomplete: false });
+  expect(s.reviews()).toBe(1);
+  expect(s.publications()).toBe(1);
+  expect(s.statuses.map((s) => s.body.state)).toEqual(["pending", "success"]);
+});
 
 test("hub duplicate restores completed status without pending or inference", async () => {
   const s = hubScenario({ duplicate: true });
