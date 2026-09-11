@@ -19,6 +19,11 @@ Use `bun run format` to format, `bun run lint` to lint and `bun run typecheck` t
 check types. Installation enables the precommit hook: staged checks plus full-project
 type checking. Hooks require development dependencies. CI also runs tests and the build.
 Tests need neither Docker nor model keys.
+
+This repository’s CI job was renamed from `checks` to `checks and build`. If branch
+protection still requires `checks`, first verify a successful `checks and build`
+run, then replace that required name while keeping its GitHub Actions binding and
+all other merge rules, including the required `kicktires` status.
 Rebuild after source changes; profile changes need no build.
 
 For agent, skill, model or sandbox changes, also run the paid integration test with
