@@ -4,7 +4,7 @@ import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js
 import { z } from "zod";
 
 // A local validation fixture, not a production context integration.
-export function startContextServer(port = 0) {
+export function startContextServer(requirementId: string, port = 0) {
   const app = createMcpExpressApp();
   app.post("/mcp", async (req, res) => {
     const server = new McpServer({
@@ -15,15 +15,20 @@ export function startContextServer(port = 0) {
       "get_requirement",
       {
         description: "Read a counter product requirement by exact ID",
-        inputSchema: { id: z.literal("COUNTER-1") },
+        inputSchema: { id: z.string() },
       },
       async ({ id }) => {
+        if (id !== requirementId)
+          return {
+            isError: true,
+            content: [{ type: "text" as const, text: "Unknown requirement." }],
+          };
         console.log(JSON.stringify({ tool: "get_requirement", id }));
         return {
           content: [
             {
               type: "text",
-              text: "COUNTER-1: Clicking Increment must increase the displayed count by one, beginning at zero. Acceptance requires testing the browser interaction.",
+              text: `${requirementId}: Clicking Increment must increase the displayed count by one, beginning at zero. Acceptance requires testing the browser interaction.`,
             },
           ],
         };

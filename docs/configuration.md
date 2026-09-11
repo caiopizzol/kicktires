@@ -32,6 +32,26 @@ extra skills and MCP context:
 Replace the example commands, skill path and MCP endpoint with real ones. Omit
 `skills` and `connections` until needed; set `browser` to `false` to disable it.
 
+## Project instructions
+
+Add optional `instructions` to the trusted profile for project-specific review guidance:
+
+```json
+{
+  "model": { "provider": "openai", "id": "gpt-5.6-terra" },
+  "checks": ["bun test"],
+  "instructions": "Check tenant isolation and preserve public API compatibility."
+}
+```
+
+Upgrade the worker before adding this field; older releases reject it.
+The text is sent to your selected model. Use up to 16,000 characters.
+Omit the field when unnecessary; empty
+values are rejected. Instructions supplement the built-in review rules. They do
+not disable required checks, grant tools or relax evidence validation. Use optional
+skills for reusable guidance with supporting files. Existing reviews are not rerun
+when a profile changes; new revisions use the updated instructions.
+
 ## Models and authentication
 
 | Provider    | Credential            | Integration          |

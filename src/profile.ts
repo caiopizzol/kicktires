@@ -23,6 +23,7 @@ export const profileSchema = z
             : model.codexHome === undefined && model.reasoningEffort === undefined,
         "codex requires codexHome and no apiKeyEnv; other providers cannot set codexHome or reasoningEffort",
       ),
+    instructions: z.string().trim().min(1).max(16000).optional(),
     skills: z.array(z.string().min(1)).default([]),
     setup: z
       .object({

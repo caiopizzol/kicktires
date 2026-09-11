@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { parseArgs } from "node:util";
 import { resolve } from "node:path";
 import { mkdtemp, writeFile, readFile, stat, rm } from "node:fs/promises";
@@ -10,7 +11,8 @@ import { startContextServer } from "./fixtures/requirements-mcp.ts";
 
 const { values } = parseArgs({ options: { profile: { type: "string" } } });
 const directory = await mkdtemp(join(tmpdir(), "kicktires-smoke-"));
-const server = startContextServer();
+const requirementId = `COUNTER-${randomUUID()}`;
+const server = startContextServer(requirementId);
 await once(server, "listening");
 const address = server.address();
 assert(address && typeof address !== "string");
@@ -46,6 +48,7 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
     ),
   );
   Object.assign(profile, {
+    instructions: `Use requirements MCP get_requirement with exact ID ${requirementId}. Run run_checks on both revisions, then browser_check to assert output starts at 0 and becomes 1 after clicking Increment on both revisions. Do not change source to make assertions pass; report bugs and verification gaps.`,
     setup: {
       network: "deny-all",
       commands: [
@@ -57,7 +60,7 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
     connections: {
       requirements: {
         url: `http://127.0.0.1:${address.port}/mcp`,
-        description: "Counter requirement COUNTER-1",
+        description: "Look up counter product requirements by exact ID",
         tools: ["get_requirement"],
       },
     },
@@ -89,8 +92,6 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
         "HEAD",
         "--profile",
         profilePath,
-        "--context",
-        "Use requirements MCP get_requirement with exact ID COUNTER-1. Run run_checks on both revisions, then browser_check to assert output starts at 0 and becomes 1 after clicking Increment on both revisions. Do not change source to make assertions pass; report bugs and verification gaps.",
       ],
       {
         cwd: new URL("../..", import.meta.url).pathname,
@@ -121,8 +122,10 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
     const response = JSON.parse(await readFile(join(report.directory, "response.json"), "utf8"));
     assert(
       response.events.some(
-        (e: { type: string; data: { result?: { toolName?: string } } }) =>
-          e.type === "action.result" && e.data.result?.toolName?.includes("get_requirement"),
+        (e: { type: string; data: { result?: { toolName?: string; output?: unknown } } }) =>
+          e.type === "action.result" &&
+          e.data.result?.toolName?.includes("get_requirement") &&
+          JSON.stringify(e.data.result.output ?? null).includes(requirementId),
       ),
       "MCP requirement was not fetched",
     );
