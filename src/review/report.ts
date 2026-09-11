@@ -119,7 +119,7 @@ export function validateReport(data: unknown, rawEvents: unknown[], job: ReviewJ
     for (const output of readEvidence(
       z.object({ executions: z.array(executionSchema) }),
       action.output,
-      "required check result",
+      "check result",
     ))
       for (const execution of output.executions)
         executions.push({
@@ -129,26 +129,9 @@ export function validateReport(data: unknown, rawEvents: unknown[], job: ReviewJ
         });
   }
 
-  for (const revision of ["base", "head"] as const)
-    for (const command of job.profile.checks) {
-      if (
-        !executions.some(
-          (e) =>
-            e.tool === "run_checks" &&
-            e.revision === revision &&
-            e.commit === job.repository[revision] &&
-            e.command === command,
-        )
-      )
-        gaps.push(`Required check not recorded for ${revision}: ${command}`);
-    }
-  for (const e of executions.filter((e) => e.tool === "run_checks" && e.exitCode !== 0))
-    gaps.push(`Required check exited ${e.exitCode} for ${e.revision}: ${e.command}`);
   const citedEvidence = new Set(normalized.findings.flatMap((f) => f.evidenceRefs));
   for (const e of executions.filter((e) => e.truncated || [124, 137, 143].includes(e.exitCode))) {
-    if (e.tool === "run_checks")
-      gaps.push(`Required check output was truncated or execution timed out: ${e.command}`);
-    else if (citedEvidence.has(e.callId))
+    if (citedEvidence.has(e.callId))
       gaps.push(`Cited command output was truncated or execution timed out: ${e.callId}`);
   }
   const browserExecutions = actions
@@ -167,22 +150,16 @@ export function validateReport(data: unknown, rawEvents: unknown[], job: ReviewJ
       ).map((output) => ({ callId: a.callId, ...output })),
     );
 
-  if (job.profile.browser)
-    for (const revision of ["base", "head"] as const) {
-      if (
-        !browserExecutions.some(
-          (e) =>
-            e.revision === revision &&
-            e.commit === job.repository[revision] &&
-            e.exitCode === 0 &&
-            !e.truncated &&
-            e.screenshot,
-        )
-      )
-        gaps.push(`Browser verification did not complete successfully for ${revision}`);
-    }
+  for (const e of [...executions, ...browserExecutions]) {
+    if (e.commit !== job.repository[e.revision])
+      gaps.push(`Execution does not match the pinned ${e.revision} revision: ${e.callId}`);
+  }
+  for (const e of browserExecutions) {
+    if (citedEvidence.has(e.callId) && (e.truncated || [124, 137, 143].includes(e.exitCode)))
+      gaps.push(`Cited browser output was truncated or execution timed out: ${e.callId}`);
+  }
   if (actions.some((a) => a.isError && a.toolName !== "read_file"))
-    gaps.push("A required capability failed; inspect tool evidence");
+    gaps.push("A tool failed; inspect tool evidence");
   return {
     ...report,
     model: modelSettingsSchema.parse(job.profile.model),

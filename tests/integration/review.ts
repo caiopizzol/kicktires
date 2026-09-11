@@ -31,6 +31,7 @@ const html=\`<title>Counter</title><button aria-label="Increment" onclick="docum
 http.createServer((_req,res)=>{res.setHeader("Content-Type","text/html");res.end(html);}).listen(Number(process.env.PORT),"127.0.0.1");
 `;
   await writeFile(join(directory, "app.cjs"), app);
+  await writeFile(join(directory, "README.md"), "Counter example.\n");
   await writeFile(
     join(directory, "app.test.cjs"),
     `const {test}=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs");
@@ -66,20 +67,35 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
     },
   });
   const profilePath = join(directory, "profile.json");
-  await writeFile(profilePath, JSON.stringify(profile));
-  for (const regression of [false, true]) {
+  for (const scenario of ["clean", "regression", "docs", "blocked"]) {
+    const regression = scenario === "regression";
+    const documentation = scenario === "docs" || scenario === "blocked";
+    const activeProfile = documentation
+      ? {
+          ...profile,
+          instructions:
+            "Review this documentation change. Use execution only if needed to investigate it.",
+          setup: { network: "deny-all", commands: scenario === "blocked" ? ["exit 42"] : [] },
+          checks: [],
+        }
+      : profile;
+    await writeFile(profilePath, JSON.stringify(activeProfile));
     await writeFile(
       join(directory, "app.cjs"),
       regression
         ? app.replace("textContent)+1", "textContent)-1")
-        : app.replace("Content-Type", "content-type"),
+        : documentation
+          ? app
+          : app.replace("Content-Type", "content-type"),
     );
-    git("add", "app.cjs");
-    git(
-      "commit",
-      "-qm",
-      regression ? "test: introduce regression" : "refactor: normalize header casing",
+    await writeFile(
+      join(directory, "README.md"),
+      documentation
+        ? `Counter example. Use Increment to add one. ${scenario}.\n`
+        : "Counter example.\n",
     );
+    git("add", "app.cjs", "README.md");
+    git("commit", "-qm", `test: ${scenario} review`);
     const child = Bun.spawn(
       [
         "bun",
@@ -104,13 +120,19 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
       new Response(child.stderr).text(),
       child.exited,
     ]);
-    assert.equal(exit, regression ? 2 : 0, stderr || stdout);
+    assert.equal(exit, scenario === "blocked" ? 2 : 0, stderr || stdout);
     const report = JSON.parse(stdout);
+    if (scenario === "blocked") {
+      assert.equal(report.status, "incomplete");
+      assert(report.gaps.length > 0);
+      console.log(JSON.stringify({ scenario, status: report.status, directory: report.directory }));
+      continue;
+    }
     assert(
       (await stat(join(report.directory, ".eve/.workflow-data"))).isDirectory(),
       "Review must own its workflow store",
     );
-    assert.equal(report.status, regression ? "incomplete" : "reviewed");
+    assert.equal(report.status, "reviewed");
     if (regression)
       assert(
         report.findings.some(
@@ -119,6 +141,30 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
         ),
         "Regression was not identified",
       );
+    if (scenario === "docs") {
+      assert.equal(report.findings.length, 0);
+      assert.equal(report.executions.length, 0, "Documentation review ran unnecessary commands");
+      assert.equal(
+        report.browserExecutions.length,
+        0,
+        "Documentation review ran unnecessary browser checks",
+      );
+      console.log(JSON.stringify({ scenario, status: report.status, directory: report.directory }));
+      continue;
+    }
+    for (const revision of ["base", "head"]) {
+      assert(
+        report.executions.some(
+          (e: { revision: string; tool: string }) =>
+            e.revision === revision && e.tool === "run_checks",
+        ),
+        "Requested checks were not recorded",
+      );
+      assert(
+        report.browserExecutions.some((e: { revision: string }) => e.revision === revision),
+        "Requested browser investigation was not recorded",
+      );
+    }
     const response = JSON.parse(await readFile(join(report.directory, "response.json"), "utf8"));
     assert(
       response.events.some(
@@ -131,7 +177,7 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
     );
     console.log(
       JSON.stringify({
-        regression,
+        scenario,
         status: report.status,
         directory: report.directory,
       }),

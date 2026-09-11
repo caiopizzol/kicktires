@@ -53,7 +53,7 @@ protection is deliberately updated; see [upgrading](upgrading.md).
 
 Merge the workflow through the normal process, then open a small draft PR. The
 installation PR may not run the workflow because it comes from the trusted base branch.
-Verify the runner and release, checks on both revisions, and one review on the exact
+Verify the runner and release, recorded investigation evidence, and one review on the exact
 head. Rerun to confirm duplicate prevention. Close disposable fixtures without merging.
 
 A queued job usually lacks an online matching runner. Preflight failures identify
@@ -62,7 +62,9 @@ review advisory until this path works.
 
 ## Choose advisory or merge-blocking reviews
 
-Findings alone do not fail the check. Failed or missing required verification does.
+The check reports whether the investigation finished, not whether tests passed.
+Findings and failing assertions can accompany a completed review; blocked investigation
+fails the check. Require independent CI checks for project-wide pass/fail gates.
 To block merging after successful CI and reviewer trials, configure branch protection:
 
 - Require PRs and the exact observed CI and reviewer job names (`kicktires` in the example).

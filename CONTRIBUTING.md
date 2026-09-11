@@ -31,9 +31,10 @@ bun run test:integration
 # Or: bun run test:integration --profile /absolute/codex-profile.json
 ```
 
-The integration test reviews a harmless change and a seeded browser regression. It checks terminal
+The integration test reviews a harmless change, a seeded browser regression and a
+documentation change, then checks a setup failure. It checks terminal
 and browser execution, MCP context, source restoration after setup, and separate
-workflow state per run. The regression must produce a finding and incomplete status.
+workflow state per run. The regression must produce a finding and completed review status.
 Private reports stay in `.runs/`; temporary input repositories are removed. Investigate
 failures rather than assuming a model's conclusion is correct.
 
@@ -70,7 +71,7 @@ paid end-to-end review and its local MCP fixture.
 
 ## Changes
 
-Preserve required verification and [upgrade requirements](docs/upgrading.md).
+Preserve evidence validation and [upgrade requirements](docs/upgrading.md).
 Evidence validation checks references and execution, not whether a finding is true.
 Add focused regression tests for behavior changes; avoid tests that mirror cosmetic edits.
 Use conventional commits and describe the change and its verification.

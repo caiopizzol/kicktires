@@ -1,4 +1,20 @@
-# Upgrade from Agent Review
+# Upgrading
+
+## Review completion and CI
+
+Check commands are now optional investigation shortcuts. Neither configured checks
+nor browser access require execution on every PR. A completed review can report
+findings and failing assertions; missing necessary evidence still makes it incomplete.
+
+Before activating this release, require your existing CI jobs independently of the
+reviewer. Verify that they report on every PR, including documentation-only changes.
+Existing profiles remain valid; remove instructions that demand full-suite execution
+unless that is intentional. Older workers still require at least one check command.
+
+Already published reviews retain their status on reruns. Revalidate old private reports
+with their originating release; use a new revision for a fresh investigation.
+
+## Upgrade from Agent Review
 
 The product, packages, workflow name and new worker installations use `kicktires`.
 Runtime variables use `KICKTIRES_`.

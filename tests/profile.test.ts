@@ -98,3 +98,11 @@ test("custom instructions are optional, bounded project guidance", () => {
   for (const instructions of ["", "  ", "x".repeat(16001), null, ["guidance"]])
     expect(() => profileSchema.parse({ ...base, instructions })).toThrow();
 });
+
+test("check shortcuts are optional and still accept existing profiles", () => {
+  const model = { provider: "openai", id: "test" };
+  expect(profileSchema.parse({ model }).checks).toEqual([]);
+  expect(profileSchema.parse({ model, checks: [] }).checks).toEqual([]);
+  expect(profileSchema.parse({ model, checks: ["bun test"] }).checks).toEqual(["bun test"]);
+  expect(profileSchema.safeParse({ model, checks: [""] }).success).toBe(false);
+});
