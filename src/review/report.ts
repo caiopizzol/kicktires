@@ -106,32 +106,6 @@ export function validateReport(data: unknown, rawEvents: unknown[], job: ReviewJ
     events.some((e) => ["turn.failed", "turn.cancelled", "session.failed"].includes(e.type))
   )
     gaps.push("Agent turn did not complete successfully");
-  const requests = events
-    .filter((e) => e.type === "actions.requested")
-    .flatMap((e) =>
-      readEvidence(
-        z.array(
-          z.object({
-            callId: z.string(),
-            toolName: z.string().optional(),
-            input: z.unknown(),
-          }),
-        ),
-        e.data.actions,
-        "action request",
-      ).flat(),
-    );
-  for (const skill of ["review-code", "get-context", "verify-change"]) {
-    if (
-      !requests.some(
-        (r) =>
-          r.toolName === "load_skill" &&
-          z.object({ skill: z.literal(skill) }).safeParse(r.input).success &&
-          evidence.has(r.callId),
-      )
-    )
-      gaps.push(`Required skill was not loaded: ${skill}`);
-  }
   const executions = actions
     .filter((a) => a.toolName === "run_command" && !a.isError)
     .flatMap((a) =>

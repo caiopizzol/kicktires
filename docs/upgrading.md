@@ -1,7 +1,7 @@
 # Upgrade from Agent Review
 
 The product, packages, workflow name and new worker installations use `kicktires`.
-Runtime variables use `KICKTIRES_`. The skill package is `@kicktires/skills`.
+Runtime variables use `KICKTIRES_`.
 
 Existing workers are not renamed automatically. Install a fresh release under
 `/opt/kicktires`; do not move compiled releases, copy the old release-selection file,

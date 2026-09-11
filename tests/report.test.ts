@@ -29,18 +29,6 @@ const report = {
 };
 function events() {
   const result: unknown[] = [{ type: "turn.completed", data: {} }];
-  for (const skill of ["review-code", "get-context", "verify-change"]) {
-    result.push({
-      type: "actions.requested",
-      data: {
-        actions: [{ callId: skill, toolName: "load_skill", input: { skill } }],
-      },
-    });
-    result.push({
-      type: "action.result",
-      data: { result: { callId: skill, toolName: "load_skill", output: {} } },
-    });
-  }
   for (const revision of ["base", "head"] as const)
     result.push({
       type: "action.result",
@@ -66,7 +54,7 @@ function events() {
     });
   return result;
 }
-test("requires actual skill and pinned check evidence", () => {
+test("reviews without skills while requiring pinned check evidence", () => {
   expect(validateReport(report, events(), job, diff).status).toBe("reviewed");
   const incomplete = validateReport(report, [{ type: "turn.completed", data: {} }], job, diff);
   expect(incomplete.status).toBe("incomplete");

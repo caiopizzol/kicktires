@@ -114,11 +114,11 @@ successful browser checks save screenshots. See [execution limits](execution.md)
 
 ## Skills and context
 
-The bundled `review-code`, `get-context` and `verify-change` skills are required.
-Additional directories need `SKILL.md` with YAML `name` and `description` fields.
+Reviews use built-in instructions; no skills are required. Add optional skill
+directories with `skills` in the trusted profile. Each directory needs `SKILL.md` with YAML `name` and `description` fields.
 Supporting files must be UTF-8 text. Limits: 1 MiB per file, 256 files and 8 MiB total.
 Duplicate names and symlinks are rejected. Skills guide behavior; they do not install
-runtimes, grant tools or create connections. See [portable skills](../packages/skills/README.md).
+runtimes, grant tools or create connections. The agent loads supplied skills when relevant.
 
 MCP `tools` is an explicit allowlist. Use read-only context tools and pass exact issue
 IDs or references through `--context`. Tokens are resolved on the host. MCP tools run
