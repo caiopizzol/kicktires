@@ -2,9 +2,18 @@
 set -eu
 umask 022
 
-[ "$#" -eq 2 ] && [ "$1" = --source ] || {
-  echo 'Usage: sudo sh install.sh --source /path/to/kicktires' >&2; exit 1;
-}
+checkout=
+version=${KICKTIRES_VERSION:-}
+case "$#:${1:-}" in
+  0:) ;;
+  2:--source) checkout=$(cd "$2" && pwd) ;;
+  2:--version) version=$2 ;;
+  *) echo 'Usage: sudo sh install.sh [--source CHECKOUT | --version FULL_COMMIT_SHA]' >&2; exit 1 ;;
+esac
+if [ -z "$checkout" ]; then
+  case "$version" in ''|*[!0-9a-f]*) echo 'Specify a full release commit with --version.' >&2; exit 1 ;; esac
+  [ "${#version}" -eq 40 ] || { echo 'Expected a full 40-character commit.' >&2; exit 1; }
+fi
 [ "$(id -u)" -eq 0 ] || { echo 'Run as root on the worker VM.' >&2; exit 1; }
 export PATH=/opt/kicktires/runtime/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 . /etc/os-release
@@ -14,15 +23,34 @@ case "$(dpkg --print-architecture)" in
   arm64) arch=arm64; bunarch=aarch64; nodehash=e7adfca03d9173276114a6f2219df1a7d25e1bfd6bbd771d3f839118a2053094; bunhash=a27ffb63a8310375836e0d6f668ae17fa8d8d18b88c37c821c65331973a19a3b ;;
   *) echo 'Supported architectures: amd64 and arm64.' >&2; exit 1 ;;
 esac
-checkout=$(cd "$2" && pwd)
-[ -f "$checkout/scripts/install-worker.sh" ] || { echo 'Expected a kicktires source checkout.' >&2; exit 1; }
-if command -v git >/dev/null; then
-  git -C "$checkout" rev-parse --verify HEAD >/dev/null
-  git -C "$checkout" diff --quiet HEAD -- || { echo 'Commit tracked source changes before installing.' >&2; exit 1; }
-fi
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y ca-certificates curl git gnupg diffutils tar unzip xz-utils util-linux coreutils
+temporary=$(mktemp -d)
+trap 'rm -rf "$temporary"' EXIT HUP INT TERM
+if [ -z "$checkout" ]; then
+  checkout="$temporary/source"
+  if [ -n "${GH_TOKEN:-}" ]; then
+    cat > "$temporary/askpass" <<'ASKPASS'
+#!/bin/sh
+case "$1" in *Username*) printf '%s\n' x-access-token ;; *) printf '%s\n' "$GH_TOKEN" ;; esac
+ASKPASS
+    chmod 700 "$temporary/askpass"
+    export GIT_ASKPASS="$temporary/askpass" GH_TOKEN
+  fi
+  export GIT_TERMINAL_PROMPT=0
+  git init -q "$checkout"
+  git -C "$checkout" remote add origin https://github.com/caiopizzol/kicktires.git
+  git -C "$checkout" -c credential.helper= fetch --depth 1 origin "$version" || {
+    echo 'Cannot download kicktires. For a private repository, supply GH_TOKEN with repository read access or use --source.' >&2; exit 1;
+  }
+  git -C "$checkout" checkout -q --detach FETCH_HEAD
+  [ "$(git -C "$checkout" rev-parse HEAD)" = "$version" ] || exit 1
+fi
+unset GH_TOKEN GIT_ASKPASS
+[ -f "$checkout/scripts/install-worker.sh" ] || { echo 'Expected a kicktires source checkout.' >&2; exit 1; }
+git -C "$checkout" rev-parse --verify HEAD >/dev/null
+git -C "$checkout" diff --quiet HEAD -- || { echo 'Commit tracked source changes before installing.' >&2; exit 1; }
 if ! command -v docker >/dev/null; then
   install -d -m 755 /etc/apt/keyrings
   curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/kicktires-docker.asc
@@ -35,8 +63,6 @@ systemctl enable --now docker
 docker info >/dev/null
 runtime=/opt/kicktires/runtime/bin
 install -d -m 755 "$runtime"
-temporary=$(mktemp -d)
-trap 'rm -rf "$temporary"' EXIT HUP INT TERM
 if [ ! -e "$runtime/node" ]; then
   curl -fL --retry 3 "https://nodejs.org/dist/v24.14.0/node-v24.14.0-linux-$arch.tar.xz" -o "$temporary/node.tar.xz"
   printf '%s  %s\n' "$nodehash" "$temporary/node.tar.xz" | sha256sum -c -
