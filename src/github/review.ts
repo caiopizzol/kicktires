@@ -122,12 +122,12 @@ export async function reviewPullRequest(options: {
     current.number !== event.number ||
     current.head.sha !== event.head.sha
   )
-    return { result: "stale", incomplete: false };
+    return { result: "stale", incomplete: false, findings: 0 };
   const duplicate = await previousReview(api, endpoint, current, reviewer);
   if (duplicate)
     return {
       result: "duplicate",
-      incomplete: isIncomplete(duplicate),
+      ...previousOutcome(duplicate),
     };
   const report = publishedReportSchema.parse(await review(current));
   // Repeat after the slow model call. commit_id also anchors the unavoidable API race.
@@ -138,18 +138,30 @@ export async function reviewPullRequest(options: {
     latest.head.sha !== current.head.sha ||
     latest.base.sha !== current.base.sha
   )
-    return { result: "stale", incomplete: true };
+    return { result: "stale", incomplete: true, findings: 0 };
   const published = await previousReview(api, endpoint, current, reviewer);
   if (published)
     return {
       result: "duplicate",
-      incomplete: isIncomplete(published),
+      ...previousOutcome(published),
     };
   await api(`${endpoint}/reviews`, renderReview(current, report));
-  return { result: "published", incomplete: report.status === "incomplete" };
+  return {
+    result: "published",
+    incomplete: report.status === "incomplete",
+    findings: report.findings.length,
+  };
 }
 
-// Read old reviews during migration; all new reviews use kicktires markers.
-function isIncomplete(body: string) {
-  return /<!-- (?:kicktires|agent-review)-status:incomplete -->/.test(body);
+// The generated header precedes model text, including in previously published reviews.
+function previousOutcome(body: string) {
+  const header = /^Verification: \*\*(reviewed|incomplete)\*\* · (\d+) finding\(s\)\.$/m.exec(body);
+  return {
+    incomplete: !header || header[1] === "incomplete",
+    findings: Number(header?.[2] ?? 0),
+  };
+}
+
+export function reviewExitCode(result: { incomplete: boolean; findings: number }) {
+  return result.incomplete || result.findings > 0 ? 2 : 0;
 }

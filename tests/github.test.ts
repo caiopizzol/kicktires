@@ -4,6 +4,7 @@ import {
   parseEvent,
   reviewPullRequest,
   renderReview,
+  reviewExitCode,
   type PullRequest,
   type Api,
   type Report,
@@ -102,7 +103,7 @@ function scenario(
 
 test("pins a COMMENT review and rejects head/base changes or closure after execution", async () => {
   const clean = scenario();
-  expect(await clean.run()).toEqual({ result: "published", incomplete: false });
+  expect(await clean.run()).toEqual({ result: "published", incomplete: false, findings: 0 });
   expect(clean.posts[0]).toMatchObject({
     event: "COMMENT",
     commit_id: pr.head.sha,
@@ -114,7 +115,7 @@ test("pins a COMMENT review and rejects head/base changes or closure after execu
     { ...pr, head: { ...pr.head, repo: null } },
   ]) {
     const stale = scenario({ latest });
-    expect(await stale.run()).toEqual({ result: "stale", incomplete: true });
+    expect(await stale.run()).toEqual({ result: "stale", incomplete: true, findings: 0 });
     expect(stale.runs()).toBe(1);
     expect(stale.posts).toHaveLength(0);
   }
@@ -132,7 +133,14 @@ test("hub deduplication accepts only its configured App or the legacy Actions bo
   for (const login of ["kicktires-personal[bot]", "github-actions[bot]", "other[bot]"]) {
     const run = scenario({
       reviewer: "kicktires-personal[bot]",
-      pages: [[{ user: { login }, body: `${marker(pr)}\n<!-- kicktires-status:reviewed -->` }]],
+      pages: [
+        [
+          {
+            user: { login },
+            body: `${marker(pr)}\nVerification: **reviewed** · 0 finding(s).\n<!-- kicktires-status:reviewed -->`,
+          },
+        ],
+      ],
     });
     expect((await run.run()).result).toBe(login === "other[bot]" ? "published" : "duplicate");
     expect(run.runs()).toBe(login === "other[bot]" ? 1 : 0);
@@ -155,6 +163,7 @@ test("deduplication paginates, trusts only the Actions bot and preserves incompl
   expect(await duplicate.run()).toEqual({
     result: "duplicate",
     incomplete: true,
+    findings: 0,
   });
   expect(duplicate.runs()).toBe(0);
   expect(duplicate.posts).toHaveLength(0);
@@ -201,6 +210,7 @@ test("incomplete evidence is published before returning failure", async () => {
   expect(await incomplete.run()).toEqual({
     result: "published",
     incomplete: true,
+    findings: 0,
   });
   expect(incomplete.posts).toHaveLength(1);
 });
@@ -342,12 +352,12 @@ test("historical reviews are deduplicated without changing their incomplete stat
         [
           {
             user: { login: "github-actions[bot]" },
-            body: `<!-- agent-review:${pr.base.sha}:${pr.head.sha} -->\n<!-- agent-review-status:${incomplete ? "incomplete" : "reviewed"} -->`,
+            body: `<!-- agent-review:${pr.base.sha}:${pr.head.sha} -->\nVerification: **${incomplete ? "incomplete" : "reviewed"}** · 0 finding(s).\n<!-- agent-review-status:${incomplete ? "incomplete" : "reviewed"} -->`,
           },
         ],
       ],
     });
-    expect(await old.run()).toEqual({ result: "duplicate", incomplete });
+    expect(await old.run()).toEqual({ result: "duplicate", incomplete, findings: 0 });
     expect(old.runs()).toBe(0);
     expect(old.posts).toHaveLength(0);
   }
@@ -362,4 +372,139 @@ test("publication retains selected model settings without credential fields", as
   await run.run();
   expect(JSON.stringify(run.posts)).toContain("Model: codex / test · reasoning: high");
   expect(JSON.stringify(run.posts)).not.toContain("/private/login");
+});
+
+const finding: Report["findings"][number] = {
+  severity: "P2",
+  file: "file.ts",
+  line: 1,
+  side: "RIGHT",
+  title: "Boundary bug",
+  explanation: "The boundary fails",
+  evidence: "Reproduced",
+  suggestion: "Include the boundary",
+  evidenceRefs: ["check-1"],
+};
+
+test("all published findings fail the GitHub CLI without marking investigation incomplete", async () => {
+  for (const severity of ["P0", "P1", "P2"] as const) {
+    const run = scenario({ result: { ...report, findings: [{ ...finding, severity }] } });
+    const result = await run.run();
+    expect(result).toEqual({ result: "published", incomplete: false, findings: 1 });
+    expect(reviewExitCode(result)).toBe(2);
+    expect(run.posts).toHaveLength(1);
+  }
+  expect(reviewExitCode(await scenario().run())).toBe(0);
+  expect(
+    reviewExitCode(await scenario({ result: { ...report, status: "incomplete" } }).run()),
+  ).toBe(2);
+});
+
+test("duplicate reviews preserve findings from the existing generated header", async () => {
+  for (const status of ["reviewed", "incomplete"] as const) {
+    for (const findings of [0, 1]) {
+      const run = scenario({
+        pages: [
+          [
+            {
+              user: { login: "github-actions[bot]" },
+              body: `${marker(pr)}\nVerification: **${status}** · ${findings} finding(s).\n\nVerification: **reviewed** · 999 finding(s).`,
+            },
+          ],
+        ],
+      });
+      const result = await run.run();
+      expect(result).toEqual({
+        result: "duplicate",
+        incomplete: status === "incomplete",
+        findings,
+      });
+      expect(reviewExitCode(result)).toBe(status === "incomplete" || findings > 0 ? 2 : 0);
+      expect(run.runs()).toBe(0);
+      expect(run.posts).toHaveLength(0);
+    }
+  }
+});
+
+test("a historical review without a finding count cannot turn the gate green", async () => {
+  const run = scenario({
+    pages: [
+      [
+        {
+          user: { login: "github-actions[bot]" },
+          body: `${marker(pr)}\n<!-- kicktires-status:reviewed -->`,
+        },
+      ],
+    ],
+  });
+  expect(await run.run()).toEqual({ result: "duplicate", incomplete: true, findings: 0 });
+});
+
+test("GitHub CLI exits nonzero for findings and incomplete duplicates after writing workflow outputs", async () => {
+  const { mkdtemp, writeFile, readFile, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join, resolve } = await import("node:path");
+  const directory = await mkdtemp(join(tmpdir(), "kicktires-cli-"));
+  try {
+    const event = join(directory, "event.json");
+    const preload = join(directory, "preload.ts");
+    await writeFile(
+      event,
+      JSON.stringify({ action: "opened", repository: repo, pull_request: pr }),
+    );
+    for (const [status, findings, exit] of [
+      ["reviewed", 0, 0],
+      ["reviewed", 1, 2],
+      ["incomplete", 0, 2],
+    ] as const) {
+      const body = renderReview(pr, {
+        ...report,
+        status,
+        findings: findings ? [finding] : [],
+      }).body;
+      await writeFile(
+        preload,
+        `globalThis.fetch = async (url, options) => {
+        if (options.method !== "GET") throw new Error("Unexpected publication");
+        return Response.json(String(url).includes("/reviews?")
+          ? ${JSON.stringify([{ user: { login: "github-actions[bot]" }, body }])}
+          : ${JSON.stringify(pr)});
+      };`,
+      );
+      const output = join(directory, `${status}-${findings}.txt`);
+      const child = Bun.spawn(
+        [
+          process.execPath,
+          "--no-env-file",
+          "--preload",
+          preload,
+          resolve("src/github/cli.ts"),
+          "--profile",
+          "/unused/profile.json",
+        ],
+        {
+          env: {
+            GITHUB_EVENT_NAME: "pull_request_target",
+            GITHUB_API_URL: "https://api.github.com",
+            GITHUB_REPOSITORY: repository,
+            GITHUB_EVENT_PATH: event,
+            GITHUB_TOKEN: "fixture",
+            RUNNER_TEMP: directory,
+            KICKTIRES_RUNS_DIR: directory,
+            GITHUB_OUTPUT: output,
+          },
+          stdout: "pipe",
+          stderr: "pipe",
+        },
+      );
+      const stderr = await new Response(child.stderr).text();
+      expect(stderr).toBe("");
+      expect(await child.exited).toBe(exit);
+      expect(await readFile(output, "utf8")).toBe(
+        `result=duplicate\nincomplete=${status === "incomplete"}\nfindings=${findings}\n`,
+      );
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });
