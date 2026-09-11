@@ -1,0 +1,71 @@
+name: kicktires hub
+run-name: Review ${{ inputs.repository }} PR ${{ inputs.pr }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: Source owner/repository
+        required: true
+        type: string
+      pr:
+        description: Pull request number
+        required: true
+        type: string
+      head:
+        description: Full head commit SHA
+        required: true
+        type: string
+
+concurrency:
+  group: kicktires-${{ inputs.repository }}-${{ inputs.pr }}
+  cancel-in-progress: false
+  queue: max
+
+permissions: {}
+
+jobs:
+  review:
+    runs-on: [self-hosted, kicktires]
+    timeout-minutes: 35
+    steps:
+      - name: Validate source repository
+        id: source
+        env:
+          SOURCE_REPOSITORY: ${{ inputs.repository }}
+        run: |
+          [[ "$SOURCE_REPOSITORY" =~ ^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$ ]]
+          test "${SOURCE_REPOSITORY%/*}" = "$GITHUB_REPOSITORY_OWNER"
+          printf 'name=%s\n' "${SOURCE_REPOSITORY#*/}" >> "$GITHUB_OUTPUT"
+      - name: Create a source repository token
+        id: token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        with:
+          app-id: ${{ vars.KICKTIRES_APP_ID }}
+          private-key: ${{ secrets.KICKTIRES_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ steps.source.outputs.name }}
+          permission-contents: read
+          permission-pull-requests: write
+          permission-statuses: write
+      - name: Review
+        id: review
+        env:
+          GITHUB_TOKEN: ${{ steps.token.outputs.token }}
+        run: /opt/kicktires/bin/review-pr --hub /etc/kicktires/hub.json
+      - name: Report interrupted review
+        if: ${{ always() && steps.token.outputs.token != '' && steps.review.outputs.result == '' }}
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ steps.token.outputs.token }}
+          script: |
+            const { repository, head } = context.payload.inputs;
+            if (!/^[\w.-]+\/[\w.-]+$/.test(repository) || !/^[a-f0-9]{40}$/.test(head)) {
+              throw new Error('Invalid review request');
+            }
+            const [owner, repo] = repository.split('/');
+            await github.rest.repos.createCommitStatus({
+              owner, repo, sha: head, context: 'kicktires', state: 'error',
+              description: 'Review interrupted; inspect and rerun the worker job',
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });

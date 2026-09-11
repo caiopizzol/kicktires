@@ -45,7 +45,7 @@ export function marker(pr: PullRequest) {
   return `<!-- kicktires:${pr.base.sha}:${pr.head.sha} -->`;
 }
 
-async function previousReview(api: Api, endpoint: string, pr: PullRequest) {
+async function previousReview(api: Api, endpoint: string, pr: PullRequest, reviewer: string) {
   for (let page = 1; ; page++) {
     const reviews = z
       .array(
@@ -57,7 +57,7 @@ async function previousReview(api: Api, endpoint: string, pr: PullRequest) {
       .parse(await api(`${endpoint}/reviews?per_page=100&page=${page}`));
     const previous = reviews.find(
       (r) =>
-        r.user.login === "github-actions[bot]" &&
+        (r.user.login === reviewer || r.user.login === "github-actions[bot]") &&
         (r.body?.includes(marker(pr)) ||
           r.body?.includes(`<!-- agent-review:${pr.base.sha}:${pr.head.sha} -->`)),
     );
@@ -112,8 +112,9 @@ export async function reviewPullRequest(options: {
   event: PullRequest;
   api: Api;
   review: (pr: PullRequest) => Promise<Report>;
+  reviewer?: string;
 }) {
-  const { repository, event, api, review } = options;
+  const { repository, event, api, review, reviewer = "github-actions[bot]" } = options;
   const endpoint = `/repos/${repository}/pulls/${event.number}`;
   const fresh = () => api(endpoint).then((value) => pullRequestSchema.parse(value));
   const current = await fresh();
@@ -123,7 +124,7 @@ export async function reviewPullRequest(options: {
     current.head.sha !== event.head.sha
   )
     return { result: "stale", incomplete: false };
-  const duplicate = await previousReview(api, endpoint, current);
+  const duplicate = await previousReview(api, endpoint, current, reviewer);
   if (duplicate)
     return {
       result: "duplicate",
@@ -139,7 +140,7 @@ export async function reviewPullRequest(options: {
     latest.base.sha !== current.base.sha
   )
     return { result: "stale", incomplete: true };
-  const published = await previousReview(api, endpoint, current);
+  const published = await previousReview(api, endpoint, current, reviewer);
   if (published)
     return {
       result: "duplicate",

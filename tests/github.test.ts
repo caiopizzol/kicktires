@@ -53,6 +53,7 @@ function scenario(
     initial?: PullRequest;
     pages?: unknown[][];
     result?: typeof report;
+    reviewer?: string;
   } = {},
 ) {
   let reads = 0,
@@ -77,6 +78,7 @@ function scenario(
         repository,
         event: pr,
         api,
+        reviewer: options.reviewer,
         review: async () => {
           runs++;
           return options.result ?? report;
@@ -111,6 +113,17 @@ test("queued events for an older head skip model work", async () => {
   });
   expect((await stale.run()).result).toBe("stale");
   expect(stale.runs()).toBe(0);
+});
+
+test("hub deduplication accepts only its configured App or the legacy Actions bot", async () => {
+  for (const login of ["kicktires-personal[bot]", "github-actions[bot]", "other[bot]"]) {
+    const run = scenario({
+      reviewer: "kicktires-personal[bot]",
+      pages: [[{ user: { login }, body: `${marker(pr)}\n<!-- kicktires-status:reviewed -->` }]],
+    });
+    expect((await run.run()).result).toBe(login === "other[bot]" ? "published" : "duplicate");
+    expect(run.runs()).toBe(login === "other[bot]" ? 1 : 0);
+  }
 });
 
 test("deduplication paginates, trusts only the Actions bot and preserves incomplete status", async () => {

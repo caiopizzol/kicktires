@@ -4,6 +4,9 @@ kicktires supports private github.com repositories and same-repository PR branch
 It runs on a self-hosted runner and posts one `COMMENT` review with inline findings.
 It never approves, requests changes, merges or modifies the branch.
 
+For several personal repositories sharing a VM, use [shared workers](shared-workers.md).
+The setup below connects a runner directly to one repository.
+
 ## Add a new repository
 
 First [install the worker](self-hosting.md). Each repository needs its own runner.

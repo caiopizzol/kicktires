@@ -1,8 +1,12 @@
 #!/bin/sh
 set -eu
 
-[ "$#" -eq 1 ] || { echo "Usage: review-pr TRUSTED_PROFILE" >&2; exit 1; }
-profile=$1
+if [ "$#" -eq 1 ]; then
+  set -- --profile "$1"
+elif [ "$#" -ne 2 ] || [ "$1" != --hub ]; then
+  echo "Usage: review-pr TRUSTED_PROFILE | review-pr --hub TRUSTED_HUB_CONFIG" >&2
+  exit 1
+fi
 release=$(cat /etc/kicktires/release)
 case "$release" in
   ''|*[!0-9a-f]*) echo 'Expected a pinned release commit' >&2; exit 1 ;;
@@ -19,4 +23,4 @@ cd "$installation"
 printf 'kicktires release: %s\n' "$release"
 exec flock --exclusive --close --wait 600 /var/lock/kicktires/review.lock \
   timeout --signal=TERM --kill-after=30s 1200 \
-  bun --no-env-file "$entry" --profile "$profile"
+  bun --no-env-file "$entry" "$@"
