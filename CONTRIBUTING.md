@@ -4,7 +4,8 @@ Read [the product scope](PRODUCT.md) before proposing a change.
 
 ## Development
 
-Use Git, Node 24+ and Bun 1.3.12+.
+Use Git, Node 24+ and Bun 1.3.12+. To deploy a worker, use the
+[hosted installer](docs/self-hosting.md) at `https://kicktires.dev/install.sh`.
 
 ```sh
 bun install --frozen-lockfile
