@@ -7,7 +7,7 @@ import { runSandboxCommand } from "../../src/sandbox-command.ts";
 export default defineTool({
   description:
     "Run every configured required check exactly as supplied on one revision. Use this on base and head before additional investigation; output is already bounded, so no shell pipes are needed.",
-  inputSchema: z.object({ revision: z.enum(["base", "head"]) }),
+  inputSchema: z.strictObject({ revision: z.enum(["base", "head"]) }),
   async execute({ revision }, ctx) {
     const job = readJob(),
       sandbox = await ctx.getSandbox();

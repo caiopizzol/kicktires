@@ -1,3 +1,7 @@
+import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import browserTool from "../agent/tools/browser_check.ts";
 import { expect, test } from "bun:test";
 import { z } from "zod";
 import type { LanguageModelV4CallOptions } from "@ai-sdk/provider";
@@ -44,7 +48,7 @@ test("actual core and report schemas use native inputs; unsupported MCP schema s
   const schemas: Record<string, Record<string, unknown>> = { final_output: reportJSONSchema };
   for (const name of ["run_checks", "run_command", "read_file", "write_file", "load_skill"]) {
     const tool = (await import(`../agent/tools/${name}.ts`)).default;
-    schemas[name] = z.toJSONSchema(tool.inputSchema);
+    schemas[name] = tool.inputSchema["~standard"].jsonSchema.input({ target: "draft-07" });
     expect(codexInputShape(schemas[name])).toBeDefined();
   }
   expect(codexInputShape(reportJSONSchema)).toBeDefined();
@@ -150,4 +154,50 @@ test("no tools produces a valid final-response-only grammar", () => {
   const schema = z.fromJSONSchema(codexProposalSchema({ prompt: [] }));
   expect(schema.safeParse({ toolCalls: [], text: "done" }).success).toBe(true);
   expect(schema.safeParse({ toolCalls: ["call"], text: "" }).success).toBe(false);
+});
+
+test("dynamic browser uses Eve input serialization and native arguments", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "kicktires-browser-schema-"));
+  const previous = process.env.KICKTIRES_JOB;
+  try {
+    const path = join(directory, "job.json");
+    await writeFile(
+      path,
+      JSON.stringify({
+        id: "schema-test",
+        directory,
+        profile: {
+          model: { provider: "openai", id: "test" },
+          checks: ["true"],
+          browser: { start: "unused" },
+        },
+        repository: { base: "a".repeat(40), head: "b".repeat(40), files: {}, changedFiles: [] },
+        skills: {},
+      }),
+    );
+    process.env.KICKTIRES_JOB = path;
+    type Resolver = NonNullable<(typeof browserTool.events)["session.started"]>;
+    const tool = await browserTool.events["session.started"]!(
+      {} as Parameters<Resolver>[0],
+      {} as Parameters<Resolver>[1],
+    );
+    if (!tool) throw new Error("Browser tool was not enabled");
+    const schema = (tool.inputSchema as z.ZodType)["~standard"].jsonSchema.input({
+      target: "draft-07",
+    });
+    expect(codexInputShape(schema)).toBeDefined();
+    const input = {
+      revision: "head",
+      script:
+        "await page.goto(origin); assert.equal(await page.locator('output').textContent(), '1');",
+    };
+    expect(
+      proposedResponse(proposal(input, "browser_check"), options(schema, "browser_check"))
+        .content[0],
+    ).toMatchObject({ input: JSON.stringify(input) });
+  } finally {
+    if (previous === undefined) delete process.env.KICKTIRES_JOB;
+    else process.env.KICKTIRES_JOB = previous;
+    await rm(directory, { recursive: true, force: true });
+  }
 });

@@ -5,7 +5,7 @@ import { runSandboxCommand } from "../../src/sandbox-command.ts";
 export default defineTool({
   description:
     "Run a real bounded shell command or test in the selected pinned revision's writable sandbox copy. Nonzero exit is evidence, not automatically a regression.",
-  inputSchema: z.object({
+  inputSchema: z.strictObject({
     revision: z.enum(["base", "head"]),
     command: z.string().min(1).max(16000),
   }),
