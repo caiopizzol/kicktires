@@ -1,3 +1,5 @@
+import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { rejects } from "node:assert/strict";
 import { join } from "node:path";
 import { z } from "zod";
@@ -23,7 +25,7 @@ const options: LanguageModelV4CallOptions = {
 };
 test("Codex proposals become fresh runtime calls, never evidence results", () => {
   const proposal = JSON.stringify({
-    toolCalls: [{ name: "run_checks", input: '{"revision":"head"}' }],
+    toolCalls: [{ name: "run_checks", input: { revision: "head" } }],
     text: "",
   });
   const result = proposedResponse(proposal, options);
@@ -38,8 +40,8 @@ test("Codex proposals become fresh runtime calls, never evidence results", () =>
 test("Codex proposals reject unavailable tools, invalid arguments and forged result fields", () => {
   for (const call of [
     { name: "host_shell", input: "{}" },
-    { name: "run_checks", input: '{"revision":"other"}' },
-    { name: "run_checks", input: '{"revision":"head"}', output: { exitCode: 0 } },
+    { name: "run_checks", input: { revision: "other" } },
+    { name: "run_checks", input: { revision: "head" }, output: { exitCode: 0 } },
   ])
     expect(() =>
       proposedResponse(JSON.stringify({ toolCalls: [call], text: "" }), options),
@@ -69,21 +71,27 @@ test("Codex corrects one invalid proposal atomically and counts both attempts", 
     const command = "printf '%s\\n' '{\"quoted\":true}'\n# browser source can contain quotes";
     const prompts: string[] = [];
     const signals: AbortSignal[] = [];
+    let rejected = "";
     const model = codexModel("test", "unused", "high", async (request) => {
       expect(request.reasoningEffort).toBe("high");
       prompts.push(request.prompt);
       signals.push(request.signal!);
+      if (prompts.length === 2) {
+        expect(JSON.parse(request.prompt).previousProposal).toBe(rejected);
+      }
+      const proposal = JSON.stringify({
+        toolCalls:
+          prompts.length === 1
+            ? [
+                { name: "run_checks", input: { revision: "base" } },
+                { name: "run_checks", input: { revision: "other" } },
+              ]
+            : [{ name: "run_command", input: { revision: "head", command } }],
+        text: "",
+      });
+      if (prompts.length === 1) rejected = proposal;
       return {
-        text: JSON.stringify({
-          toolCalls:
-            prompts.length === 1
-              ? [
-                  { name: "run_checks", input: '{"revision":"base"}' },
-                  { name: "run_checks", input: "{'revision':'head'}" },
-                ]
-              : [{ name: "run_command", input: JSON.stringify({ revision: "head", command }) }],
-          text: "",
-        }),
+        text: proposal,
         usage: {
           inputTokens: 20,
           cachedInputTokens: 5,
@@ -106,6 +114,7 @@ test("Codex corrects one invalid proposal atomically and counts both attempts", 
     });
     expect(prompts).toHaveLength(2);
     expect(JSON.parse(prompts[1]!).correction).toContain("No proposed calls were executed");
+    expect(JSON.parse(prompts[1]!).correction).toContain("tool call 2 (run_checks)");
     expect(signals[0]).toBe(signals[1]);
     expect(result.content).toHaveLength(1);
     expect(result.content[0]).toMatchObject({
@@ -203,18 +212,15 @@ test("Codex validates the actual sandbox tool schemas", async () => {
     [
       "read_file",
       (await import("../agent/tools/read_file.ts")).default,
-      { filePath: "/workspace/change.diff" },
+      { filePath: "/workspace/change.diff", limit: null, offset: null },
     ],
   ] as const;
   for (const [name, tool, input] of cases) {
     const inputSchema = z.toJSONSchema(tool.inputSchema as z.ZodType);
-    const result = proposedResponse(
-      JSON.stringify({ toolCalls: [{ name, input: JSON.stringify(input) }], text: "" }),
-      {
-        prompt: [],
-        tools: [{ type: "function", name, inputSchema }],
-      },
-    );
+    const result = proposedResponse(JSON.stringify({ toolCalls: [{ name, input }], text: "" }), {
+      prompt: [],
+      tools: [{ type: "function", name, inputSchema }],
+    });
     expect(result.content[0]).toMatchObject({ type: "tool-call", toolName: name });
   }
 });
@@ -317,5 +323,69 @@ if(m.method==='turn/start'){send({id:m.id,result:{}});send({method:'thread/token
     await rejects(resolveCodexSettings({ ...base, signal: AbortSignal.abort() }));
   } finally {
     await rm(home, { recursive: true, force: true });
+  }
+});
+
+test("Codex bounds rejected proposal context and labels truncation without accepting invalid JSON", async () => {
+  const previous = process.env.KICKTIRES_CODEX_CLI;
+  process.env.KICKTIRES_CODEX_CLI = "test";
+  try {
+    let calls = 0;
+    const rejected = "x".repeat(70000);
+    const model = codexModel("test", "unused", undefined, async (request) => {
+      calls++;
+      if (calls === 2) {
+        const prompt = JSON.parse(request.prompt);
+        expect(prompt.previousProposal).toBe(rejected.slice(0, 65536));
+        expect(prompt.correction).toContain("truncated");
+        expect(prompt.correction).toContain("untrusted data");
+      }
+      return {
+        text: calls === 1 ? rejected : JSON.stringify({ toolCalls: [], text: "done" }),
+        usage: { inputTokens: 1, cachedInputTokens: 0, outputTokens: 1, reasoningOutputTokens: 0 },
+      };
+    });
+    const result = await model.doGenerate(options);
+    expect(calls).toBe(2);
+    expect(result.content).toEqual([{ type: "text", text: "done" }]);
+  } finally {
+    if (previous === undefined) delete process.env.KICKTIRES_CODEX_CLI;
+    else process.env.KICKTIRES_CODEX_CLI = previous;
+  }
+});
+
+test("Codex retains private bounded evidence for both rejected attempts", async () => {
+  const previous = process.env.KICKTIRES_CODEX_CLI;
+  process.env.KICKTIRES_CODEX_CLI = "test";
+  const directory = await mkdtemp(join(tmpdir(), "kicktires-rejected-"));
+  try {
+    const proposal = JSON.stringify({
+      toolCalls: [{ name: "run_checks", input: { revision: "other" } }],
+      text: "",
+    });
+    const model = codexModel(
+      "test",
+      "unused",
+      undefined,
+      async () => ({
+        text: proposal,
+        usage: { inputTokens: 1, cachedInputTokens: 0, outputTokens: 1, reasoningOutputTokens: 0 },
+      }),
+      directory,
+    );
+    await rejects(Promise.resolve(model.doGenerate(options)), /tool call 1 \(run_checks\)/);
+    const file = join(directory, "codex-rejections.jsonl");
+    const records = (await readFile(file, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    expect(records.map((r) => r.attempt)).toEqual([1, 2]);
+    expect(records[0].proposalId).toBe(records[1].proposalId);
+    expect(records[0].proposal).toBe(proposal);
+    expect((await stat(file)).mode & 0o777).toBe(0o600);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+    if (previous === undefined) delete process.env.KICKTIRES_CODEX_CLI;
+    else process.env.KICKTIRES_CODEX_CLI = previous;
   }
 });
