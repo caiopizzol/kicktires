@@ -2,7 +2,7 @@ import { readFile, appendFile, mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { executeReview } from "./execute.ts";
-import { parseEvent, reviewPullRequest } from "./review.ts";
+import { parseEvent, reviewPullRequest, reviewExitCode } from "./review.ts";
 import { githubApi } from "./api.ts";
 import { hubConfigSchema, reviewHubRequest } from "./hub.ts";
 
@@ -50,15 +50,15 @@ try {
         api,
         review: (pr) => review(pr, values.profile!),
       });
-  const summary = `kicktires: ${result.result}${result.incomplete ? "; verification incomplete" : ""}.\n`;
+  const summary = `kicktires: ${result.result}; ${result.findings} finding(s)${result.incomplete ? "; verification incomplete" : ""}.\n`;
   console.log(summary.trim());
   if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, summary);
   if (process.env.GITHUB_OUTPUT)
     await appendFile(
       process.env.GITHUB_OUTPUT,
-      `result=${result.result}\nincomplete=${result.incomplete}\n`,
+      `result=${result.result}\nincomplete=${result.incomplete}\nfindings=${result.findings}\n`,
     );
-  if (result.incomplete || (values.hub && result.result === "stale")) process.exitCode = 2;
+  process.exitCode = values.hub && result.result === "stale" ? 2 : reviewExitCode(result);
 } catch (error) {
   console.error(error instanceof Error ? error.message : "GitHub review failed");
   process.exitCode = 1;

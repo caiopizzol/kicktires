@@ -69,7 +69,7 @@ export async function reviewHubRequest(options: {
     });
   if (stale) {
     await status("error", "Review request superseded by a newer revision");
-    return { result: "stale", incomplete: true };
+    return { result: "stale", incomplete: true, findings: 0 };
   }
   let result;
   try {
@@ -93,8 +93,10 @@ export async function reviewHubRequest(options: {
     await status("error", "Pull request changed during review");
   } else if (result.incomplete) {
     await status("failure", "Investigation incomplete; inspect the review");
+  } else if (result.findings > 0) {
+    await status("failure", `${result.findings} finding(s); inspect the review`);
   } else {
-    await status("success", "Investigation completed; inspect the review for findings");
+    await status("success", "Investigation completed; no findings");
   }
   return result;
 }

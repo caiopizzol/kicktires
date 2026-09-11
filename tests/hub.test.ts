@@ -85,6 +85,7 @@ function hubScenario(
   options: {
     duplicate?: boolean;
     incomplete?: boolean;
+    findings?: boolean;
     stale?: boolean;
     failReview?: boolean;
     failStatus?: boolean | "success" | "error";
@@ -99,7 +100,7 @@ function hubScenario(
     base: { ...pr.base, repo: source },
     head: { ...pr.head, repo: source },
   };
-  const statuses: { path: string; body: { state: string } }[] = [];
+  const statuses: { path: string; body: { state: string; description: string } }[] = [];
   let reviews = 0;
   let publications = 0;
   let reads = 0;
@@ -111,10 +112,10 @@ function hubScenario(
       runUrl: "https://github.com/example/hub/actions/runs/1/attempts/1",
       api: async (path, body) => {
         if (path.includes("/statuses/")) {
-          statuses.push({ path, body: body as { state: string } });
+          statuses.push({ path, body: body as { state: string; description: string } });
           if (
             options.failStatus === true ||
-            options.failStatus === (body as { state: string }).state
+            options.failStatus === (body as { state: string; description: string }).state
           )
             throw new Error("status unavailable");
           return {};
@@ -128,7 +129,7 @@ function hubScenario(
             ? [
                 {
                   user: { login: config.reviewer },
-                  body: `<!-- kicktires:${pr.base.sha}:${pr.head.sha} -->\n<!-- kicktires-status:${options.incomplete ? "incomplete" : "reviewed"} -->`,
+                  body: `Verification: **${options.incomplete ? "incomplete" : "reviewed"}** · ${options.findings ? 1 : 0} finding(s).\n<!-- kicktires:${pr.base.sha}:${pr.head.sha} -->\n<!-- kicktires-status:${options.incomplete ? "incomplete" : "reviewed"} -->`,
                 },
               ]
             : [];
@@ -148,7 +149,21 @@ function hubScenario(
           summary: "Investigated",
           status: options.incomplete ? "incomplete" : "reviewed",
           gaps: [],
-          findings: [],
+          findings: options.findings
+            ? [
+                {
+                  severity: "P1",
+                  file: "file.ts",
+                  line: 1,
+                  side: "RIGHT",
+                  title: "Boundary bug",
+                  explanation: "The boundary fails",
+                  evidence: "Reproduced",
+                  suggestion: "Include the boundary",
+                  evidenceRefs: ["check-1"],
+                },
+              ]
+            : [],
         };
       },
     });
@@ -157,7 +172,7 @@ function hubScenario(
 
 test("hub publishes reviews and completion statuses for configured public repositories", async () => {
   const s = hubScenario({ public: true });
-  expect(await s.run()).toEqual({ result: "published", incomplete: false });
+  expect(await s.run()).toEqual({ result: "published", incomplete: false, findings: 0 });
   expect(s.reviews()).toBe(1);
   expect(s.publications()).toBe(1);
   expect(s.statuses.map((s) => s.body.state)).toEqual(["pending", "success"]);
@@ -165,7 +180,7 @@ test("hub publishes reviews and completion statuses for configured public reposi
 
 test("hub duplicate restores completed status without pending or inference", async () => {
   const s = hubScenario({ duplicate: true });
-  expect(await s.run()).toEqual({ result: "duplicate", incomplete: false });
+  expect(await s.run()).toEqual({ result: "duplicate", incomplete: false, findings: 0 });
   expect(s.reviews()).toBe(0);
   expect(s.publications()).toBe(0);
   expect(s.statuses.map((s) => s.body.state)).toEqual(["success"]);
@@ -235,4 +250,22 @@ test("hub config rejects relative paths, non-bot identities and unknown fields",
     { ...config, token: "must-not-be-a-config-field" },
   ])
     expect(hubConfigSchema.safeParse(value).success).toBe(false);
+});
+
+test("hub fails the source status for published and duplicate findings", async () => {
+  for (const duplicate of [false, true]) {
+    const run = hubScenario({ duplicate, findings: true, public: true });
+    const result = await run.run();
+    expect(run.statuses.map((s) => s.body.state)).toEqual(
+      duplicate ? ["failure"] : ["pending", "failure"],
+    );
+    expect(result).toEqual({
+      result: duplicate ? "duplicate" : "published",
+      incomplete: false,
+      findings: 1,
+    });
+    expect(run.statuses.at(-1)?.body.description).toBe("1 finding(s); inspect the review");
+    expect(run.reviews()).toBe(duplicate ? 0 : 1);
+    expect(run.publications()).toBe(duplicate ? 0 : 1);
+  }
 });
