@@ -85,3 +85,16 @@ test("reasoning effort is an explicit Codex-only setting", () => {
     }),
   ).toThrow();
 });
+
+test("custom instructions are optional, bounded project guidance", () => {
+  const base = { model: { provider: "openai", id: "test" }, checks: ["true"] };
+  expect(profileSchema.parse(base).instructions).toBeUndefined();
+  expect(
+    profileSchema.parse({ ...base, instructions: "  Check tenant isolation.\n  " }).instructions,
+  ).toBe("Check tenant isolation.");
+  expect(
+    profileSchema.parse({ ...base, instructions: "x".repeat(16000) }).instructions,
+  ).toHaveLength(16000);
+  for (const instructions of ["", "  ", "x".repeat(16001), null, ["guidance"]])
+    expect(() => profileSchema.parse({ ...base, instructions })).toThrow();
+});

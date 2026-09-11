@@ -8,6 +8,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
 import { Client } from "eve/client";
 import { resolveCodexSettings } from "./codex.ts";
+import { reviewMessage } from "./review/prompt.ts";
 import { profileSchema } from "./profile.ts";
 import { snapshotRepository } from "./repository.ts";
 import { loadSkills } from "./skills.ts";
@@ -148,7 +149,7 @@ try {
     auth: { basic: { username: "reviewer", password } },
   });
   const turn = await client.sessions.create({
-    message: `Review /workspace/review.json and /workspace/change.diff. Follow the built-in review instructions and load supplied skills when relevant. Use run_checks on both base and head to execute the required checks. Cite tool call IDs as evidenceRefs. Additional user context: ${values.context ?? "None supplied."}`,
+    message: reviewMessage(values.context, profile.instructions),
     outputSchema: reportJSONSchema,
     signal: AbortSignal.any([
       interruption.signal,
