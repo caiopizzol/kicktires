@@ -76,3 +76,17 @@ Use conventional commits and describe the change and its verification.
 
 Keep builds, credentials and private run data out of Git. Before making existing
 history public, review it for earlier operator records too.
+
+## Hosted installer
+
+`kicktires.dev/install.sh` and the domain root serve the same pinned installer through
+Cloudflare Workers. Publish a committed, tested revision with:
+
+```sh
+bun scripts/deploy-installer.ts FULL_COMMIT_SHA
+```
+
+Set `CF_TOKEN` in the environment or the ignored `.env`. The token needs Worker script,
+custom-domain and zone access. The deployed script contains no credentials; private
+source downloads use the installer's own `GH_TOKEN`. Verify the published script and
+`X-Kicktires-Version` header after deployment.

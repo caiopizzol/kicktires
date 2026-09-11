@@ -5,14 +5,22 @@ Serverless platforms without Docker are unsupported. For existing installations,
 
 ## Install
 
-On Ubuntu 24.04 or 26.04, amd64 or arm64, obtain a source checkout and select a commit:
+On Ubuntu 24.04 or 26.04, amd64 or arm64:
 
 ```sh
-git clone https://github.com/caiopizzol/kicktires.git
-cd kicktires
-git checkout FULL_COMMIT_SHA
-sudo sh install.sh --source "$PWD"
+curl -fsSL https://kicktires.dev/install.sh -o /tmp/kicktires-install.sh
+sudo sh /tmp/kicktires-install.sh
 ```
+
+The hosted script downloads a pinned source commit. While the repository is private,
+set `GH_TOKEN` with repository read access and preserve it when running the installer:
+
+```sh
+sudo --preserve-env=GH_TOKEN sh /tmp/kicktires-install.sh
+```
+
+Use `--version FULL_COMMIT_SHA` to select another commit, or
+`--source /path/to/kicktires` to install an existing checkout.
 
 Inspect the script before running it. It installs prerequisites, Docker from its
 official APT repository, and checksum-verified Node 24.14.0 and Bun 1.3.14 binaries.
@@ -28,7 +36,7 @@ sudo env PATH="$PATH" sh scripts/install-worker.sh "$PWD"
 
 Both installers require root. Tracked edits must be committed; untracked files are
 excluded. Do not copy `node_modules`, `.output` or `.eve` from another machine.
-Distribution is source-based, with no published installer package or container release.
+Distribution is source-based; the hosted installer fetches source from GitHub.
 
 The first install activates the release. Repeats preserve completed installs. Later
 installs add releases without replacing the active release, runtimes, launcher or
