@@ -17,7 +17,8 @@ per output stream. If exploratory output is truncated or times out, narrow the c
 or read the needed ranges; cite complete replacement evidence in findings. Required
 check truncation or timeouts remain verification gaps. Record relevant assertions and actual exits.
 connection_search discovers only the supplied MCP tools. Use exact context references
-from the request; don't invent identifiers. When browser is configured, use
+from the request; don't invent identifiers. Fetch explicitly requested external context
+before drawing conclusions; report a gap if the supplied connection cannot provide it. When browser is configured, use
 browser_check on both revisions with meaningful assertions. Failed assertions are evidence; report the verification gap.
 
 Use the same focused reproduction on both revisions to distinguish introduced bugs
