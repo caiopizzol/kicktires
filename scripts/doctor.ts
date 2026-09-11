@@ -5,7 +5,7 @@ import { access, readFile, stat } from "node:fs/promises";
 import { constants } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
-import { profileSchema, modelCredentialEnv } from "../src/profile.ts";
+import { profileSchema } from "../src/profile.ts";
 import { loadSkills } from "../src/skills.ts";
 
 const { values } = parseArgs({
@@ -66,32 +66,20 @@ await check("Review sandbox image", () =>
 const profilePath = resolve(values.profile);
 await check("Trusted profile and skills", async () => {
   const profile = profileSchema.parse(JSON.parse(await readFile(profilePath, "utf8")));
-  const credentialNames = [
-    profile.model.apiKeyEnv,
-    ...Object.values(profile.connections).map((c) => c.tokenEnv),
-  ];
+  const credentialNames = Object.values(profile.connections).map((c) => c.tokenEnv);
   if (credentialNames.some((name) => name && /^(GITHUB_|GH_|ACTIONS_|GIT_)/.test(name)))
-    throw new Error("Model/MCP credentials cannot use GitHub, Actions or Git variable names.");
+    throw new Error("MCP credentials cannot use GitHub, Actions or Git variable names.");
   await loadSkills(profile.skills.map((path) => resolve(dirname(profilePath), path)));
-  if (profile.model.provider === "codex") {
-    assertCodexHome(profile.model.codexHome);
-    if (values.credentials) {
-      const settings = await resolveCodexSettings({
-        cli: fileURLToPath(import.meta.resolve("@openai/codex/bin/codex.js")),
-        home: profile.model.codexHome,
-        model: profile.model.id,
-        reasoningEffort: profile.model.reasoningEffort,
-      });
-      console.log(`Codex: ${settings.id} · reasoning: ${settings.reasoningEffort}`);
-    }
-  }
-  if (profile.model.provider === "chatgpt")
-    throw new Error(
-      "Subscription login is not verified for unattended installation; configure an API provider.",
-    );
+  assertCodexHome(profile.model.codexHome);
   if (values.credentials) {
-    const key = modelCredentialEnv(profile.model);
-    for (const name of [key, ...Object.values(profile.connections).map((c) => c.tokenEnv)])
+    const settings = await resolveCodexSettings({
+      cli: fileURLToPath(import.meta.resolve("@openai/codex/bin/codex.js")),
+      home: profile.model.codexHome,
+      model: profile.model.id,
+      reasoningEffort: profile.model.reasoningEffort,
+    });
+    console.log(`Codex: ${settings.id} · effort: ${settings.reasoningEffort}`);
+    for (const name of credentialNames)
       if (name && !process.env[name])
         throw new Error(
           `Supply ${name} in the process environment; never put its value in the profile.`,

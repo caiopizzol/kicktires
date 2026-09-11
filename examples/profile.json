@@ -1,9 +1,8 @@
 {
   "model": {
-    "provider": "openai",
-    "id": "gpt-5.6-terra"
+    "id": "gpt-5.6-terra",
+    "effort": "high",
+    "home": "/home/runner/.local/share/kicktires/codex"
   },
-  "checks": ["node --test"],
-  "setup": { "commands": [], "network": "deny-all" },
-  "browser": false
+  "instructions": "Check boundary cases and public API compatibility."
 }

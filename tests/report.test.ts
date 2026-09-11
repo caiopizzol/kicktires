@@ -10,7 +10,7 @@ const job: ReviewJob = {
   directory: "/unused",
   skills: {},
   profile: profileSchema.parse({
-    model: { provider: "openai", id: "test" },
+    model: { provider: "codex", id: "test", home: "/login" },
     checks: ["npm test"],
   }),
   repository: {

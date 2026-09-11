@@ -2,7 +2,7 @@ import { mkdtemp, mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { command } from "../process.ts";
-import { profileSchema, modelCredentialEnv, type Profile } from "../profile.ts";
+import { profileSchema, type Profile } from "../profile.ts";
 import { jobSchema } from "../job.ts";
 import { validateReport, publishedReportSchema } from "../review/report.ts";
 import type { PullRequest, Report } from "./review.ts";
@@ -14,10 +14,7 @@ export function reviewEnvironment(env: NodeJS.ProcessEnv, profile: Profile, runs
     TMPDIR: env.TMPDIR,
     KICKTIRES_RUNS_DIR: runs,
   };
-  const keys = [
-    modelCredentialEnv(profile.model),
-    ...Object.values(profile.connections).map((c) => c.tokenEnv),
-  ];
+  const keys = Object.values(profile.connections).map((c) => c.tokenEnv);
   for (const key of keys) {
     if (!key) continue;
     if (/^(GITHUB_|GH_|ACTIONS_|GIT_)/.test(key))

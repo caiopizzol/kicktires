@@ -42,16 +42,15 @@ for (const name of ["repo", "base", "head", "profile"] as const)
 const profilePath = resolve(values.profile!);
 const profile = profileSchema.parse(JSON.parse(await readFile(profilePath, "utf8")));
 assertModelAccess(profile.model);
-if (profile.model.provider === "codex")
-  Object.assign(
-    profile.model,
-    await resolveCodexSettings({
-      cli: fileURLToPath(import.meta.resolve("@openai/codex/bin/codex.js")),
-      home: profile.model.codexHome!,
-      model: profile.model.id,
-      reasoningEffort: profile.model.reasoningEffort,
-    }),
-  );
+Object.assign(
+  profile.model,
+  await resolveCodexSettings({
+    cli: fileURLToPath(import.meta.resolve("@openai/codex/bin/codex.js")),
+    home: profile.model.codexHome!,
+    model: profile.model.id,
+    reasoningEffort: profile.model.reasoningEffort,
+  }),
+);
 for (const connection of Object.values(profile.connections))
   if (connection.tokenEnv && !process.env[connection.tokenEnv])
     throw new Error(`Missing connection credential: ${connection.tokenEnv}`);

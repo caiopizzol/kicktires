@@ -27,13 +27,12 @@ all other merge rules, including the required `kicktires` status.
 Rebuild after source changes; profile changes need no build.
 
 For agent, skill, model or sandbox changes, also run the paid integration test with
-Docker and `OPENAI_API_KEY` (or a trusted Codex profile):
+Docker and a trusted Codex profile:
 
 ```sh
 bun run sandbox
 bun run build
-bun run test:integration
-# Or: bun run test:integration --profile /absolute/codex-profile.json
+bun run test:integration --profile /absolute/codex-profile.json
 ```
 
 The integration test covers harmless and documentation changes, a seeded browser

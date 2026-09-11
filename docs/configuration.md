@@ -9,7 +9,10 @@ extra skills and MCP context:
 
 ```json
 {
-  "model": { "provider": "openai", "id": "gpt-5.6-terra" },
+  "model": {
+    "id": "gpt-5.6-terra",
+    "home": "/home/runner/.local/share/kicktires/codex"
+  },
   "setup": {
     "commands": ["bun install --frozen-lockfile --ignore-scripts"],
     "network": "allow-all"
@@ -38,7 +41,10 @@ Add optional `instructions` to the trusted profile for project-specific review g
 
 ```json
 {
-  "model": { "provider": "openai", "id": "gpt-5.6-terra" },
+  "model": {
+    "id": "gpt-5.6-terra",
+    "home": "/home/runner/.local/share/kicktires/codex"
+  },
   "checks": ["bun test"],
   "instructions": "Check tenant isolation and preserve public API compatibility."
 }
@@ -54,27 +60,10 @@ when a profile changes; new revisions use the updated instructions.
 
 ## Models and authentication
 
-| Provider    | Credential            | Integration          |
-| ----------- | --------------------- | -------------------- |
-| `openai`    | `OPENAI_API_KEY`      | OpenAI API           |
-| `anthropic` | `ANTHROPIC_API_KEY`   | Anthropic API        |
-| `xai`       | `XAI_API_KEY`         | xAI API              |
-| `chatgpt`   | Eve login file        | ChatGPT subscription |
-| `codex`     | Dedicated Codex login | Codex CLI adapter    |
-
-The API adapters are typechecked; live end-to-end validation is pending. The Eve
-subscription path is unverified. Codex validation is described below. Fireworks is
-unsupported.
-
-Choose a provider model with tool calling and structured output support. `apiKeyEnv`
-sets the credential variable name, not the key itself. `contextWindow` defaults to
-100,000 tokens; set it to the model's capacity. Custom endpoints are not supported.
-
-ChatGPT uses Eve's `eve dev` → `/model` → Provider → ChatGPT subscription login.
-Sign in as the account running the reviewer. Credentials live in
-`~/.eve/auth/chatgpt.json`, separately from Codex. Eve managed deployment rejects
-this local login path.
-Claude Code subscriptions and Meta Muse execution are not implemented.
+Codex is the supported provider and the default when `provider` is omitted.
+It uses a dedicated CLI login. Choose a model
+available to that account. `contextWindow` defaults to 100,000 tokens; set it to
+the model's capacity.
 
 ## Codex subscription
 
@@ -86,19 +75,21 @@ chmod 700 "$HOME/.local/share/kicktires/codex"
 CODEX_HOME="$HOME/.local/share/kicktires/codex" bunx --no-install codex login --device-auth
 ```
 
-Set the trusted profile's `model` field, using an absolute `codexHome` path:
+Start with [examples/profile.json](../examples/profile.json):
 
 ```json
 {
-  "provider": "codex",
-  "id": "gpt-5.6-terra",
-  "reasoningEffort": "high",
-  "codexHome": "/home/runner/.local/share/kicktires/codex"
+  "model": {
+    "id": "gpt-5.6-terra",
+    "effort": "high",
+    "home": "/home/runner/.local/share/kicktires/codex"
+  },
+  "instructions": "Check boundary cases and public API compatibility."
 }
 ```
 
-`reasoningEffort` is optional and currently supported only for Codex. Omit it to use
-the selected model's catalog default. kicktires rejects unknown models and unsupported
+`home` is the absolute path to the dedicated Codex login and configuration directory.
+`effort` is optional; omit it to use the model's catalog default. kicktires rejects unknown models and unsupported
 efforts before preparing the review. Run `bun run doctor -- --profile PROFILE --credentials`
 to check the catalog without generating a response; account access is still checked
 when the model runs.
