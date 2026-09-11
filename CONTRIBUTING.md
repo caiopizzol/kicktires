@@ -92,3 +92,5 @@ Set `CF_TOKEN` in the environment or the ignored `.env`. The token needs Worker 
 custom-domain and zone access. The deployed script contains no credentials; private
 source downloads use the installer's own `GH_TOKEN`. Verify the published script and
 `X-Kicktires-Version` header after deployment.
+
+<!-- Disposable two-VM hub validation B. Close without merging. -->
