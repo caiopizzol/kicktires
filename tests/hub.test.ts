@@ -84,7 +84,9 @@ test("hub preserves same-repository eligibility and stale-head detection", async
 function hubScenario(
   options: {
     duplicate?: boolean;
+    duplicateAfterReview?: boolean;
     incomplete?: boolean;
+    gaps?: string[];
     findings?: boolean;
     stale?: boolean;
     failReview?: boolean;
@@ -125,7 +127,7 @@ function hubScenario(
           return {};
         }
         if (path.includes("/reviews?"))
-          return options.duplicate
+          return options.duplicate || (options.duplicateAfterReview && reviews > 0)
             ? [
                 {
                   user: { login: config.reviewer },
@@ -148,7 +150,7 @@ function hubScenario(
         return {
           summary: "Investigated",
           status: options.incomplete ? "incomplete" : "reviewed",
-          gaps: [],
+          gaps: options.gaps ?? [],
           findings: options.findings
             ? [
                 {
@@ -176,6 +178,7 @@ test("hub publishes reviews and completion statuses for configured public reposi
   expect(s.reviews()).toBe(1);
   expect(s.publications()).toBe(1);
   expect(s.statuses.map((s) => s.body.state)).toEqual(["pending", "success"]);
+  expect(s.statuses[0]!.body.description).toBe(`Reviewing ${pr.head.sha.slice(0, 7)}.`);
 });
 
 test("hub duplicate restores completed status without pending or inference", async () => {
@@ -264,8 +267,45 @@ test("hub fails the source status for published and duplicate findings", async (
       incomplete: false,
       findings: 1,
     });
-    expect(run.statuses.at(-1)?.body.description).toBe("1 finding(s); inspect the review");
+    expect(run.statuses.at(-1)?.body.description).toBe(
+      "Review complete. 1 finding. Inspect the review.",
+    );
     expect(run.reviews()).toBe(duplicate ? 0 : 1);
     expect(run.publications()).toBe(duplicate ? 0 : 1);
+  }
+});
+
+test("incomplete status describes the published gap within GitHub's character limit", async () => {
+  const short = hubScenario({
+    incomplete: true,
+    gaps: [" ", "Browser check\n timed out on head."],
+  });
+  await short.run();
+  expect(short.statuses.at(-1)?.body).toMatchObject({
+    state: "failure",
+    description: "Incomplete: Browser check timed out on head.",
+  });
+  const long = hubScenario({ incomplete: true, gaps: ["Could not inspect " + "🧪".repeat(160)] });
+  await long.run();
+  const description = long.statuses.at(-1)!.body.description;
+  expect(Array.from(description)).toHaveLength(140);
+  expect(description.endsWith("...")).toBe(true);
+  expect(description).toStartWith("Incomplete: Could not inspect ");
+  expect(description).toMatch(/^Incomplete: Could not inspect (?:🧪)+\.\.\.$/);
+});
+
+test("incomplete duplicates do not describe a discarded investigation's gap", async () => {
+  for (const duplicateAfterReview of [false, true]) {
+    const s = hubScenario({
+      incomplete: true,
+      duplicate: !duplicateAfterReview,
+      duplicateAfterReview,
+      gaps: ["This gap belongs only to the unpublished candidate report"],
+    });
+    expect((await s.run()).result).toBe("duplicate");
+    expect(s.reviews()).toBe(duplicateAfterReview ? 1 : 0);
+    expect(s.publications()).toBe(0);
+    expect(s.statuses.at(-1)?.body.description).toBe("Review incomplete. See verification gaps.");
+    expect(s.statuses.at(-1)?.body.state).toBe("failure");
   }
 });

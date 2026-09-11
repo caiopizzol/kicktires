@@ -66,6 +66,6 @@ jobs:
             const [owner, repo] = repository.split('/');
             await github.rest.repos.createCommitStatus({
               owner, repo, sha: head, context: 'kicktires', state: 'error',
-              description: 'Review interrupted; inspect and rerun the worker job',
+              description: 'Review interrupted. Inspect the worker run before retrying.',
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             });

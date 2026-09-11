@@ -85,6 +85,17 @@ resolvable thread. Do not bypass failed checks with automatic approvals.
 
 kicktires does not configure these rules. See [GitHub branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule).
 
+## Rename a required CI job
+
+This repository's CI job is now **checks and build**; its submission job is
+**queue review**. The **kicktires** status context and GitHub App are unchanged.
+
+If branch protection requires **checks**, first observe a successful **checks and
+build** run on the migration PR. Replace only that required name, retaining its
+GitHub Actions source and every other merge requirement. The old name will remain
+pending until replaced. Do not require **queue review**: it confirms that GitHub
+accepted the request, not that a worker completed the review.
+
 ## Move a repository to another worker
 
 Install and preflight the destination. Copy its trusted profile and skills, refresh

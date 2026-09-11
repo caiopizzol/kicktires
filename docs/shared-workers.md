@@ -51,7 +51,7 @@ Set these Actions settings in each source repository:
 
 Copy [the submission workflow](../examples/github-submit-workflow.yml) to
 `.github/workflows/kicktires.yml`. It submits the source PR and head SHA without checking
-out code. **Submit review** means the request was accepted, not that review finished.
+out code. **queue review** means the request was accepted, not that review finished.
 Its job summary links to the hub run.
 
 Only the hub App writes the `kicktires` status. Before the first review starts, the
@@ -64,7 +64,7 @@ the original PR. Duplicate completed reviews restore success without new inferen
 Validate the hub on a draft PR before cutover. With the old runner idle and its queue
 empty, replace the source workflow and stop its old service. Require the **`kicktires`
 status from your App**, preserving independent CI gates and conversation resolution.
-Do not require **Submit review** as a substitute. The previous Actions-app binding does
+Do not require **queue review** as a substitute. The previous Actions-app binding does
 not automatically migrate to the new App.
 
 Remove old project registrations after live review and duplicate-rerun validation.
