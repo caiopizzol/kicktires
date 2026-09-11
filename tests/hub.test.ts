@@ -1,10 +1,11 @@
+import { renderReview, type PullRequest } from "../src/github/review.ts";
 import { rejects } from "node:assert/strict";
 import { expect, test } from "bun:test";
 import { hubConfigSchema, resolveHubRequest, reviewHubRequest } from "../src/github/hub.ts";
 
 const repository = "example/project";
 const repo = { full_name: repository, private: true };
-const pr = {
+const pr: PullRequest = {
   number: 1,
   state: "open",
   title: "Review",
@@ -85,6 +86,7 @@ function hubScenario(
   options: {
     duplicate?: boolean;
     duplicateAfterReview?: boolean;
+    publishedBody?: string;
     incomplete?: boolean;
     gaps?: string[];
     findings?: boolean;
@@ -131,7 +133,9 @@ function hubScenario(
             ? [
                 {
                   user: { login: config.reviewer },
-                  body: `Verification: **${options.incomplete ? "incomplete" : "reviewed"}** · ${options.findings ? 1 : 0} finding(s).\n<!-- kicktires:${pr.base.sha}:${pr.head.sha} -->\n<!-- kicktires-status:${options.incomplete ? "incomplete" : "reviewed"} -->`,
+                  body:
+                    options.publishedBody ??
+                    `Verification: **${options.incomplete ? "incomplete" : "reviewed"}** · ${options.findings ? 1 : 0} finding(s).\n<!-- kicktires:${pr.base.sha}:${pr.head.sha} -->\n<!-- kicktires-status:${options.incomplete ? "incomplete" : "reviewed"} -->`,
                 },
               ]
             : [];
@@ -307,5 +311,36 @@ test("incomplete duplicates do not describe a discarded investigation's gap", as
     expect(s.publications()).toBe(0);
     expect(s.statuses.at(-1)?.body.description).toBe("Review incomplete. See verification gaps.");
     expect(s.statuses.at(-1)?.body.state).toBe("failure");
+  }
+});
+
+test("incomplete duplicates do not infer gaps from ambiguous published Markdown", async () => {
+  const summaryBullet = renderReview(pr, {
+    summary: "Investigation summary\n\n- Browser unavailable",
+    status: "incomplete",
+    findings: [],
+    gaps: [],
+  }).body;
+  const publishedGap = renderReview(pr, {
+    summary: "Investigation summary",
+    status: "incomplete",
+    findings: [],
+    gaps: ["Browser unavailable"],
+  }).body;
+  expect(summaryBullet).toBe(publishedGap);
+  for (const duplicateAfterReview of [false, true]) {
+    const s = hubScenario({
+      incomplete: true,
+      duplicate: !duplicateAfterReview,
+      duplicateAfterReview,
+      publishedBody: publishedGap,
+      gaps: ["Discarded candidate gap"],
+    });
+    expect((await s.run()).result).toBe("duplicate");
+    expect(s.publications()).toBe(0);
+    expect(s.statuses.at(-1)?.body).toMatchObject({
+      state: "failure",
+      description: "Review incomplete. See verification gaps.",
+    });
   }
 });
