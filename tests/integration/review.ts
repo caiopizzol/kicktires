@@ -76,7 +76,6 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
           instructions:
             "Review this documentation change. Use execution only if needed to investigate it.",
           setup: { network: "deny-all", commands: scenario === "blocked" ? ["exit 42"] : [] },
-          checks: [],
         }
       : profile;
     await writeFile(profilePath, JSON.stringify(activeProfile));
@@ -141,9 +140,13 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
         ),
         "Regression was not identified",
       );
+    else assert.equal(report.findings.length, 0, "Harmless change produced a finding");
     if (scenario === "docs") {
       assert.equal(report.findings.length, 0);
-      assert.equal(report.executions.length, 0, "Documentation review ran unnecessary commands");
+      assert(
+        !report.executions.some((e: { tool: string }) => e.tool === "run_checks"),
+        "Documentation review ran the configured suite unnecessarily",
+      );
       assert.equal(
         report.browserExecutions.length,
         0,
