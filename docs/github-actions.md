@@ -1,6 +1,7 @@
 # GitHub reviews
 
-kicktires supports private github.com repositories and same-repository PR branches.
+kicktires supports public and private github.com repositories with same-repository PR branches.
+Fork PRs are unsupported.
 It runs on a self-hosted runner and posts one `COMMENT` review with inline findings.
 It never approves, requests changes, merges or modifies the branch.
 
@@ -47,7 +48,7 @@ Set the repository Actions secret `OPENAI_API_KEY`. Copy
 and replace its profile path. For another provider, change both the secret and its
 environment mapping. GitHub supplies the publication token; keep it out of the profile.
 
-Keep `pull_request_target`, the private/same-repository guards, and cancellation disabled.
+Keep `pull_request_target`, the same-repository guard, and cancellation disabled.
 Never check out PR code or load its profile on the host. Match the installed runner
 label and profile path. Existing required check names must remain until branch
 protection is deliberately updated; see [upgrading](upgrading.md).

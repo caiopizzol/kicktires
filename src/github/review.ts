@@ -27,15 +27,14 @@ export function parseEvent(value: unknown, repository: string) {
   const event = eventSchema.parse(value);
   if (event.repository.full_name !== repository)
     throw new Error("Event repository does not match GITHUB_REPOSITORY");
-  if (!eligible(event.pull_request, repository) || !event.repository.private)
-    throw new Error("Reviews require a private repository and a same-repository PR");
+  if (!eligible(event.pull_request, repository))
+    throw new Error("Reviews require an open same-repository PR");
   return event.pull_request;
 }
 
 function eligible(pr: PullRequest, repository: string) {
   return (
     pr.state === "open" &&
-    pr.base.repo.private &&
     pr.base.repo.full_name === repository &&
     pr.head.repo?.full_name === repository
   );

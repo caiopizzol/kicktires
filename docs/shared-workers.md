@@ -4,7 +4,8 @@ Use one private GitHub repository as a review hub for several personal repositor
 GitHub queues the jobs. Each VM runs one hub runner, so a second VM adds a second review
 slot. No queue server or public endpoint is needed.
 
-The hub supports private, same-owner repositories and same-repository PRs. Keep project
+The hub supports public and private same-owner source repositories with same-repository
+PRs. Fork PRs are unsupported. Keep the hub repository private. Keep project
 CI separate: the required `kicktires` status reports investigation completion, including
 reviews that find bugs.
 

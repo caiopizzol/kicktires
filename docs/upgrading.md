@@ -1,5 +1,15 @@
 # Upgrading
 
+## Public source repositories
+
+Upgrade the installed worker before enabling public repositories in the source workflow.
+Older workers reject public PRs even when a workflow submits them. Remove only the
+`github.event.repository.private == true` condition from existing source workflows;
+retain `pull_request_target`, the same-repository head guard and trusted profiles.
+The shared hub stays private and continues to allow only configured source repositories.
+Reviews on public PRs publish summaries, findings and gaps publicly, so use only context
+appropriate for that audience.
+
 ## Review completion and CI
 
 Check commands are now optional investigation shortcuts. Neither configured checks

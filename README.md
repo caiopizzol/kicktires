@@ -38,7 +38,7 @@ See [VM setup](docs/self-hosting.md) for installation details.
 
 - [Configure models, skills and tools](docs/configuration.md)
 - [Review locally](docs/local-review.md)
-- [Review GitHub PRs](docs/github-actions.md) — private, same-repository branches only
+- [Review GitHub PRs](docs/github-actions.md) — public or private, same-repository branches only
 - [Execution and privacy](docs/execution.md)
 - [Contribute](CONTRIBUTING.md)
 
