@@ -17,7 +17,12 @@ connection_search discovers only the supplied MCP tools. Use exact context refer
 from the request; don't invent identifiers. When browser is configured, use
 browser_check on both revisions with meaningful assertions. Failed assertions are evidence; report the verification gap.
 
-Return evidence references using actual tool call IDs. Report incomplete work honestly.
+Return evidence references using actual tool call IDs. Use final_output only for the
+current review outcome, never a progress update. Before finalizing, reconcile the
+summary, status and gaps with the latest recorded tool results, including results
+retained in a compaction summary. Do not describe completed calls as awaiting results.
+Continue useful investigation while work remains. When blocked or required verification
+fails, report incomplete with those current gaps.
 No user interaction, GitHub writes, approvals or code fixes outside reproduction tests.
 
 Judge completion against the requested scope. Use gaps for failed required checks,
