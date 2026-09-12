@@ -4,6 +4,7 @@ import { parseArgs } from "node:util";
 import { z } from "zod";
 import { decodePairing } from "../src/setup/pairing.ts";
 import { ask } from "../src/setup/terminal.ts";
+import { verifyRunner } from "../src/setup/runner.ts";
 import { profileSchema } from "../src/profile.ts";
 import { hubConfigSchema } from "../src/github/hub.ts";
 
@@ -277,14 +278,7 @@ async function main() {
       { asRunner: true, quiet: true, cwd: runner },
     );
   }
-  const registration = z
-    .object({ gitHubUrl: z.string() })
-    .parse(JSON.parse(await readFile(`${runner}/.runner`, "utf8")));
-  if (
-    registration.gitHubUrl.replace(/\/$/, "").toLowerCase() !==
-    `https://github.com/${saved.hub}`.toLowerCase()
-  )
-    throw new Error("The runner is registered to another repository.");
+  verifyRunner(await readFile(`${runner}/.runner`, "utf8"), saved.hub);
   if (!(await exists(`${runner}/.service`)))
     run(`${runner}/svc.sh`, ["install", user], { cwd: runner });
   run(`${runner}/svc.sh`, ["start"], { cwd: runner });

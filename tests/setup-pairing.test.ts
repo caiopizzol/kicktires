@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
 import { decodePairing, encodePairing } from "../src/setup/pairing.ts";
+import { verifyRunner } from "../src/setup/runner.ts";
 
 const pairing = {
   version: 1 as const,
@@ -22,4 +23,10 @@ test("pairing accepts a current same-owner worker and rejects expired or cross-o
 test("pairing accepts GitHub timestamps with timezone offsets", () => {
   const offset = new Date(Date.now() + 3600000).toISOString().replace("Z", "+00:00");
   expect(decodePairing(encodePairing({ ...pairing, expires: offset })).expires).toBe(offset);
+});
+
+test("runner registration accepts GitHub's UTF-8 BOM and rejects a different hub", () => {
+  const registration = '\uFEFF{"gitHubUrl":"https://github.com/owner/worker/"}';
+  expect(() => verifyRunner(registration, "owner/worker")).not.toThrow();
+  expect(() => verifyRunner(registration, "owner/other")).toThrow("another repository");
 });
