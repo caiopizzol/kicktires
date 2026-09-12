@@ -1,6 +1,7 @@
 # Shared workers
 
-Use one private GitHub repository as a review hub for several personal repositories.
+Use one private GitHub repository as a review hub for several repositories owned by
+one organization or personal account.
 GitHub queues the jobs. Each VM runs one hub runner, so a second VM adds a second review
 slot. No queue server or public endpoint is needed.
 
@@ -8,6 +9,30 @@ The hub supports public and private same-owner source repositories with same-rep
 PRs. Fork PRs are unsupported. Keep the hub repository private; never register a
 self-hosted runner on a public source repository. The required `kicktires` status
 passes only when the investigation finishes with no findings. Findings and incomplete reviews block merging. Keep project CI separate.
+
+## Choose the hub owner
+
+| Setup               | Source repositories      | Private hub             |
+| ------------------- | ------------------------ | ----------------------- |
+| GitHub organization | `acme/api`, `acme/web`   | `acme/kicktires-worker` |
+| Personal account    | `alex/shop`, `alex/blog` | `alex/kicktires-worker` |
+
+**Organization:** create the hub and GitHub App under `acme`, install the App on
+`acme/api` and `acme/web`, and select `acme` as the dispatch token's resource owner.
+Set `KICKTIRES_HUB` to `acme/kicktires-worker` in both source repositories.
+
+**Personal account:** create the hub and App under `alex`, install the App on
+`alex/shop` and `alex/blog`, and select `alex` as the token's resource owner.
+Set `KICKTIRES_HUB` to `alex/kicktires-worker` in both repositories. No organization
+is needed.
+
+In either case, grant the dispatch token access only to the hub. A source PR queues
+a job there; an available hub worker reviews it and the App posts back to the source
+PR. Two worker VMs can run two reviews at once, across either source repository.
+
+The supplied workflow rejects sources owned by a different account. For example,
+`alex/shop` and `sam/blog` cannot share one hub; use a hub per owner or move the
+repositories under one organization.
 
 ## Set up the hub
 
