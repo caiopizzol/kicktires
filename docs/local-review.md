@@ -23,3 +23,17 @@ bun run review --repo /path/to/repository \
 
 The CLI reviews committed changes and saves `report.json` and supporting evidence
 in a private `.runs/review-*/` directory. A completed review is not an approval.
+
+## Command options
+
+| Argument         | Required | Meaning                                         |
+| ---------------- | -------- | ----------------------------------------------- |
+| `--repo PATH`    | Yes      | Local Git repository.                           |
+| `--base REF`     | Yes      | Base commit, tag or branch.                     |
+| `--head REF`     | Yes      | Head commit, tag or branch.                     |
+| `--profile PATH` | Yes      | Trusted review profile.                         |
+| `--context TEXT` | No       | Additional review context, such as an issue ID. |
+| `--help`         | No       | Print usage.                                    |
+
+Set `KICKTIRES_RUNS_DIR` to choose where private run artifacts are stored.
+Profile fields are listed in the [configuration reference](configuration-reference.md).

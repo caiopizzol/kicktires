@@ -10,6 +10,16 @@ PRs. Fork PRs are unsupported. Keep the hub repository private; never register a
 self-hosted runner on a public source repository. The required `kicktires` status
 passes only when the investigation finishes with no findings. Findings and incomplete reviews block merging. Keep project CI separate.
 
+```mermaid
+flowchart LR
+    R["Source repositories"] --> H["Private hub"]
+    H -->|Available runner| W1["Worker 1"]
+    H -->|Available runner| W2["Worker 2"]
+    style H fill:#EEF2FF,stroke:#A5B4FC,color:#312E81
+```
+
+Each review runs on one available worker.
+
 ## Choose the hub owner
 
 | Setup               | Source repositories      | Private hub             |
@@ -52,6 +62,16 @@ Install each project's trusted profile and skills. Copy [hub.json](../examples/h
 to `/etc/kicktires/hub.json`, owned by root and readable by the runner. Set the hub's full
 repository name, the App's exact `[bot]` login, and the source-to-profile mapping.
 Requests cannot choose a profile path.
+
+The hub config has three required fields:
+
+| Field        | Value                                                             |
+| ------------ | ----------------------------------------------------------------- |
+| `repository` | Private hub name, such as `acme/kicktires-worker`.                |
+| `reviewer`   | GitHub App login, including `[bot]`.                              |
+| `profiles`   | Map of source repository names to absolute trusted profile paths. |
+
+Unknown fields and unconfigured source repositories are rejected.
 
 Run `doctor` as the hub runner account for every profile. All workers in the pool need
 the same release, profiles, skills, runtimes and model authentication. Each worker's

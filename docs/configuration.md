@@ -3,7 +3,8 @@
 Pass a trusted JSON file with `--profile`. Never load it from a PR head: it selects
 commands, credentials and MCP endpoints. Unknown fields fail validation.
 
-Start with [examples/profile.json](../examples/profile.json):
+Start with [profile.json](../examples/profile.json). See the
+[complete reference](configuration-reference.md) for every field, default and constraint.
 
 ```json
 {
@@ -64,36 +65,10 @@ Profile changes apply to new reviews; they do not rerun existing reviews.
 
 ## Optional tools
 
-Add setup commands, check shortcuts, browser access, skills or MCP context as needed:
-
-```json
-{
-  "model": {
-    "id": "gpt-5.6-terra",
-    "home": "/home/runner/.local/share/kicktires/codex"
-  },
-  "setup": {
-    "commands": ["bun install --frozen-lockfile --ignore-scripts"],
-    "network": "allow-all"
-  },
-  "checks": ["bun test"],
-  "skills": ["./skills/review-accessibility"],
-  "browser": { "start": "bun run dev --host 127.0.0.1 --port $PORT" },
-  "connections": {
-    "project-context": {
-      "url": "https://your-context-service.example/mcp",
-      "description": "Read requirements by exact issue ID",
-      "tools": ["get_issue"],
-      "tokenEnv": "PROJECT_CONTEXT_TOKEN"
-    }
-  },
-  "limits": { "commandSeconds": 60, "reviewSeconds": 600 }
-}
-```
-
-Replace the example commands, skill path and MCP endpoint with real ones. Skill
-paths resolve relative to the profile. Omitted skills and connections default to
-empty collections; browser access defaults to `false`.
+Add setup commands, check shortcuts, browser access, skills or MCP context only when
+needed. [profile-full.json](../examples/profile-full.json) shows every field; replace
+its commands, paths and MCP endpoint before use. It is a reference, not a ready-to-run
+profile. The [option tables](configuration-reference.md#review-profile) explain the defaults.
 
 ## Checks and browser
 

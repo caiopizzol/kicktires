@@ -65,7 +65,7 @@ To connect one private repository directly:
    checks; test setup and check commands in the sandbox.
 3. [Sign in to Codex](configuration.md#codex-subscription) as the runner account
    and set `model.home` to its dedicated login directory.
-   Copy [the workflow](../examples/github-workflow.yml)
+   Copy [the workflow](../examples/github-direct-workflow.yml)
    to `.github/workflows/kicktires.yml` and set its profile path and runner label.
 
 Keep `pull_request_target`, the private/same-repository guards and cancellation
