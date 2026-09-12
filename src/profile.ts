@@ -5,24 +5,12 @@ export const profileSchema = z
   .object({
     model: z
       .object({
-        provider: z.enum(["xai", "openai", "anthropic", "chatgpt", "codex"]),
         id: z.string().min(1),
-        codexHome: z.string().min(1).optional(),
-        reasoningEffort: z.string().min(1).optional(),
-        apiKeyEnv: z
-          .string()
-          .regex(/^[A-Z][A-Z0-9_]*$/)
-          .optional(),
+        home: z.string().min(1),
+        effort: z.string().min(1).optional(),
         contextWindow: z.number().int().min(8192).default(100000),
       })
-      .strict()
-      .refine(
-        (model) =>
-          model.provider === "codex"
-            ? !!model.codexHome && !model.apiKeyEnv
-            : model.codexHome === undefined && model.reasoningEffort === undefined,
-        "codex requires codexHome and no apiKeyEnv; other providers cannot set codexHome or reasoningEffort",
-      ),
+      .strict(),
     instructions: z.string().trim().min(1).max(16000).optional(),
     skills: z.array(z.string().min(1)).default([]),
     setup: z
@@ -62,15 +50,3 @@ export const profileSchema = z
   })
   .strict();
 export type Profile = z.infer<typeof profileSchema>;
-
-export function modelCredentialEnv(model: Profile["model"]): string | undefined {
-  if (model.provider === "chatgpt" || model.provider === "codex") return undefined;
-  return (
-    model.apiKeyEnv ??
-    {
-      xai: "XAI_API_KEY",
-      openai: "OPENAI_API_KEY",
-      anthropic: "ANTHROPIC_API_KEY",
-    }[model.provider]
-  );
-}

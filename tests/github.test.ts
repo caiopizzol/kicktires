@@ -229,10 +229,10 @@ test("rendering bounds text and neutralizes mentions and forged status markers",
   expect(payload.body.length).toBeLessThan(65536);
 });
 
-test("model process receives selected credentials but no GitHub or runner environment", () => {
+test("model process receives MCP credentials but no API keys or GitHub environment", () => {
   const profile = profileSchema.parse({
     checks: ["bun test"],
-    model: { provider: "openai", id: "model" },
+    model: { id: "model", home: "/login" },
     connections: {
       context: {
         url: "https://example.com/mcp",
@@ -258,7 +258,7 @@ test("model process receives selected credentials but no GitHub or runner enviro
     profile,
     "/private/runs",
   );
-  expect(env.OPENAI_API_KEY).toBe("model");
+  expect(env.OPENAI_API_KEY).toBeUndefined();
   expect(env.CONTEXT_KEY).toBe("context");
   for (const key of [
     "GITHUB_TOKEN",
@@ -272,7 +272,10 @@ test("model process receives selected credentials but no GitHub or runner enviro
   expect(() =>
     reviewEnvironment(
       {},
-      { ...profile, model: { ...profile.model, apiKeyEnv: "GITHUB_TOKEN" } },
+      {
+        ...profile,
+        connections: { context: { ...profile.connections.context!, tokenEnv: "GITHUB_TOKEN" } },
+      },
       "/runs",
     ),
   ).toThrow();
@@ -319,29 +322,6 @@ test("preparation failures retain diagnostics but cannot publish findings or cla
     );
   } finally {
     await rm(run, { recursive: true, force: true });
-  }
-});
-
-test("provider credentials remain selected after configuration cleanup", () => {
-  for (const [provider, key] of [
-    ["xai", "XAI_API_KEY"],
-    ["openai", "OPENAI_API_KEY"],
-    ["anthropic", "ANTHROPIC_API_KEY"],
-  ] as const) {
-    const profile = profileSchema.parse({
-      model: { provider, id: "model" },
-      checks: ["bun test"],
-    });
-    expect(
-      reviewEnvironment({ [key]: "selected", UNUSED_KEY: "excluded" }, profile, "/runs")[key],
-    ).toBe("selected");
-    const custom = {
-      ...profile,
-      model: { ...profile.model, apiKeyEnv: "CUSTOM_KEY" },
-    };
-    const env = reviewEnvironment({ [key]: "default", CUSTOM_KEY: "custom" }, custom, "/runs");
-    expect(env.CUSTOM_KEY).toBe("custom");
-    expect(env[key]).toBeUndefined();
   }
 });
 

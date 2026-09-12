@@ -42,16 +42,14 @@ for (const name of ["repo", "base", "head", "profile"] as const)
 const profilePath = resolve(values.profile!);
 const profile = profileSchema.parse(JSON.parse(await readFile(profilePath, "utf8")));
 assertModelAccess(profile.model);
-if (profile.model.provider === "codex")
-  Object.assign(
-    profile.model,
-    await resolveCodexSettings({
-      cli: fileURLToPath(import.meta.resolve("@openai/codex/bin/codex.js")),
-      home: profile.model.codexHome!,
-      model: profile.model.id,
-      reasoningEffort: profile.model.reasoningEffort,
-    }),
-  );
+const settings = await resolveCodexSettings({
+  cli: fileURLToPath(import.meta.resolve("@openai/codex/bin/codex.js")),
+  home: profile.model.home,
+  model: profile.model.id,
+  reasoningEffort: profile.model.effort,
+});
+profile.model.id = settings.id;
+profile.model.effort = settings.reasoningEffort;
 for (const connection of Object.values(profile.connections))
   if (connection.tokenEnv && !process.env[connection.tokenEnv])
     throw new Error(`Missing connection credential: ${connection.tokenEnv}`);
@@ -109,11 +107,7 @@ try {
       WORKFLOW_LOCAL_DATA_DIR: join(directory, ".eve/.workflow-data"),
       NODE_ENV: "production",
       KICKTIRES_JOB: join(directory, "job.json"),
-      ...(profile.model.provider === "codex"
-        ? {
-            KICKTIRES_CODEX_CLI: fileURLToPath(import.meta.resolve("@openai/codex/bin/codex.js")),
-          }
-        : {}),
+      KICKTIRES_CODEX_CLI: fileURLToPath(import.meta.resolve("@openai/codex/bin/codex.js")),
       KICKTIRES_PASSWORD: password,
     },
     stdio: ["ignore", log.fd, log.fd],
@@ -177,7 +171,11 @@ try {
   );
 } catch (error) {
   outcome = {
-    model: modelSettingsSchema.parse(profile.model),
+    model: modelSettingsSchema.parse({
+      provider: "codex",
+      id: profile.model.id,
+      reasoningEffort: profile.model.effort,
+    }),
     executions: [],
     browserExecutions: [],
     status: "incomplete",

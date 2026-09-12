@@ -10,7 +10,7 @@ const job: ReviewJob = {
   directory: "/unused",
   skills: {},
   profile: profileSchema.parse({
-    model: { provider: "openai", id: "test" },
+    model: { id: "test", home: "/login" },
     checks: ["npm test"],
   }),
   repository: {
@@ -243,10 +243,9 @@ test("published model settings come from the trusted job and omit credentials", 
     ...job,
     profile: profileSchema.parse({
       model: {
-        provider: "codex",
         id: "test",
-        reasoningEffort: "high",
-        codexHome: "/private/login",
+        effort: "high",
+        home: "/private/login",
       },
       checks: ["npm test"],
     }),

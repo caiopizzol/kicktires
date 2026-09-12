@@ -13,27 +13,21 @@ bun run check
 bun run build
 ```
 
-`check` runs Vite+ formatting and lint checks, TypeScript (including scripts), and
-Bun regression tests. Vite+ is pinned; Eve remains the application builder.
-Use `bun run format` to format, `bun run lint` to lint and `bun run typecheck` to
-check types. Installation enables the precommit hook: staged checks plus full-project
-type checking. Hooks require development dependencies. CI also runs tests and the build.
-Tests need neither Docker nor model keys.
+`check` runs formatting, lint, TypeScript and regression tests. CI also runs the
+build. Tests need neither Docker nor a model login.
 
-This repository’s CI job was renamed from `checks` to `checks and build`. If branch
-protection still requires `checks`, first verify a successful `checks and build`
-run, then replace that required name while keeping its GitHub Actions binding and
-all other merge rules, including the required `kicktires` status.
-Rebuild after source changes; profile changes need no build.
+Use `bun run format`, `bun run lint` or `bun run typecheck` for individual checks.
+Installation enables staged checks and full-project type checking before commits;
+hooks require development dependencies. Rebuild after source changes; profile
+changes need no build.
 
 For agent, skill, model or sandbox changes, also run the paid integration test with
-Docker and `OPENAI_API_KEY` (or a trusted Codex profile):
+Docker and a trusted Codex profile:
 
 ```sh
 bun run sandbox
 bun run build
-bun run test:integration
-# Or: bun run test:integration --profile /absolute/codex-profile.json
+bun run test:integration --profile /absolute/codex-profile.json
 ```
 
 The integration test covers harmless and documentation changes, a seeded browser
@@ -76,8 +70,8 @@ paid end-to-end review and its local MCP fixture.
 
 ## Changes
 
-Preserve evidence validation.
-Evidence validation checks references and execution, not whether a finding is true.
+Preserve evidence validation: it checks references and execution, not whether a
+finding is true.
 Add focused regression tests for behavior changes; avoid tests that mirror cosmetic edits.
 Use conventional commits and describe the change and its verification.
 

@@ -1,82 +1,26 @@
 # Configuration
 
-Pass a trusted JSON file with `--profile`. It selects commands, credentials and MCP
-endpoints; never load it from a PR head. Unknown fields fail validation. Skill paths
-resolve relative to the profile.
+Pass a trusted JSON file with `--profile`. Never load it from a PR head: it selects
+commands, credentials and MCP endpoints. Unknown fields fail validation.
 
-Start with [examples/profile.json](../examples/profile.json). For browser checks,
-extra skills and MCP context:
+Start with [examples/profile.json](../examples/profile.json):
 
 ```json
 {
-  "model": { "provider": "openai", "id": "gpt-5.6-terra" },
-  "setup": {
-    "commands": ["bun install --frozen-lockfile --ignore-scripts"],
-    "network": "allow-all"
+  "model": {
+    "id": "gpt-5.6-terra",
+    "effort": "high",
+    "home": "/home/runner/.local/share/kicktires/codex"
   },
-  "checks": ["bun test"],
-  "skills": ["./skills/review-accessibility"],
-  "browser": { "start": "bun run dev --host 127.0.0.1 --port $PORT" },
-  "connections": {
-    "project-context": {
-      "url": "https://your-context-service.example/mcp",
-      "description": "Read requirements by exact issue ID",
-      "tools": ["get_issue"],
-      "tokenEnv": "PROJECT_CONTEXT_TOKEN"
-    }
-  },
-  "limits": { "commandSeconds": 60, "reviewSeconds": 600 }
+  "instructions": "Check boundary cases and public API compatibility."
 }
 ```
-
-Replace the example commands, skill path and MCP endpoint with real ones. Omit
-`skills` and `connections` until needed; set `browser` to `false` to disable it.
-
-## Project instructions
-
-Add optional `instructions` to the trusted profile for project-specific review guidance:
-
-```json
-{
-  "model": { "provider": "openai", "id": "gpt-5.6-terra" },
-  "checks": ["bun test"],
-  "instructions": "Check tenant isolation and preserve public API compatibility."
-}
-```
-
-Upgrade the worker before adding this field; older releases reject it.
-The text is sent to your selected model. Use up to 16,000 characters.
-Omit the field when unnecessary; empty
-values are rejected. Instructions supplement the built-in review rules. They do
-not grant tools or relax evidence validation. Use optional
-skills for reusable guidance with supporting files. Existing reviews are not rerun
-when a profile changes; new revisions use the updated instructions.
-
-## Models and authentication
-
-| Provider    | Credential            | Integration          |
-| ----------- | --------------------- | -------------------- |
-| `openai`    | `OPENAI_API_KEY`      | OpenAI API           |
-| `anthropic` | `ANTHROPIC_API_KEY`   | Anthropic API        |
-| `xai`       | `XAI_API_KEY`         | xAI API              |
-| `chatgpt`   | Eve login file        | ChatGPT subscription |
-| `codex`     | Dedicated Codex login | Codex CLI adapter    |
-
-The API adapters are typechecked; live end-to-end validation is pending. The Eve
-subscription path is unverified. Codex validation is described below. Fireworks is
-unsupported.
-
-Choose a provider model with tool calling and structured output support. `apiKeyEnv`
-sets the credential variable name, not the key itself. `contextWindow` defaults to
-100,000 tokens; set it to the model's capacity. Custom endpoints are not supported.
-
-ChatGPT uses Eve's `eve dev` → `/model` → Provider → ChatGPT subscription login.
-Sign in as the account running the reviewer. Credentials live in
-`~/.eve/auth/chatgpt.json`, separately from Codex. Eve managed deployment rejects
-this local login path.
-Claude Code subscriptions and Meta Muse execution are not implemented.
 
 ## Codex subscription
+
+Reviews use Codex with a dedicated CLI login. Choose a model
+available to that account. `contextWindow` defaults to 100,000 tokens; set it to
+the model's capacity.
 
 From the installed release directory, sign in as the account running reviews:
 
@@ -86,20 +30,9 @@ chmod 700 "$HOME/.local/share/kicktires/codex"
 CODEX_HOME="$HOME/.local/share/kicktires/codex" bunx --no-install codex login --device-auth
 ```
 
-Set the trusted profile's `model` field, using an absolute `codexHome` path:
-
-```json
-{
-  "provider": "codex",
-  "id": "gpt-5.6-terra",
-  "reasoningEffort": "high",
-  "codexHome": "/home/runner/.local/share/kicktires/codex"
-}
-```
-
-`reasoningEffort` is optional and currently supported only for Codex. Omit it to use
-the selected model's catalog default. kicktires rejects unknown models and unsupported
-efforts before preparing the review. Run `bun run doctor -- --profile PROFILE --credentials`
+`home` is the absolute path to the dedicated Codex login and configuration directory.
+`effort` is optional; omit it to use the model's catalog default. Unknown models
+and unsupported efforts are rejected before preparing the review. Run `bun run doctor -- --profile PROFILE --credentials`
 to check the catalog without generating a response; account access is still checked
 when the model runs.
 
@@ -119,6 +52,48 @@ CLI version 0.154.0. Subscription limits and reauthentication apply.
 
 Clean and seeded browser-regression tests verified terminal checks, browser checks
 and MCP context using a ChatGPT subscription.
+
+## Project instructions
+
+Use `instructions` for project-specific guidance, up to 16,000 characters. Omit it
+when unnecessary; empty values are rejected. Instructions supplement the built-in
+review rules without granting tools or relaxing evidence validation. Use skills
+for reusable guidance with supporting files.
+
+Profile changes apply to new reviews; they do not rerun existing reviews.
+
+## Optional tools
+
+Add setup commands, check shortcuts, browser access, skills or MCP context as needed:
+
+```json
+{
+  "model": {
+    "id": "gpt-5.6-terra",
+    "home": "/home/runner/.local/share/kicktires/codex"
+  },
+  "setup": {
+    "commands": ["bun install --frozen-lockfile --ignore-scripts"],
+    "network": "allow-all"
+  },
+  "checks": ["bun test"],
+  "skills": ["./skills/review-accessibility"],
+  "browser": { "start": "bun run dev --host 127.0.0.1 --port $PORT" },
+  "connections": {
+    "project-context": {
+      "url": "https://your-context-service.example/mcp",
+      "description": "Read requirements by exact issue ID",
+      "tools": ["get_issue"],
+      "tokenEnv": "PROJECT_CONTEXT_TOKEN"
+    }
+  },
+  "limits": { "commandSeconds": 60, "reviewSeconds": 600 }
+}
+```
+
+Replace the example commands, skill path and MCP endpoint with real ones. Skill
+paths resolve relative to the profile. Omitted skills and connections default to
+empty collections; browser access defaults to `false`.
 
 ## Checks and browser
 

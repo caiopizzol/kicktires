@@ -10,7 +10,7 @@
 <p align="center">
   <strong>Code review that runs your code.</strong>
   <br>
-  Self-hosted reviews with your models, skills and tools.
+  Self-hosted reviews with Codex, your skills and tools.
 </p>
 
 <p align="center">
@@ -22,18 +22,17 @@
 
 ## Install
 
-Use an Ubuntu 24.04 or 26.04 VM (amd64 or arm64) and a model. While this repository
-is private, set `GH_TOKEN` with repository read access before installing.
+Use an Ubuntu 24.04 or 26.04 VM (amd64 or arm64) and a Codex login.
 
 ```sh
 curl -fsSL https://kicktires.dev/install.sh -o /tmp/kicktires-install.sh
-sudo --preserve-env=GH_TOKEN sh /tmp/kicktires-install.sh
+sudo sh /tmp/kicktires-install.sh
 ```
 
-The installer sets up prerequisites, Docker and a pinned worker release. Then
-[connect your repository](docs/self-hosting.md#add-a-repository) and
-[configure your model](docs/configuration.md#models-and-authentication).
-See [VM setup](docs/self-hosting.md) for installation details.
+The installer sets up prerequisites, Docker and a pinned worker release.
+[Configure Codex](docs/configuration.md#codex-subscription), then
+[connect your repository](docs/self-hosting.md#add-a-repository).
+See [VM setup](docs/self-hosting.md) for details.
 
 ## Documentation
 

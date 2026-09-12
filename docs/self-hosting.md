@@ -5,15 +5,15 @@ Serverless platforms without Docker are unsupported.
 
 ## Install
 
-On Ubuntu 24.04 or 26.04, amd64 or arm64. While the repository is private,
-set `GH_TOKEN` with repository read access before installing:
+Run on Ubuntu 24.04 or 26.04, amd64 or arm64:
 
 ```sh
 curl -fsSL https://kicktires.dev/install.sh -o /tmp/kicktires-install.sh
-sudo --preserve-env=GH_TOKEN sh /tmp/kicktires-install.sh
+sudo sh /tmp/kicktires-install.sh
 ```
 
-The hosted script downloads a pinned source commit.
+The hosted script downloads a pinned source commit. For private source, set
+`GH_TOKEN` with read access and pass `--preserve-env=GH_TOKEN` to `sudo`.
 Use `--version FULL_COMMIT_SHA` to select another commit, or
 `--source /path/to/kicktires` to install an existing checkout.
 
@@ -63,8 +63,9 @@ To connect one private repository directly:
 2. Install a root-owned, mode `644` [profile](../examples/profile.json) at
    `/etc/kicktires/your-project.json`. Configure its model, skills and available
    checks; test setup and check commands in the sandbox.
-3. Set the repository Actions secret `OPENAI_API_KEY`, or map your provider's
-   secret in the workflow. Copy [the workflow](../examples/github-workflow.yml)
+3. [Sign in to Codex](configuration.md#codex-subscription) as the runner account
+   and set `model.home` to its dedicated login directory.
+   Copy [the workflow](../examples/github-workflow.yml)
    to `.github/workflows/kicktires.yml` and set its profile path and runner label.
 
 Keep `pull_request_target`, the private/same-repository guards and cancellation
@@ -81,8 +82,8 @@ bun --no-env-file /opt/kicktires/releases/$release/scripts/doctor.ts \
 ```
 
 Preflight checks runtimes, Docker/image access, profile/skills, build, ownership,
-launcher, lock and private home. `--credentials` also checks that required variables
-exist without printing them. Actions secrets are normally available only inside jobs.
+launcher, lock and private home. `--credentials` also checks the Codex model catalog
+and required MCP credential variables without printing secrets.
 Preflight does not call models, run repository code or prove credentials work.
 After the workflow reaches the trusted base branch, validate a draft PR and rerun
 it to confirm duplicate prevention. Check the exact reviewed head and recorded
@@ -98,8 +99,7 @@ selects the release for every repository on the worker. Retain the old release f
 rollback and refresh skills containing launcher snapshots.
 
 Runtimes and the shared sandbox image require separate tested upgrades. Update and
-verify download versions/checksums when changing bootstrap runtimes. Existing Fireworks
-profiles must switch provider and secrets before upgrading to this version.
+verify download versions/checksums when changing bootstrap runtimes.
 
 To move a runner, install and preflight the destination with the same labels and
 trusted configuration, leaving its service stopped. Drain the old runner, stop it,
@@ -109,7 +109,7 @@ stop the new service before restarting the old one.
 
 Private reports remain in `~/kicktires-runs/`; apply an appropriate retention policy.
 After interrupted cleanup, use a run's `sandbox.json` to identify its exact container.
-Never prune other applications' containers. External providers receive model context;
+Never prune other applications' containers. Codex receives review context;
 self-contained repository tests do not need production credentials.
 
 For developer-machine reviews, use the [local review guide](local-review.md).
