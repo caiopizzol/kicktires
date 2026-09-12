@@ -10,7 +10,7 @@
 <p align="center">
   <strong>Code review that runs your code.</strong>
   <br>
-  Self-hosted reviews with Codex, your skills and tools.
+  Self-hosted code review with your own model or subscription.
 </p>
 
 <p align="center">
@@ -19,6 +19,8 @@
   <a href="https://bun.sh/"><img src="https://img.shields.io/badge/Bun-1.3.12%2B-FF5A1F" alt="Bun 1.3.12+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
 </p>
+
+Currently supports Codex with a dedicated CLI login. Other backends are not yet supported.
 
 ## Install
 
@@ -34,9 +36,25 @@ The installer sets up prerequisites, Docker and a pinned worker release.
 [connect your repository](docs/self-hosting.md#add-a-repository).
 See [VM setup](docs/self-hosting.md) for details.
 
+## How it works
+
+```mermaid
+flowchart LR
+    P["Pull request"] --> W["Your worker"]
+    W <--> S["Sandbox"]
+    W --> R["GitHub review"]
+    style W fill:#EEF2FF,stroke:#A5B4FC,color:#312E81
+```
+
+The worker investigates changes in a sandbox and posts findings to the PR.
+A required Kicktires check blocks merging when the review finds problems or cannot finish.
+Use a [private hub](docs/shared-workers.md) to share workers across repositories.
+
 ## Documentation
 
-- [Configure models, skills and tools](docs/configuration.md)
+- [Configure a review](docs/configuration.md)
+- [Every configuration option](docs/configuration-reference.md)
+- [Example files and where to use them](examples/README.md)
 - [Review locally](docs/local-review.md)
 - [Review GitHub PRs with shared workers](docs/shared-workers.md)
 - [Execution and privacy](docs/execution.md)
