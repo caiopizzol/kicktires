@@ -49,6 +49,22 @@ export async function workflowPullRequest(repository: string, base: string, work
       ref: `refs/heads/${branch}`,
       sha: ref.object.sha,
     });
+  } else {
+    const comparison = z
+      .object({
+        files: z.array(
+          z.object({ filename: z.string(), previous_filename: z.string().optional() }),
+        ),
+      })
+      .parse(
+        await api(
+          `/repos/${repository}/compare/${encodeURIComponent(base)}...${encodeURIComponent(branch)}`,
+        ),
+      );
+    if (comparison.files.some((file) => file.filename !== path || file.previous_filename))
+      throw new Error(
+        `${branch} contains unrelated changes. Rename that branch before running setup.`,
+      );
   }
   await addWorkflow(repository, branch, path, workflow);
   const pulls = z

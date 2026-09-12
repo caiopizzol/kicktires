@@ -1,10 +1,10 @@
 import { spawnSync } from "node:child_process";
-import { chmod, lstat, mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { chmod, lstat, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
 import { z } from "zod";
 import { decodePairing } from "../src/setup/pairing.ts";
 import { ask } from "../src/setup/terminal.ts";
-import { verifyRunner } from "../src/setup/runner.ts";
+import { runnerService, verifyRunner } from "../src/setup/runner.ts";
 import { profileSchema } from "../src/profile.ts";
 import { hubConfigSchema } from "../src/github/hub.ts";
 
@@ -175,8 +175,12 @@ async function main() {
     const visibility = await fetch(`https://api.github.com/repos/${pairing.hub}`, {
       signal: AbortSignal.timeout(30000),
     });
-    if (visibility.status !== 404)
+    if (visibility.status === 200)
       throw new Error("The worker hub must be private. Check the pairing code.");
+    if (visibility.status !== 404)
+      throw new Error(
+        `Could not verify hub visibility (${visibility.status}). Retry setup after GitHub access recovers.`,
+      );
     const next = { hub: pairing.hub, source: pairing.source, reviewer: pairing.reviewer };
     if (saved && JSON.stringify(saved) !== JSON.stringify(next))
       throw new Error("Pairing code belongs to another worker configuration.");
@@ -216,7 +220,17 @@ async function main() {
     profiles: { [saved.source]: profilePath },
   };
   hubConfigSchema.parse(hub);
-  await trustedWrite(hubPath, hub);
+  if (await exists(hubPath)) {
+    const existing = hubConfigSchema.parse(JSON.parse(await readTrusted(hubPath)));
+    if (
+      existing.repository !== saved.hub ||
+      existing.reviewer !== saved.reviewer ||
+      existing.profiles[saved.source] !== profilePath
+    )
+      throw new Error(
+        `${hubPath} no longer matches this worker setup. Restore its hub, reviewer and source profile before continuing.`,
+      );
+  } else await trustedWrite(hubPath, hub);
   await login(release);
   doctor();
   if (!(await exists(`${runner}/.runner`))) {
@@ -249,17 +263,24 @@ async function main() {
       !asset.browser_download_url.startsWith("https://github.com/actions/runner/releases/download/")
     )
       throw new Error("GitHub did not provide a verified runner download.");
-    await mkdir(runner, { mode: 0o700, recursive: true });
-    const archive = `${runner}/runner.tar.gz`;
-    run("curl", ["-fsSL", "--retry", "3", asset.browser_download_url, "-o", archive]);
-    const hash = new Bun.CryptoHasher("sha256")
-      .update(await Bun.file(archive).arrayBuffer())
-      .digest("hex");
-    if (`sha256:${hash}` !== asset.digest)
-      throw new Error("Runner download checksum does not match GitHub.");
-    run("tar", ["-xzf", archive, "-C", runner]);
-    run("chown", ["-R", `${user}:${user}`, runner]);
-    run(`${runner}/bin/installdependencies.sh`, []);
+    const staging = await mkdtemp("/opt/kicktires/runner-");
+    try {
+      const archive = `${staging}/runner.tar.gz`;
+      run("curl", ["-fsSL", "--retry", "3", asset.browser_download_url, "-o", archive]);
+      const hash = new Bun.CryptoHasher("sha256")
+        .update(await Bun.file(archive).arrayBuffer())
+        .digest("hex");
+      if (`sha256:${hash}` !== asset.digest)
+        throw new Error("Runner download checksum does not match GitHub.");
+      run("tar", ["-xzf", archive, "-C", staging]);
+      run(`${staging}/bin/installdependencies.sh`, [], { quiet: true });
+      await chmod(staging, 0o755);
+      await chmod(archive, 0o644);
+      run("mkdir", ["-p", runner], { asRunner: true });
+      run("tar", ["-xzf", archive, "-C", runner], { asRunner: true });
+    } finally {
+      await rm(staging, { recursive: true, force: true });
+    }
     run(
       `${runner}/config.sh`,
       [
@@ -278,11 +299,35 @@ async function main() {
       { asRunner: true, quiet: true, cwd: runner },
     );
   }
-  verifyRunner(await readFile(`${runner}/.runner`, "utf8"), saved.hub);
+  const registration = verifyRunner(await readFile(`${runner}/.runner`, "utf8"), saved.hub);
+  const service = (await exists(`${runner}/.service`))
+    ? runnerService(await readFile(`${runner}/.service`, "utf8"))
+    : runnerService(
+        `actions.runner.${saved.hub.replace("/", "-")}.${registration.agentName}.service`,
+      );
+  const unitPath = `/etc/systemd/system/${service}`;
+  if (!(await exists(unitPath))) {
+    run("cp", [`${runner}/bin/runsvc.sh`, `${runner}/runsvc.sh`], { asRunner: true });
+    await writeFile(
+      unitPath,
+      `[Unit]\nDescription=Kicktires GitHub Actions runner\nAfter=network-online.target\n\n[Service]\nExecStart=${runner}/runsvc.sh\nUser=${user}\nWorkingDirectory=${runner}\nKillMode=process\nKillSignal=SIGTERM\nTimeoutStopSec=5min\n\n[Install]\nWantedBy=multi-user.target\n`,
+      { mode: 0o644, flag: "wx" },
+    );
+  }
+  await readTrusted(unitPath);
+  run("systemctl", ["daemon-reload"]);
+  if (run("systemctl", ["show", service, "--property=User", "--value"], { quiet: true }) !== user)
+    throw new Error(
+      "The runner service uses another account. Check its systemd unit before continuing.",
+    );
   if (!(await exists(`${runner}/.service`)))
-    run(`${runner}/svc.sh`, ["install", user], { cwd: runner });
-  run(`${runner}/svc.sh`, ["start"], { cwd: runner });
-  run(`${runner}/svc.sh`, ["status"], { cwd: runner });
+    run("bash", ["-c", 'printf "%s\\n" "$1" > .service', "kicktires", service], {
+      asRunner: true,
+      cwd: runner,
+    });
+  run("systemctl", ["enable", service]);
+  run("systemctl", ["start", service]);
+  run("systemctl", ["is-active", "--quiet", service]);
   console.log(
     `Worker connected to ${saved.hub}. Merge the source workflow, then open a pull request to verify the review.`,
   );

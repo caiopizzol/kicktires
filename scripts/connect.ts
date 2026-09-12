@@ -25,6 +25,11 @@ const stateSchema = z.object({
   appSlug: z.string().optional(),
   credentials: z.boolean().default(false),
   dispatch: z.boolean().default(false),
+  ready: z.boolean().default(false),
+  release: z
+    .string()
+    .regex(/^[a-f0-9]{40}$/)
+    .optional(),
 });
 
 async function connect() {
@@ -201,17 +206,24 @@ async function connect() {
   await gh(["variable", "set", "KICKTIRES_HUB", "--repo", source.full_name, "--body", hub]);
   const hubRepo = repositorySchema.parse(await api(`/repos/${hub}`));
   if (hubRepo.default_branch !== "main") throw new Error("The hub default branch must be main.");
-  await addWorkflow(
-    hub,
-    "main",
-    ".github/workflows/review.yml",
-    await readFile(new URL("../examples/github-hub-workflow.yml", import.meta.url), "utf8"),
-  );
-  const pr = await workflowPullRequest(
-    source.full_name,
-    source.default_branch,
-    await readFile(new URL("../examples/github-submit-workflow.yml", import.meta.url), "utf8"),
-  );
+  if (!state.ready) {
+    await addWorkflow(
+      hub,
+      "main",
+      ".github/workflows/review.yml",
+      await readFile(new URL("../examples/github-hub-workflow.yml", import.meta.url), "utf8"),
+    );
+    const pr = await workflowPullRequest(
+      source.full_name,
+      source.default_branch,
+      await readFile(new URL("../examples/github-submit-workflow.yml", import.meta.url), "utf8"),
+    );
+    state.ready = true;
+    state.release = release;
+    await savePrivate(directory, "setup.json", state);
+    if (pr) console.log(`After the worker is ready, merge ${pr}`);
+  }
+  const workerRelease = state.release ?? release;
   const registration = z
     .object({ token: z.string(), expires_at: z.iso.datetime({ offset: true }) })
     .parse(await api(`/repos/${hub}/actions/runners/registration-token`, {}));
@@ -220,7 +232,7 @@ async function connect() {
     hub,
     source: source.full_name,
     reviewer: `${state.appSlug}[bot]`,
-    release,
+    release: workerRelease,
     token: registration.token,
     expires: new Date(registration.expires_at).toISOString(),
   });
@@ -228,7 +240,7 @@ async function connect() {
   await savePrivateText(directory, "pairing.txt", `${pairing}\n`);
   if (process.platform === "darwin") {
     const copy = Bun.spawn(["pbcopy"], { stdin: "pipe", stdout: "ignore", stderr: "ignore" });
-    copy.stdin.write(pairing);
+    await copy.stdin.write(pairing);
     await copy.stdin.end();
     if ((await copy.exited) === 0) console.log("Pairing code copied to your clipboard.");
   }
@@ -236,9 +248,8 @@ async function connect() {
     `\nPairing code saved to ${pairingPath}\nOn your worker, run sudo kicktires setup and paste this code. It expires in one hour.`,
   );
   console.log(
-    `Worker install:\ncurl -fsSL https://kicktires.dev/install.sh -o /tmp/kicktires-install.sh\nsudo sh /tmp/kicktires-install.sh --version ${release}`,
+    `Worker install:\ncurl -fsSL https://kicktires.dev/install.sh -o /tmp/kicktires-install.sh\nsudo sh /tmp/kicktires-install.sh --version ${workerRelease}`,
   );
-  if (pr) console.log(`After the worker is ready, merge ${pr}`);
   console.log(
     "Open a same-repository pull request to verify the Kicktires check before making it required.",
   );
