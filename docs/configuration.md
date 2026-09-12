@@ -20,7 +20,7 @@ Start with [profile.json](../examples/profile.json). See the
 ## Codex subscription
 
 Reviews use Codex with a dedicated CLI login. Choose a model
-available to that account. `contextWindow` defaults to 100,000 tokens; set it to
+available to that account. `context` defaults to 100,000 tokens; set it to
 the model's capacity.
 
 From the installed release directory, sign in as the account running reviews:
@@ -62,6 +62,13 @@ review rules without granting tools or relaxing evidence validation. Use skills
 for reusable guidance with supporting files.
 
 Profile changes apply to new reviews; they do not rerun existing reviews.
+
+## Setup
+
+Omit `setup` unless the project needs preparation, such as installing dependencies.
+Commands run on both base and head so the reviewer can compare prepared revisions.
+Use `network: "allow-all"` only when setup needs downloads; the default is
+`"deny-all"`. Sandbox networking is disabled after setup.
 
 ## Optional tools
 

@@ -8,7 +8,7 @@ export const profileSchema = z
         id: z.string().min(1),
         home: z.string().min(1),
         effort: z.string().min(1).optional(),
-        contextWindow: z.number().int().min(8192).default(100000),
+        context: z.number().int().min(8192).default(100000),
       })
       .strict(),
     instructions: z.string().trim().min(1).max(16000).optional(),

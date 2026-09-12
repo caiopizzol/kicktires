@@ -10,7 +10,7 @@ export default defineAgent({
         const { model } = job.profile;
         return {
           model: resolveModel(model, job.directory),
-          modelContextWindowTokens: model.contextWindow,
+          modelContextWindowTokens: model.context,
         };
       },
     },

@@ -3,7 +3,7 @@
     "id": "gpt-5.6-terra",
     "home": "/home/runner/.local/share/kicktires/codex",
     "effort": "high",
-    "contextWindow": 100000
+    "context": 100000
   },
   "instructions": "Check boundary cases and public API compatibility.",
   "skills": ["./skills/review-accessibility"],

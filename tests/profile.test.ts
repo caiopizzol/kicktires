@@ -73,8 +73,9 @@ test("connection names follow Eve's kebab-case contract", () => {
 
 test("concise Codex settings survive job serialization", async () => {
   const model = { id: "test", home: "/login", effort: "high" };
+  expect(profileSchema.parse({ model: { ...model, context: 200000 } }).model.context).toBe(200000);
   const current = profileSchema.parse({ model }).model;
-  expect(current).toEqual({ ...model, contextWindow: 100000 });
+  expect(current).toEqual({ ...model, context: 100000 });
   expect(profileSchema.parse(JSON.parse(JSON.stringify({ model: current }))).model).toEqual(
     current,
   );
@@ -88,6 +89,9 @@ test("concise Codex settings survive job serialization", async () => {
 test("rejects legacy, unsupported and invalid model settings", () => {
   const model = { id: "test", home: "/login", effort: "high" };
   for (const overrides of [
+    { contextWindow: 100000 },
+    { context: 8191 },
+    { context: 8192.5 },
     { provider: "codex" },
     { codexHome: "/login" },
     { reasoningEffort: "high" },
