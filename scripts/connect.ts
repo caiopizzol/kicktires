@@ -224,6 +224,29 @@ async function connect() {
     if (pr) console.log(`After the worker is ready, merge ${pr}`);
   }
   const workerRelease = state.release ?? release;
+  if (!state.appSlug)
+    throw new Error("Saved setup has no review App. Restore its setup state before continuing.");
+  if (workerRelease !== release)
+    console.log(`Keeping worker release ${workerRelease}; setup does not upgrade workers.`);
+  if (state.ready) {
+    const workflow = await optionalApi(
+      `/repos/${source.full_name}/contents/.github/workflows/kicktires.yml?ref=${encodeURIComponent(source.default_branch)}`,
+    );
+    if (!workflow) {
+      const pulls = z
+        .array(z.object({ html_url: z.url() }))
+        .parse(
+          await api(
+            `/repos/${source.full_name}/pulls?head=${owner}:kicktires%2Fsetup&base=${encodeURIComponent(source.default_branch)}&state=open`,
+          ),
+        );
+      console.log(
+        pulls[0]
+          ? `Merge the source workflow: ${pulls[0].html_url}`
+          : "The source workflow is missing. Restore .github/workflows/kicktires.yml before requesting reviews.",
+      );
+    }
+  }
   const registration = z
     .object({ token: z.string(), expires_at: z.iso.datetime({ offset: true }) })
     .parse(await api(`/repos/${hub}/actions/runners/registration-token`, {}));
