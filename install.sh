@@ -59,6 +59,8 @@ ASKPASS
 fi
 unset GH_TOKEN GIT_ASKPASS
 validate_checkout
+exec 8>/run/kicktires-install.lock
+flock --exclusive --nonblock 8 || { echo 'Another installer is running.' >&2; exit 1; }
 if ! command -v docker >/dev/null; then
   install -d -m 755 /etc/apt/keyrings
   curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/kicktires-docker.asc
@@ -96,4 +98,5 @@ bun --no-env-file "/opt/kicktires/releases/$active/scripts/install.ts"
 
 }
 
+( : </dev/tty ) 2>/dev/null || { echo 'Run the installer in an interactive terminal on the worker VM.' >&2; exit 1; }
 main "$@" </dev/tty

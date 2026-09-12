@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { rm } from "node:fs/promises";
 import { z } from "zod";
 import { privateDirectory } from "../src/setup/state.ts";
 import { connect } from "../src/setup/connect.ts";
@@ -10,7 +10,9 @@ async function install() {
     throw new Error("Run the installer as root in an interactive terminal on the worker VM.");
   const directory = "/var/lib/kicktires/install";
   await privateDirectory(directory);
-  const auth = await mkdtemp(`${directory}/gh-`);
+  const auth = "/run/kicktires-install-gh";
+  await rm(auth, { recursive: true, force: true });
+  await privateDirectory(auth);
   const previous = process.env.GH_CONFIG_DIR;
   process.env.GH_CONFIG_DIR = auth;
   delete process.env.GH_TOKEN;
@@ -22,7 +24,7 @@ async function install() {
   const authenticate = async () => {
     if (authenticated) return;
     console.log(
-      "Sign into GitHub to configure your repositories. This login is removed from the VM when the installer exits.",
+      "Sign into GitHub to configure your repositories. This temporary login is removed after installation.",
     );
     const child = Bun.spawn(
       [
@@ -57,7 +59,10 @@ async function install() {
     });
     if (connection.workflow) console.log(`\nMerge the workflow PR: ${connection.workflow}`);
     console.log(
-      "Open a same-repository PR and wait for the review. Require the kicktires status from your GitHub App, alongside your existing CI checks.",
+      `Open a same-repository PR and wait for the review. Require the kicktires status from ${connection.appSlug}, alongside your existing CI checks.`,
+    );
+    console.log(
+      "GitHub sign-in removed from this VM on exit. Its GitHub CLI authorization remains in your GitHub settings.",
     );
   } finally {
     if (previous === undefined) delete process.env.GH_CONFIG_DIR;

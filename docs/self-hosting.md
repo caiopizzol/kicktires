@@ -60,8 +60,9 @@ an organization owner.
 
 Configuration stays in `/etc/kicktires/`. The dedicated runner and Codex login use
 `/home/kicktires-runner/`. Private installation state is in
-`/var/lib/kicktires/install/`. The temporary GitHub CLI login is deleted when the
-installer exits. The review App key is retained only until stored as a hub secret.
+`/var/lib/kicktires/install/`. The temporary GitHub CLI login is kept under `/run/` and deleted on normal exit
+or the next installer run; reboot also clears it. Its GitHub authorization remains
+in your account settings. The review App key is retained only until stored as a hub secret.
 
 App creation returns through `kicktires.dev`; its temporary confirmation URL lets
 the VM retrieve the App credentials. Paste it only into your installer.

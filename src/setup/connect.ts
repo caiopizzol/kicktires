@@ -25,7 +25,6 @@ const stateSchema = z.object({
   dispatch: z.boolean().default(false),
   ready: z.boolean().default(false),
   workflow: z.url().nullable().optional(),
-  appState: z.string().optional(),
 });
 
 export async function connect(directory: string, authenticate: () => Promise<void>) {
@@ -47,7 +46,7 @@ export async function connect(directory: string, authenticate: () => Promise<voi
     .stdout.toString()
     .trim();
   if (configured && configured !== account)
-    throw new Error(`GitHub CLI is signed in as ${account}; this checkout expects ${configured}.`);
+    throw new Error(`GitHub CLI is signed in as ${account}; this machine expects ${configured}.`);
   const source = repositorySchema.parse(await api(`/repos/${sourceInput}`));
   if (!source.permissions.admin) throw new Error("Repository admin access is required for setup.");
   const owner = source.owner.login;
@@ -107,7 +106,7 @@ export async function connect(directory: string, authenticate: () => Promise<voi
       const keyPath = await ask("Private key file on this VM");
       const info = await lstat(keyPath);
       if (!info.isFile() || info.uid !== process.getuid?.() || info.mode & 0o077)
-        throw new Error("The App key must be a private file owned by your account (chmod 600).");
+        throw new Error("The App key must be a root-owned private file (mode 600).");
       const credentials = {
         id: z.coerce.number().int().positive().parse(appId),
         pem: await readFile(keyPath, "utf8"),
@@ -117,16 +116,20 @@ export async function connect(directory: string, authenticate: () => Promise<voi
       await savePrivate(directory, "app.json", pending);
     }
     if (!pending) {
-      state.appState ??=
+      const appState =
         crypto.randomUUID().replaceAll("-", "") + crypto.randomUUID().replaceAll("-", "");
-      await savePrivate(directory, "github.json", state);
-      await openBrowser(
-        registrationUrl(owner, source.owner.type === "Organization", state.appState),
-      );
-      const code = registrationCode(
-        await ask("Paste the App confirmation URL (hidden)", true),
-        state.appState,
-      );
+      await openBrowser(registrationUrl(owner, source.owner.type === "Organization", appState));
+      let code: string;
+      try {
+        code = registrationCode(
+          await ask("Paste the App confirmation URL (hidden)", true),
+          appState,
+        );
+      } catch {
+        throw new Error(
+          `Invalid App confirmation. An App may already exist under ${owner}; reuse it or remove it in GitHub settings before retrying.`,
+        );
+      }
       const response = await fetch(`https://api.github.com/app-manifests/${code}/conversions`, {
         method: "POST",
         headers: { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2026-03-10" },

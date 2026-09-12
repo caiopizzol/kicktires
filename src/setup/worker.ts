@@ -1,3 +1,4 @@
+import { ask } from "./terminal.ts";
 import { spawnSync } from "node:child_process";
 import { chmod, lstat, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { z } from "zod";
@@ -169,7 +170,12 @@ export async function configureWorker(
   await chmod(codexHome, 0o700);
   const profile = (await exists(profilePath))
     ? profileSchema.parse(JSON.parse(await readTrusted(profilePath)))
-    : { model: { id: "gpt-5.6-terra", home: codexHome } };
+    : {
+        model: {
+          id: (await ask("Codex model [gpt-5.6-terra]")) || "gpt-5.6-terra",
+          home: codexHome,
+        },
+      };
   profileSchema.parse(profile);
   if (profile.model.home !== codexHome)
     throw new Error("The profile belongs to another Codex login.");
@@ -192,7 +198,13 @@ export async function configureWorker(
       );
   } else await trustedWrite(hubPath, hub);
   await login(release);
-  doctor();
+  try {
+    doctor();
+  } catch (error) {
+    throw new Error(
+      `${error instanceof Error ? error.message : "Worker preflight failed."} Check ${profilePath}, then rerun the installer.`,
+    );
+  }
   if (!(await exists(`${runner}/.runner`))) {
     const platform =
       process.arch === "arm64" ? "arm64" : process.arch === "x64" ? "x64" : undefined;

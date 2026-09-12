@@ -32,7 +32,7 @@ for (const dirty of [false, true]) {
       }
       const script = await readFile(new URL("../install.sh", import.meta.url), "utf8");
       // Simulate supported Linux probes and stop at the first package operation.
-      const harness = `id() { echo 0; }\ndpkg() { echo amd64; }\napt_get() { echo HOST_MUTATION >&2; exit 97; }\n${script.replace(". /etc/os-release", "ID=ubuntu; VERSION_ID=26.04").replaceAll("apt-get ", "apt_get ").replace('main "$@" </dev/tty', 'main "$@"')}`;
+      const harness = `id() { echo 0; }\ndpkg() { echo amd64; }\napt_get() { echo HOST_MUTATION >&2; exit 97; }\n${script.replace(". /etc/os-release", "ID=ubuntu; VERSION_ID=26.04").replaceAll("apt-get ", "apt_get ").replace("( : </dev/tty ) 2>/dev/null", "true").replace('main "$@" </dev/tty', 'main "$@"')}`;
       const result = Bun.spawnSync(["sh", "-c", harness, "install.sh", "--source", source]);
       expect(result.exitCode).toBe(1);
       expect(result.stderr.toString()).toContain(
