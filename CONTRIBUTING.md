@@ -5,7 +5,7 @@ Read [the product scope](PRODUCT.md) before proposing a change.
 ## Development
 
 Use Git, Node 24+ and Bun 1.3.12+. To deploy a worker, use the
-[hosted installer](docs/self-hosting.md) at `https://kicktires.dev/install.sh`.
+[hosted installer](docs/self-hosting.md) at `https://kicktires.dev/install`.
 
 ```sh
 bun install --frozen-lockfile
@@ -80,7 +80,7 @@ history public, review it for earlier operator records too.
 
 ## Hosted installer
 
-`kicktires.dev/install.sh` and the domain root serve the same pinned installer through
+`kicktires.dev/install`, `/install.sh` and the domain root serve the same pinned installer through
 Cloudflare Workers. Publish a committed, tested revision with:
 
 ```sh

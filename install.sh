@@ -1,5 +1,7 @@
 #!/bin/sh
 set -eu
+
+main() {
 umask 022
 
 checkout=
@@ -33,7 +35,7 @@ validate_checkout() {
 if [ -n "$checkout" ]; then validate_checkout; fi
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y ca-certificates curl git gnupg diffutils tar unzip xz-utils util-linux coreutils
+apt-get install -y gh ca-certificates curl git gnupg diffutils tar unzip xz-utils util-linux coreutils
 temporary=$(mktemp -d)
 trap 'rm -rf "$temporary"' EXIT HUP INT TERM
 if [ -z "$checkout" ]; then
@@ -57,6 +59,10 @@ ASKPASS
 fi
 unset GH_TOKEN GIT_ASKPASS
 validate_checkout
+exec 8>/run/kicktires-install.lock
+flock --exclusive --nonblock 8 || { echo 'Another installer is running.' >&2; exit 1; }
+trap 'rm -rf "$temporary" /run/kicktires-install-gh' EXIT
+trap 'exit 130' HUP INT TERM
 if ! command -v docker >/dev/null; then
   install -d -m 755 /etc/apt/keyrings
   curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/kicktires-docker.asc
@@ -84,4 +90,15 @@ if [ ! -e "$runtime/bun" ]; then
   mv "$runtime/bun.next" "$runtime/bun"
 fi
 sh "$checkout/scripts/install-worker.sh" "$checkout"
-echo 'Worker installed. Run sudo kicktires setup with the pairing code from your laptop.'
+active=$(cat /etc/kicktires/release)
+case "$active" in ''|*[!0-9a-f]*) echo 'Invalid active release.' >&2; exit 1 ;; esac
+[ "${#active}" -eq 40 ] || exit 1
+[ -f "/opt/kicktires/releases/$active/scripts/install.ts" ] || {
+  echo 'The active release predates guided installation. Review the staged release before activating it.' >&2; exit 1;
+}
+bun --no-env-file "/opt/kicktires/releases/$active/scripts/install.ts"
+
+}
+
+( : </dev/tty ) 2>/dev/null || { echo 'Run the installer in an interactive terminal on the worker VM.' >&2; exit 1; }
+main "$@" </dev/tty

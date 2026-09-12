@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { spawn } from "node:child_process";
 
 export class GitHubError extends Error {
@@ -57,4 +58,36 @@ export async function optionalApi(path: string) {
 
 export async function secret(repository: string, name: string, value: string) {
   await gh(["secret", "set", name, "--repo", repository], value);
+}
+
+export async function signIn() {
+  const child = Bun.spawn(
+    [
+      "gh",
+      "auth",
+      "login",
+      "--hostname",
+      "github.com",
+      "--git-protocol",
+      "https",
+      "--web",
+      "--scopes",
+      "repo,workflow",
+      "--insecure-storage",
+    ],
+    { env: process.env, stdin: "ignore", stdout: "inherit", stderr: "inherit" },
+  );
+  if ((await child.exited) !== 0)
+    throw new Error("GitHub login failed. Rerun the installer to continue.");
+}
+
+export async function runnerToken(repository: string) {
+  const hub = z.object({ private: z.boolean() }).parse(await api(`/repos/${repository}`));
+  if (!hub.private)
+    throw new Error(
+      "The worker hub must be private. Restore its visibility before rerunning the installer.",
+    );
+  return z
+    .object({ token: z.string() })
+    .parse(await api(`/repos/${repository}/actions/runners/registration-token`, {})).token;
 }
