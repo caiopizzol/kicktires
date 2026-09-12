@@ -49,4 +49,4 @@ await api(
   JSON.stringify({ hostname: "kicktires.dev", service, environment: "production", zone_id: zone }),
   true,
 );
-console.log(`Published https://kicktires.dev/install.sh at ${version}`);
+console.log(`Published https://kicktires.dev/install at ${version}`);

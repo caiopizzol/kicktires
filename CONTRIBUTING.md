@@ -5,7 +5,7 @@ Read [the product scope](PRODUCT.md) before proposing a change.
 ## Development
 
 Use Git, Node 24+ and Bun 1.3.12+. To deploy a worker, use the
-[hosted installer](docs/self-hosting.md) at `https://kicktires.dev/install.sh`.
+[hosted installer](docs/self-hosting.md) at `https://kicktires.dev/install`.
 
 ```sh
 bun install --frozen-lockfile
@@ -13,22 +13,21 @@ bun run check
 bun run build
 ```
 
-`check` runs Vite+ formatting and lint checks, TypeScript (including scripts), and
-Bun regression tests. Vite+ is pinned; Eve remains the application builder.
-Use `bun run format` to format, `bun run lint` to lint and `bun run typecheck` to
-check types. Installation enables the precommit hook: staged checks plus full-project
-type checking. Hooks require development dependencies. CI also runs tests and the build.
-Tests need neither Docker nor model keys.
-Rebuild after source changes; profile changes need no build.
+`check` runs formatting, lint, TypeScript and regression tests. CI also runs the
+build. Tests need neither Docker nor a model login.
+
+Use `bun run format`, `bun run lint` or `bun run typecheck` for individual checks.
+Installation enables staged checks and full-project type checking before commits;
+hooks require development dependencies. Rebuild after source changes; profile
+changes need no build.
 
 For agent, skill, model or sandbox changes, also run the paid integration test with
-Docker and `OPENAI_API_KEY` (or a trusted Codex profile):
+Docker and a trusted Codex profile:
 
 ```sh
 bun run sandbox
 bun run build
-bun run test:integration
-# Or: bun run test:integration --profile /absolute/codex-profile.json
+bun run test:integration --profile /absolute/codex-profile.json
 ```
 
 The integration test covers harmless and documentation changes, a seeded browser
@@ -71,8 +70,8 @@ paid end-to-end review and its local MCP fixture.
 
 ## Changes
 
-Preserve evidence validation.
-Evidence validation checks references and execution, not whether a finding is true.
+Preserve evidence validation: it checks references and execution, not whether a
+finding is true.
 Add focused regression tests for behavior changes; avoid tests that mirror cosmetic edits.
 Use conventional commits and describe the change and its verification.
 
@@ -81,7 +80,7 @@ history public, review it for earlier operator records too.
 
 ## Hosted installer
 
-`kicktires.dev/install.sh` and the domain root serve the same pinned installer through
+`kicktires.dev/install`, `/install.sh` and the domain root serve the same pinned installer through
 Cloudflare Workers. Publish a committed, tested revision with:
 
 ```sh
@@ -92,3 +91,14 @@ Set `CF_TOKEN` in the environment or the ignored `.env`. The token needs Worker 
 custom-domain and zone access. The deployed script contains no credentials; private
 source downloads use the installer's own `GH_TOKEN`. Verify the published script and
 `X-Kicktires-Version` header after deployment.
+
+## Releases
+
+Release Please opens a version and changelog PR after releasable conventional commits
+reach `main`. Merge that PR to publish a GitHub pre-release and version tag. It does
+not publish to npm or deploy workers or the hosted installer.
+
+The `release` workflow uses `RELEASE_PLEASE_TOKEN`, a fine-grained token for this
+repository with Contents, Issues and Pull requests read/write. Its PRs run normal
+CI and KickTires checks. Keep the hosted installer pinned to a tested release using
+the deployment command above.

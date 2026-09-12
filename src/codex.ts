@@ -5,11 +5,12 @@ import { existsSync, lstatSync, readdirSync } from "node:fs";
 import { join, isAbsolute } from "node:path";
 import { tmpdir } from "node:os";
 import { stopService } from "./service.ts";
+import { version } from "../package.json";
 
 export const codexVersion = "0.154.0";
 
 export function assertCodexHome(home: string | undefined): asserts home is string {
-  if (!home || !isAbsolute(home)) throw new Error("codex requires an absolute model.codexHome");
+  if (!home || !isAbsolute(home)) throw new Error("codex requires an absolute model.home");
   for (const file of ["config.toml", "AGENTS.md", "hooks.json", ".agents", "rules"]) {
     if (existsSync(join(home, file)))
       throw new Error(`Use a dedicated Codex login home without ${file}: ${home}`);
@@ -192,7 +193,7 @@ async function withCodex<T>(
   try {
     signal.throwIfAborted();
     const initialized = await request("initialize", {
-      clientInfo: { name: "kicktires", version: "0.1.0" },
+      clientInfo: { name: "kicktires", version },
       capabilities: { experimentalApi: true },
     });
     if (!String(initialized.userAgent).includes(`/${codexVersion} `))

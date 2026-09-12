@@ -1,6 +1,6 @@
 {
   "name": "kicktires",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -18,9 +18,6 @@
     "prepare": "test ! -x node_modules/.bin/vp || vp config --no-agent"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "4.0.52",
-    "@ai-sdk/openai": "4.0.36",
-    "@ai-sdk/xai": "4.0.57",
     "@openai/codex": "0.154.0",
     "eve": "0.52.5",
     "yaml": "2.8.2",

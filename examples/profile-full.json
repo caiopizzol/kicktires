@@ -1,0 +1,30 @@
+{
+  "model": {
+    "id": "gpt-5.6-terra",
+    "home": "/home/runner/.local/share/kicktires/codex",
+    "effort": "high",
+    "context": 100000
+  },
+  "instructions": "Check boundary cases and public API compatibility.",
+  "skills": ["./skills/review-accessibility"],
+  "setup": {
+    "commands": ["bun install --frozen-lockfile --ignore-scripts"],
+    "network": "allow-all"
+  },
+  "checks": ["bun test"],
+  "browser": {
+    "start": "bun run dev --host 127.0.0.1 --port $PORT"
+  },
+  "connections": {
+    "project-context": {
+      "url": "https://your-context-service.example/mcp",
+      "description": "Read requirements by exact issue ID",
+      "tools": ["get_issue"],
+      "tokenEnv": "PROJECT_CONTEXT_TOKEN"
+    }
+  },
+  "limits": {
+    "commandSeconds": 60,
+    "reviewSeconds": 600
+  }
+}

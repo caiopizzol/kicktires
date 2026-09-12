@@ -164,7 +164,11 @@ export function validateReport(data: unknown, rawEvents: unknown[], job: ReviewJ
     );
   return {
     ...report,
-    model: modelSettingsSchema.parse(job.profile.model),
+    model: modelSettingsSchema.parse({
+      provider: "codex",
+      id: job.profile.model.id,
+      reasoningEffort: job.profile.model.effort,
+    }),
     findings: normalized.findings,
     status:
       gaps.length || report.status === "incomplete"

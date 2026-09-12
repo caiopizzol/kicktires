@@ -1,13 +1,40 @@
 # Shared workers
 
-Use one private GitHub repository as a review hub for several personal repositories.
+Use one private GitHub repository as a review hub for several repositories owned by
+one organization or personal account.
 GitHub queues the jobs. Each VM runs one hub runner, so a second VM adds a second review
 slot. No queue server or public endpoint is needed.
 
 The hub supports public and private same-owner source repositories with same-repository
 PRs. Fork PRs are unsupported. Keep the hub repository private; never register a
-self-hosted runner on a public source repository. Keep project CI separate: the required `kicktires` status reports investigation completion, including
-reviews that find bugs.
+self-hosted runner on a public source repository. The required `kicktires` status
+passes only when the investigation finishes with no findings. Findings and incomplete reviews block merging. Keep project CI separate.
+
+```mermaid
+flowchart LR
+    R["Source repositories"] --> H["Private hub"]
+    H -->|Available runner| W1["Worker 1"]
+    H -->|Available runner| W2["Worker 2"]
+    style H fill:#EEF2FF,stroke:#A5B4FC,color:#312E81
+```
+
+Each review runs on one available worker.
+
+## Choose the hub owner
+
+| Setup               | Source repositories      | Private hub             |
+| ------------------- | ------------------------ | ----------------------- |
+| GitHub organization | `acme/api`, `acme/web`   | `acme/kicktires-worker` |
+| Personal account    | `alex/shop`, `alex/blog` | `alex/kicktires-worker` |
+
+Create the hub and GitHub App under the same owner as the source repositories.
+Install the App on those sources and select that owner for the dispatch token,
+which must have access only to the hub. Set each source's `KICKTIRES_HUB` to the
+hub's full name from the table. A personal account needs no organization.
+
+The supplied workflow rejects sources owned by a different account. For example,
+`alex/shop` and `sam/blog` cannot share one hub; use a hub per owner or move the
+repositories under one organization.
 
 ## Set up the hub
 
@@ -19,8 +46,8 @@ reviews that find bugs.
    repositories. No OAuth callback or server is needed.
 3. Set the hub Actions variable `KICKTIRES_APP_ID` and secret `KICKTIRES_APP_PRIVATE_KEY`.
    The workflow creates a short-lived token for the source repository after a worker
-   picks up the job. Keep model secrets in the hub; add their environment mappings to
-   the Review step if needed. Codex login belongs to the worker account.
+   picks up the job. [Sign in to Codex](configuration.md#codex-subscription) as the
+   worker account; keep its login on the worker.
 4. Create a fine-grained personal access token with access to **only the hub repository**
    and **Actions: read and write**. Record its expiry for rotation. Source repositories
    use this token to submit requests; they do not receive the App private key.
@@ -35,6 +62,16 @@ Install each project's trusted profile and skills. Copy [hub.json](../examples/h
 to `/etc/kicktires/hub.json`, owned by root and readable by the runner. Set the hub's full
 repository name, the App's exact `[bot]` login, and the source-to-profile mapping.
 Requests cannot choose a profile path.
+
+The hub config has three required fields:
+
+| Field        | Value                                                             |
+| ------------ | ----------------------------------------------------------------- |
+| `repository` | Private hub name, such as `acme/kicktires-worker`.                |
+| `reviewer`   | GitHub App login, including `[bot]`.                              |
+| `profiles`   | Map of source repository names to absolute trusted profile paths. |
+
+Unknown fields and unconfigured source repositories are rejected.
 
 Run `doctor` as the hub runner account for every profile. All workers in the pool need
 the same release, profiles, skills, runtimes and model authentication. Each worker's
@@ -51,20 +88,21 @@ Set these Actions settings in each source repository:
 
 Copy [the submission workflow](../examples/github-submit-workflow.yml) to
 `.github/workflows/kicktires.yml`. It submits the source PR and head SHA without checking
-out code. **Submit review** means the request was accepted, not that review finished.
+out code. **queue review** means the request was accepted, not that review finished.
 Its job summary links to the hub run.
 
 Only the hub App writes the `kicktires` status. Before the first review starts, the
 required status is missing and blocks merging. During investigation it is pending;
-completed investigations succeed, and blocked investigations fail. Findings appear on
-the original PR. Duplicate completed reviews restore success without new inference.
+it succeeds only when the review finishes with no findings. Findings and incomplete
+reviews fail the status. Reviews appear on the original PR. Duplicate requests
+restore the published result without new inference.
 
 ## Migrate existing projects
 
 Validate the hub on a draft PR before cutover. With the old runner idle and its queue
 empty, replace the source workflow and stop its old service. Require the **`kicktires`
 status from your App**, preserving independent CI gates and conversation resolution.
-Do not require **Submit review** as a substitute. The previous Actions-app binding does
+Do not require **queue review** as a substitute. The previous Actions-app binding does
 not automatically migrate to the new App.
 
 Remove old project registrations after live review and duplicate-rerun validation.
@@ -76,8 +114,11 @@ the old listeners alongside the hub reintroduces hidden capacity contention.
 The hub serializes requests for each repository and PR. GitHub can queue jobs for up to
 24 hours. A lost worker or queue expiry can leave the required status missing or pending;
 it never becomes successful merely because dispatch worked. Inspect the hub run and
-rerun it after repairing the worker. Incomplete published reviews remain incomplete for
-the same base/head pair; follow [the recovery guidance](github-actions.md#choose-advisory-or-merge-blocking-reviews).
+rerun it after repairing the worker. Reruns of the same base/head pair preserve
+published findings and incomplete status.
+Resolve the reported blocker or correct trusted configuration, then review a new
+revision. Reply to disputed findings and resolve their threads; resolving a thread
+does not turn a failed status green. Do not bypass failed checks with automatic approvals.
 
 The shared VM lock remains a safety check. It is not the queue. Adding workers increases
 execution capacity, not the model account's usage allowance.

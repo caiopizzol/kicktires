@@ -301,6 +301,9 @@ if(m.method==='turn/start'){send({id:m.id,result:{}});send({method:'thread/token
       /Supported: low, high/,
     );
     await rejects(resolveCodexSettings({ ...base, model: "unknown" }), /Available: alpha, beta/);
+    const packageVersion = JSON.parse(
+      await readFile(new URL("../package.json", import.meta.url), "utf8"),
+    ).version;
     const before = (await readFile(requests, "utf8"))
       .split("\n")
       .filter(Boolean)
@@ -315,6 +318,10 @@ if(m.method==='turn/start'){send({id:m.id,result:{}});send({method:'thread/token
     expect((await codexResponse(turn)).text).toBe("ready");
     await rejects(codexResponse({ ...turn, model: "mismatch" }), /did not accept/);
     await rejects(codexResponse({ ...turn, model: "locked" }), /unavailable for this account/);
+    expect(before.find((request) => request.method === "initialize").params.clientInfo).toEqual({
+      name: "kicktires",
+      version: packageVersion,
+    });
     const after = (await readFile(requests, "utf8"))
       .split("\n")
       .filter(Boolean)
