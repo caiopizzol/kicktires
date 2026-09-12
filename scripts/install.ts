@@ -1,9 +1,8 @@
 import { rm } from "node:fs/promises";
-import { z } from "zod";
 import { privateDirectory } from "../src/setup/state.ts";
 import { connect } from "../src/setup/connect.ts";
 import { configureWorker } from "../src/setup/worker.ts";
-import { api, signIn } from "../src/setup/github.ts";
+import { runnerToken, signIn } from "../src/setup/github.ts";
 
 async function install() {
   if (process.platform !== "linux" || process.getuid?.() !== 0 || !process.stdin.isTTY)
@@ -36,14 +35,7 @@ async function install() {
     const connection = await connect(directory, authenticate);
     await configureWorker(connection, async () => {
       await authenticate();
-      const hub = z.object({ private: z.boolean() }).parse(await api(`/repos/${connection.hub}`));
-      if (!hub.private)
-        throw new Error(
-          "The worker hub must be private. Restore its visibility before rerunning the installer.",
-        );
-      return z
-        .object({ token: z.string() })
-        .parse(await api(`/repos/${connection.hub}/actions/runners/registration-token`, {})).token;
+      return runnerToken(connection.hub);
     });
     if (connection.workflow) console.log(`\nMerge the workflow PR: ${connection.workflow}`);
     console.log(
