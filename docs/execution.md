@@ -35,8 +35,8 @@ no per-review CPU, memory or process quotas. Timeouts do not provide resource qu
 or strong multi-tenant isolation. Skills and prompts are guidance, not security boundaries.
 Docker does not protect against every container escape.
 
-Model and MCP credentials stay in the host service. External model providers receive
-the supplied review context; self-hosting the worker does not self-host the model.
+Codex login and MCP credentials stay on the host. Codex receives the review context;
+self-hosting the worker does not self-host the model.
 
 ## Results and limits
 

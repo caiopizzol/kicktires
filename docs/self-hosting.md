@@ -5,15 +5,15 @@ Serverless platforms without Docker are unsupported.
 
 ## Install
 
-On Ubuntu 24.04 or 26.04, amd64 or arm64. While the repository is private,
-set `GH_TOKEN` with repository read access before installing:
+Run on Ubuntu 24.04 or 26.04, amd64 or arm64:
 
 ```sh
 curl -fsSL https://kicktires.dev/install.sh -o /tmp/kicktires-install.sh
-sudo --preserve-env=GH_TOKEN sh /tmp/kicktires-install.sh
+sudo sh /tmp/kicktires-install.sh
 ```
 
-The hosted script downloads a pinned source commit.
+The hosted script downloads a pinned source commit. For private source, set
+`GH_TOKEN` with read access and pass `--preserve-env=GH_TOKEN` to `sudo`.
 Use `--version FULL_COMMIT_SHA` to select another commit, or
 `--source /path/to/kicktires` to install an existing checkout.
 
@@ -109,7 +109,7 @@ stop the new service before restarting the old one.
 
 Private reports remain in `~/kicktires-runs/`; apply an appropriate retention policy.
 After interrupted cleanup, use a run's `sandbox.json` to identify its exact container.
-Never prune other applications' containers. External providers receive model context;
+Never prune other applications' containers. Codex receives review context;
 self-contained repository tests do not need production credentials.
 
 For developer-machine reviews, use the [local review guide](local-review.md).

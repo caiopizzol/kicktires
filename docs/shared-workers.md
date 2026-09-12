@@ -44,8 +44,8 @@ repositories under one organization.
    repositories. No OAuth callback or server is needed.
 3. Set the hub Actions variable `KICKTIRES_APP_ID` and secret `KICKTIRES_APP_PRIVATE_KEY`.
    The workflow creates a short-lived token for the source repository after a worker
-   picks up the job. Keep model secrets in the hub; add their environment mappings to
-   the Review step if needed. Codex login belongs to the worker account.
+   picks up the job. [Sign in to Codex](configuration.md#codex-subscription) as the
+   worker account; keep its login on the worker.
 4. Create a fine-grained personal access token with access to **only the hub repository**
    and **Actions: read and write**. Record its expiry for rotation. Source repositories
    use this token to submit requests; they do not receive the App private key.
