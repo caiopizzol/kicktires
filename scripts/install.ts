@@ -3,7 +3,7 @@ import { z } from "zod";
 import { privateDirectory } from "../src/setup/state.ts";
 import { connect } from "../src/setup/connect.ts";
 import { configureWorker } from "../src/setup/worker.ts";
-import { api } from "../src/setup/github.ts";
+import { api, signIn } from "../src/setup/github.ts";
 
 async function install() {
   if (process.platform !== "linux" || process.getuid?.() !== 0 || !process.stdin.isTTY)
@@ -26,24 +26,7 @@ async function install() {
     console.log(
       "Sign into GitHub to configure your repositories. This temporary login is removed after installation.",
     );
-    const child = Bun.spawn(
-      [
-        "gh",
-        "auth",
-        "login",
-        "--hostname",
-        "github.com",
-        "--git-protocol",
-        "https",
-        "--web",
-        "--scopes",
-        "repo,workflow",
-        "--insecure-storage",
-      ],
-      { stdin: "ignore", stdout: "inherit", stderr: "inherit" },
-    );
-    if ((await child.exited) !== 0)
-      throw new Error("GitHub login failed. Rerun the installer to continue.");
+    await signIn();
     authenticated = true;
   };
   try {
