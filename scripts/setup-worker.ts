@@ -92,7 +92,7 @@ async function trustedWrite(path: string, value: unknown, replace = false) {
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o644, flag: "wx" });
 }
 
-async function login(release: string) {
+async function login(release: string, renew = false) {
   const cli = `${release}/node_modules/@openai/codex/bin/codex.js`;
   const status = spawnSync(
     "runuser",
@@ -112,7 +112,8 @@ async function login(release: string) {
     ],
     { stdio: "ignore" },
   );
-  if (status.status !== 0) run("node", [cli, "login", "--device-auth"], { asRunner: true });
+  if (renew || status.status !== 0)
+    run("node", [cli, "login", "--device-auth"], { asRunner: true });
   const auth = `${codexHome}/auth.json`;
   const info = await lstat(auth);
   if (!info.isFile()) throw new Error("Codex login did not create a regular auth.json file.");
@@ -158,7 +159,7 @@ async function main() {
     return;
   }
   if (action === "login") {
-    await login(release);
+    await login(release, true);
     doctor();
     return;
   }
@@ -272,7 +273,7 @@ async function main() {
         .digest("hex");
       if (`sha256:${hash}` !== asset.digest)
         throw new Error("Runner download checksum does not match GitHub.");
-      run("tar", ["-xzf", archive, "-C", staging]);
+      run("tar", ["--no-same-owner", "-xzf", archive, "-C", staging]);
       run(`${staging}/bin/installdependencies.sh`, [], { quiet: true });
       await chmod(staging, 0o755);
       await chmod(archive, 0o644);
@@ -306,15 +307,19 @@ async function main() {
         `actions.runner.${saved.hub.replace("/", "-")}.${registration.agentName}.service`,
       );
   const unitPath = `/etc/systemd/system/${service}`;
-  if (!(await exists(unitPath))) {
+  if (!(await exists(`${runner}/runsvc.sh`)))
     run("cp", [`${runner}/bin/runsvc.sh`, `${runner}/runsvc.sh`], { asRunner: true });
+  run("chmod", ["755", `${runner}/runsvc.sh`], { asRunner: true });
+  if (!(await exists(unitPath))) {
     await writeFile(
       unitPath,
       `[Unit]\nDescription=Kicktires GitHub Actions runner\nAfter=network-online.target\n\n[Service]\nExecStart=${runner}/runsvc.sh\nUser=${user}\nWorkingDirectory=${runner}\nKillMode=process\nKillSignal=SIGTERM\nTimeoutStopSec=5min\n\n[Install]\nWantedBy=multi-user.target\n`,
       { mode: 0o644, flag: "wx" },
     );
   }
-  await readTrusted(unitPath);
+  const unit = await lstat(unitPath);
+  if (!unit.isFile() || unit.uid !== 0 || unit.gid !== 0 || unit.mode & 0o002)
+    throw new Error(`Expected a root-owned service unit: ${unitPath}`);
   run("systemctl", ["daemon-reload"]);
   if (run("systemctl", ["show", service, "--property=User", "--value"], { quiet: true }) !== user)
     throw new Error(
