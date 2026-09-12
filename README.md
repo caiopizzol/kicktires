@@ -20,6 +20,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
 </p>
 
+A self-hosted alternative to code review services like CodeRabbit, Greptile, Qodo, and Cubic.
 Currently supports Codex with a dedicated CLI login. Other backends are not yet supported.
 
 ## Quickstart
