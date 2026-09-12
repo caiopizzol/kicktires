@@ -72,6 +72,10 @@ async function connect() {
   const source = repositorySchema.parse(await api(`/repos/${sourceInput}`));
   if (!source.permissions.admin) throw new Error("Repository admin access is required for setup.");
   const owner = source.owner.login;
+  if (source.owner.type === "User" && owner.toLowerCase() !== account.toLowerCase())
+    throw new Error(
+      "Sign into the repository owner’s GitHub account for personal-repository setup.",
+    );
   const hubName = z
     .string()
     .regex(/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/)
@@ -107,7 +111,14 @@ async function connect() {
   console.log(`GitHub: ${account}\nSource: ${source.full_name}\nPrivate hub: ${hub}`);
   if ((await ask("Continue? [y/N]")).toLowerCase() !== "y") return;
   await savePrivate(directory, "setup.json", state);
-  if (!existingHub) await gh(["repo", "create", hub, "--private", "--add-readme"]);
+  if (!existingHub) {
+    await gh(["repo", "create", hub, "--private", "--add-readme"]);
+    const created = repositorySchema.parse(await api(`/repos/${hub}`));
+    if (created.default_branch !== "main")
+      await api(`/repos/${hub}/branches/${encodeURIComponent(created.default_branch)}/rename`, {
+        new_name: "main",
+      });
+  }
 
   const pendingPath = join(directory, "app.json");
   if (!state.credentials) {
@@ -128,7 +139,7 @@ async function connect() {
       const registration = startAppRegistration({
         owner,
         organization: source.owner.type === "Organization",
-        name: `kicktires-${owner}-${crypto.randomUUID().slice(0, 8)}`,
+        name: `kicktires-${crypto.randomUUID().slice(0, 8)}`,
         exchange: async (code) => {
           const response = await fetch(`https://api.github.com/app-manifests/${code}/conversions`, {
             method: "POST",
@@ -175,6 +186,14 @@ async function connect() {
     await openBrowser("https://github.com/settings/personal-access-tokens/new");
     const token = await ask("Paste the token (hidden)", true);
     if (!token.startsWith("github_pat_")) throw new Error("Use a fine-grained GitHub token.");
+    const access = await fetch(`https://api.github.com/repos/${hub}/actions/workflows`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!access.ok)
+      throw new Error(
+        "The token cannot access Actions on the private hub. Check its repository, permissions and approval status.",
+      );
     await secret(source.full_name, "KICKTIRES_DISPATCH_TOKEN", token);
     state.dispatch = true;
     await savePrivate(directory, "setup.json", state);
@@ -194,7 +213,7 @@ async function connect() {
     await readFile(new URL("../examples/github-submit-workflow.yml", import.meta.url), "utf8"),
   );
   const registration = z
-    .object({ token: z.string(), expires_at: z.iso.datetime() })
+    .object({ token: z.string(), expires_at: z.iso.datetime({ offset: true }) })
     .parse(await api(`/repos/${hub}/actions/runners/registration-token`, {}));
   const pairing = encodePairing({
     version: 1,
@@ -203,7 +222,7 @@ async function connect() {
     reviewer: `${state.appSlug}[bot]`,
     release,
     token: registration.token,
-    expires: registration.expires_at,
+    expires: new Date(registration.expires_at).toISOString(),
   });
   const pairingPath = join(directory, "pairing.txt");
   await savePrivateText(directory, "pairing.txt", `${pairing}\n`);

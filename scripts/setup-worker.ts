@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { chmod, lstat, mkdir, readFile, writeFile } from "node:fs/promises";
+import { chmod, lstat, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
 import { z } from "zod";
 import { decodePairing } from "../src/setup/pairing.ts";
@@ -46,8 +46,15 @@ function run(
     cwd: options.cwd ?? "/",
     stdio: options.quiet ? ["ignore", "pipe", "pipe"] : "inherit",
   });
-  if (result.error || result.status !== 0)
-    throw new Error(`${command} failed. Fix the reported problem and run setup again.`);
+  if (result.error || result.status !== 0) {
+    let detail = `${result.stdout?.toString() ?? ""}${result.stderr?.toString() ?? ""}`;
+    const tokenIndex = args.indexOf("--token");
+    if (tokenIndex >= 0 && args[tokenIndex + 1])
+      detail = detail.replaceAll(args[tokenIndex + 1]!, "[redacted]");
+    throw new Error(
+      `${command} failed. ${detail.slice(-2000).trim() || "Run setup again after fixing the reported problem."}`,
+    );
+  }
   return result.stdout?.toString().trim() ?? "";
 }
 
@@ -68,13 +75,17 @@ async function readTrusted(path: string) {
   return readFile(path, "utf8");
 }
 
-async function trustedWrite(path: string, value: unknown) {
+async function trustedWrite(path: string, value: unknown, replace = false) {
   if (await exists(path)) {
     const info = await lstat(path);
     if (!info.isFile() || info.uid !== 0 || info.mode & 0o022)
       throw new Error(`Expected a trusted root-owned file: ${path}`);
-    if (JSON.stringify(JSON.parse(await readFile(path, "utf8"))) !== JSON.stringify(value))
+    if (JSON.stringify(JSON.parse(await readFile(path, "utf8"))) === JSON.stringify(value)) return;
+    if (!replace)
       throw new Error(`${path} belongs to another configuration. Setup will not overwrite it.`);
+    const temporary = `${path}.${crypto.randomUUID()}.tmp`;
+    await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o644, flag: "wx" });
+    await rename(temporary, path);
     return;
   }
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o644, flag: "wx" });
@@ -110,7 +121,7 @@ async function login(release: string) {
 async function main() {
   const { positionals, values } = parseArgs({
     allowPositionals: true,
-    options: { model: { type: "string", default: "gpt-5.6-terra" }, help: { type: "boolean" } },
+    options: { model: { type: "string" }, help: { type: "boolean" } },
   });
   const action = positionals[0];
   if (values.help || !["setup", "login", "doctor"].includes(action ?? "")) {
@@ -191,11 +202,13 @@ async function main() {
   await chmod(codexHome, 0o700);
   const profile = (await exists(profilePath))
     ? profileSchema.parse(JSON.parse(await readTrusted(profilePath)))
-    : { model: { id: values.model, home: codexHome } };
+    : { model: { id: values.model ?? "gpt-5.6-terra", home: codexHome } };
+  if (values.model !== undefined) profile.model.id = values.model;
   profileSchema.parse(profile);
   if (profile.model.home !== codexHome)
     throw new Error("The profile belongs to another Codex login.");
-  if (!(await exists(profilePath))) await trustedWrite(profilePath, profile);
+  if (!(await exists(profilePath)) || values.model !== undefined)
+    await trustedWrite(profilePath, profile, values.model !== undefined);
   const hub = {
     repository: saved.hub,
     reviewer: saved.reviewer,

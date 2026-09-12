@@ -44,6 +44,7 @@ export function startAppRegistration(options: {
     async fetch(request): Promise<Response> {
       const url = new URL(request.url);
       const headers = {
+        "Content-Type": "text/html; charset=utf-8",
         "Cache-Control": "no-store",
         "Referrer-Policy": "no-referrer",
         "Content-Security-Policy":

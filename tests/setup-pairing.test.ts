@@ -18,3 +18,8 @@ test("pairing accepts a current same-owner worker and rejects expired or cross-o
   ).toThrow("expired");
   expect(() => decodePairing("a".repeat(9000))).toThrow("Invalid pairing code");
 });
+
+test("pairing accepts GitHub timestamps with timezone offsets", () => {
+  const offset = new Date(Date.now() + 3600000).toISOString().replace("Z", "+00:00");
+  expect(decodePairing(encodePairing({ ...pairing, expires: offset })).expires).toBe(offset);
+});

@@ -3,7 +3,6 @@ import { Writable } from "node:stream";
 
 export async function ask(label: string, hidden = false) {
   if (!process.stdin.isTTY) throw new Error("Run setup in an interactive terminal.");
-  process.stdout.write(`${label}: `);
   const output = new Writable({
     write(chunk, _encoding, next) {
       if (!hidden) process.stdout.write(chunk);
@@ -11,8 +10,11 @@ export async function ask(label: string, hidden = false) {
     },
   });
   const reader = createInterface({ input: process.stdin, output, terminal: true });
+  const controller = new AbortController();
+  reader.once("SIGINT", () => controller.abort());
   try {
-    return (await reader.question("")).trim();
+    process.stdout.write(`${label}: `);
+    return (await reader.question("", { signal: controller.signal })).trim();
   } finally {
     reader.close();
     if (hidden) process.stdout.write("\n");

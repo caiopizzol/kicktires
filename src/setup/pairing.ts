@@ -12,7 +12,7 @@ export const pairingSchema = z
       .string()
       .regex(/^[a-zA-Z0-9_]+$/)
       .max(200),
-    expires: z.iso.datetime(),
+    expires: z.iso.datetime({ offset: true }),
   })
   .refine(
     (value) => value.hub.split("/")[0].toLowerCase() === value.source.split("/")[0].toLowerCase(),
