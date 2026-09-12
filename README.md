@@ -29,59 +29,31 @@ You need an Ubuntu 24.04 or 26.04 VM with Docker support, a Codex account, and
 GitHub admin access to your repository. Reviews run through a private hub owned
 by you. Public and private source repositories are supported; fork PRs are not.
 
-### 1. Connect GitHub from your laptop
-
-With [Bun](https://bun.sh) and [GitHub CLI](https://cli.github.com) installed:
+Run on your VM:
 
 ```sh
-gh auth login
-git clone https://github.com/caiopizzol/kicktires.git
-cd kicktires
-bun install --frozen-lockfile
-bun --no-env-file scripts/connect.ts OWNER/PROJECT
+curl -fsSL https://kicktires.dev/install | sudo sh
 ```
 
-Setup creates the private hub, guides GitHub App creation, stores the credentials,
-and opens a workflow PR. GitHub asks you to create one fine-grained token:
-select **only the hub repository**, with **Actions: read and write**.
+The installer guides GitHub sign-in, App creation or reuse, a private hub,
+and Codex login. It installs dependencies, configures the worker and starts its
+service. Keep a browser available for authorization; no laptop commands or
+public VM ports are needed.
 
-Already have a review App? Add `--app APP_ID --key /path/to/private-key.pem`.
-Use `--hub NAME` to choose another hub name. Setup refuses to overwrite an
-unrelated installation.
+GitHub also asks you to create a fine-grained token: select **only the hub
+repository**, with **Actions: read and write**. Paste it into the installer.
 
-### 2. Connect the worker
+Merge the workflow PR printed at the end, then open a PR from a branch in your
+repository. After its first review, require **`kicktires` from your GitHub App**
+in branch protection. Keep your existing CI checks required and require review
+conversations to be resolved.
 
-Run the install commands printed by setup on your VM. They select the same release
-as your laptop. Then run:
+Findings or an incomplete review fail the status. Push a fix to trigger another
+review; resolving a thread alone does not turn it green.
 
-```sh
-sudo kicktires setup
-```
-
-Paste the pairing code and complete Codex login in your browser. Setup handles the
-runner account, permissions, configuration, checks, and background service.
-Pairing codes expire after one hour; rerun the laptop command to renew one.
-
-The default model is `gpt-5.6-terra`. Use `sudo kicktires setup --model ID`
-to choose another model available to your account.
-
-### 3. Verify a review and block merging
-
-Merge the workflow PR, then open a PR from a branch in your repository. Wait for
-the App's review and **`kicktires` status**. Findings or an incomplete review fail
-that status; a completed review without findings passes.
-
-In your default branch's protection or ruleset:
-
-- Require **`kicktires` from your GitHub App**, not `queue review`.
-- Keep your existing CI checks required.
-- Require review conversations to be resolved.
-
-Fix findings and push a new revision to trigger another review. Resolving a thread
-alone does not turn the status green.
-
-Run `sudo kicktires doctor` to check the worker or `sudo kicktires login` to sign
-in again. Edit `/etc/kicktires/profile.json` for optional
+Rerun the same installer to resume interrupted setup or check the worker.
+It preserves existing configuration and does not activate upgrades automatically.
+The default model is `gpt-5.6-terra`; edit `/etc/kicktires/profile.json` for
 [configuration](docs/configuration.md). See [shared workers](docs/shared-workers.md)
 for multiple projects or VMs.
 

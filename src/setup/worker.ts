@@ -1,12 +1,9 @@
 import { spawnSync } from "node:child_process";
-import { chmod, lstat, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { parseArgs } from "node:util";
+import { chmod, lstat, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { z } from "zod";
-import { decodePairing } from "../src/setup/pairing.ts";
-import { ask } from "../src/setup/terminal.ts";
-import { runnerService, verifyRunner } from "../src/setup/runner.ts";
-import { profileSchema } from "../src/profile.ts";
-import { hubConfigSchema } from "../src/github/hub.ts";
+import { runnerService, verifyRunner } from "./runner.ts";
+import { profileSchema } from "../profile.ts";
+import { hubConfigSchema } from "../github/hub.ts";
 
 const user = "kicktires-runner";
 const home = `/home/${user}`;
@@ -53,7 +50,7 @@ function run(
     if (tokenIndex >= 0 && args[tokenIndex + 1])
       detail = detail.replaceAll(args[tokenIndex + 1]!, "[redacted]");
     throw new Error(
-      `${command} failed. ${detail.slice(-2000).trim() || "Run setup again after fixing the reported problem."}`,
+      `${command} failed. ${detail.slice(-2000).trim() || "Rerun the installer after fixing the reported problem."}`,
     );
   }
   return result.stdout?.toString().trim() ?? "";
@@ -76,23 +73,21 @@ async function readTrusted(path: string) {
   return readFile(path, "utf8");
 }
 
-async function trustedWrite(path: string, value: unknown, replace = false) {
+async function trustedWrite(path: string, value: unknown) {
   if (await exists(path)) {
     const info = await lstat(path);
     if (!info.isFile() || info.uid !== 0 || info.mode & 0o022)
       throw new Error(`Expected a trusted root-owned file: ${path}`);
     if (JSON.stringify(JSON.parse(await readFile(path, "utf8"))) === JSON.stringify(value)) return;
-    if (!replace)
-      throw new Error(`${path} belongs to another configuration. Setup will not overwrite it.`);
-    const temporary = `${path}.${crypto.randomUUID()}.tmp`;
-    await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o644, flag: "wx" });
-    await rename(temporary, path);
-    return;
+    throw new Error(
+      `${path} belongs to another configuration. Installation will not overwrite it.`,
+    );
   }
+
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o644, flag: "wx" });
 }
 
-async function login(release: string, renew = false) {
+async function login(release: string) {
   const cli = `${release}/node_modules/@openai/codex/bin/codex.js`;
   const status = spawnSync(
     "runuser",
@@ -112,29 +107,19 @@ async function login(release: string, renew = false) {
     ],
     { stdio: "ignore" },
   );
-  if (renew || status.status !== 0)
-    run("node", [cli, "login", "--device-auth"], { asRunner: true });
+  if (status.status !== 0) run("node", [cli, "login", "--device-auth"], { asRunner: true });
   const auth = `${codexHome}/auth.json`;
   const info = await lstat(auth);
   if (!info.isFile()) throw new Error("Codex login did not create a regular auth.json file.");
   await chmod(auth, 0o600);
 }
 
-async function main() {
-  const { positionals, values } = parseArgs({
-    allowPositionals: true,
-    options: { model: { type: "string" }, help: { type: "boolean" } },
-  });
-  const action = positionals[0];
-  if (values.help || !["setup", "login", "doctor"].includes(action ?? "")) {
-    console.log(
-      "Usage: sudo kicktires setup [--model ID]\n       sudo kicktires login\n       sudo kicktires doctor",
-    );
-    process.exitCode = values.help ? 0 : 1;
-    return;
-  }
+export async function configureWorker(
+  connection: { hub: string; source: string; reviewer: string },
+  registrationToken: () => Promise<string>,
+) {
   if (process.platform !== "linux" || process.getuid?.() !== 0)
-    throw new Error("Run with sudo on the Linux worker.");
+    throw new Error("Run the installer as root on the Linux worker.");
   const directory = await lstat("/etc/kicktires");
   if (!directory.isDirectory() || directory.uid !== 0 || directory.mode & 0o022)
     throw new Error("Expected a root-owned /etc/kicktires directory.");
@@ -154,40 +139,16 @@ async function main() {
       ],
       { asRunner: true },
     );
-  if (action === "doctor") {
-    doctor();
-    return;
+  const saved = workerStateSchema.parse({
+    hub: connection.hub,
+    source: connection.source,
+    reviewer: connection.reviewer,
+  });
+  if (await exists(workerState)) {
+    const previous = workerStateSchema.parse(JSON.parse(await readTrusted(workerState)));
+    if (JSON.stringify(previous) !== JSON.stringify(saved))
+      throw new Error("This worker belongs to another installation.");
   }
-  if (action === "login") {
-    await login(release, true);
-    doctor();
-    return;
-  }
-  let saved = (await exists(workerState))
-    ? workerStateSchema.parse(JSON.parse(await readTrusted(workerState)))
-    : undefined;
-  let pairing: ReturnType<typeof decodePairing> | undefined;
-  if (!saved || !(await exists(`${runner}/.runner`))) {
-    pairing = decodePairing(await ask("Paste the pairing code from your laptop (hidden)", true));
-    if (pairing.release !== sha)
-      throw new Error(
-        `Install release ${pairing.release} before pairing. The active release was not changed.`,
-      );
-    const visibility = await fetch(`https://api.github.com/repos/${pairing.hub}`, {
-      signal: AbortSignal.timeout(30000),
-    });
-    if (visibility.status === 200)
-      throw new Error("The worker hub must be private. Check the pairing code.");
-    if (visibility.status !== 404)
-      throw new Error(
-        `Could not verify hub visibility (${visibility.status}). Retry setup after GitHub access recovers.`,
-      );
-    const next = { hub: pairing.hub, source: pairing.source, reviewer: pairing.reviewer };
-    if (saved && JSON.stringify(saved) !== JSON.stringify(next))
-      throw new Error("Pairing code belongs to another worker configuration.");
-    saved = next;
-  }
-  if (!saved) throw new Error("Missing worker configuration.");
   for (const path of [profilePath, hubPath])
     if ((await exists(path)) && !(await exists(workerState)))
       throw new Error(`An existing worker uses ${path}. Setup will not replace it.`);
@@ -208,13 +169,11 @@ async function main() {
   await chmod(codexHome, 0o700);
   const profile = (await exists(profilePath))
     ? profileSchema.parse(JSON.parse(await readTrusted(profilePath)))
-    : { model: { id: values.model ?? "gpt-5.6-terra", home: codexHome } };
-  if (values.model !== undefined) profile.model.id = values.model;
+    : { model: { id: "gpt-5.6-terra", home: codexHome } };
   profileSchema.parse(profile);
   if (profile.model.home !== codexHome)
     throw new Error("The profile belongs to another Codex login.");
-  if (!(await exists(profilePath)) || values.model !== undefined)
-    await trustedWrite(profilePath, profile, values.model !== undefined);
+  if (!(await exists(profilePath))) await trustedWrite(profilePath, profile);
   const hub = {
     repository: saved.hub,
     reviewer: saved.reviewer,
@@ -235,7 +194,6 @@ async function main() {
   await login(release);
   doctor();
   if (!(await exists(`${runner}/.runner`))) {
-    if (!pairing) throw new Error("Run setup again to renew the pairing code.");
     const platform =
       process.arch === "arm64" ? "arm64" : process.arch === "x64" ? "x64" : undefined;
     if (!platform) throw new Error("Supported worker architectures: x64 and arm64.");
@@ -289,7 +247,7 @@ async function main() {
         "--url",
         `https://github.com/${saved.hub}`,
         "--token",
-        pairing.token,
+        await registrationToken(),
         "--name",
         `kicktires-${run("hostname", [], { quiet: true })}`,
         "--labels",
@@ -333,20 +291,5 @@ async function main() {
   run("systemctl", ["enable", service]);
   run("systemctl", ["start", service]);
   run("systemctl", ["is-active", "--quiet", service]);
-  console.log(
-    `Worker connected to ${saved.hub}. Merge the source workflow, then open a pull request to verify the review.`,
-  );
-}
-
-try {
-  await main();
-} catch (error) {
-  console.error(
-    error instanceof z.ZodError
-      ? "Invalid worker setup data. Run connect again on your laptop."
-      : error instanceof Error
-        ? error.message
-        : "Worker setup failed.",
-  );
-  process.exitCode = 1;
+  console.log(`Worker connected to ${saved.hub}.`);
 }

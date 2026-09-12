@@ -8,8 +8,7 @@ Serverless platforms without Docker are unsupported.
 Run on Ubuntu 24.04 or 26.04, amd64 or arm64:
 
 ```sh
-curl -fsSL https://kicktires.dev/install.sh -o /tmp/kicktires-install.sh
-sudo sh /tmp/kicktires-install.sh
+curl -fsSL https://kicktires.dev/install | sudo sh
 ```
 
 The hosted script downloads a pinned source commit. For private source, set
@@ -20,7 +19,8 @@ Use `--version FULL_COMMIT_SHA` to select another commit, or
 Inspect the script before running it. It installs prerequisites, Docker from its
 official APT repository, and checksum-verified Node 24.14.0 and Bun 1.3.14 binaries.
 It enables Docker at boot, tests/builds committed source and creates the sandbox image.
-It does not register runners, collect secrets or upgrade the whole OS.
+The guided steps then connect GitHub and Codex and register the runner service.
+It does not upgrade the whole OS.
 
 For source development, see [contributing](../CONTRIBUTING.md). Source installs
 require committed changes; untracked files are excluded. Do not copy `node_modules`,
@@ -53,19 +53,22 @@ configuration on the tested VM.
 
 ## Guided setup
 
-For a new worker, follow the [quickstart](../README.md#quickstart). The laptop
-command prepares GitHub; `sudo kicktires setup` creates the dedicated worker
-account, signs into Codex, and registers its service. It resumes completed steps
-and refuses to overwrite an unrelated installation.
+Follow the [quickstart](../README.md#quickstart). Run the installer in an interactive
+terminal on the worker. It guides browser authorization and prints the workflow
+PR to merge and the review status to require. Organization App creation requires
+an organization owner.
 
-Setup keeps trusted configuration in `/etc/kicktires/`. The runner uses
-`/home/kicktires-runner/`; its Codex login stays in that private home.
-`sudo kicktires doctor` checks the worker, and `sudo kicktires login` renews login.
-Setup does not activate staged upgrades or change branch protection.
+Configuration stays in `/etc/kicktires/`. The dedicated runner and Codex login use
+`/home/kicktires-runner/`. Private installation state is in
+`/var/lib/kicktires/install/`. The temporary GitHub CLI login is deleted when the
+installer exits. The review App key is retained only until stored as a hub secret.
 
-Laptop setup state is private under `~/.local/state/kicktires/OWNER/HUB/`.
-An App key is retained there only until it has been stored as a hub secret.
-The pairing file contains a short-lived runner credential; do not share it.
+App creation returns through `kicktires.dev`; its temporary confirmation URL lets
+the VM retrieve the App credentials. Paste it only into your installer.
+To reuse an App, provide its ID and a private key file on the VM when prompted.
+
+Rerun the installer to resume or check the worker. It preserves configured models
+and profiles, refuses unrelated installations, and does not change branch protection.
 
 ## Manual setup
 
