@@ -75,7 +75,7 @@ Use `network: "allow-all"` only when setup needs downloads; the default is
 Add setup commands, check shortcuts, browser access, skills or MCP context only when
 needed. [profile-full.json](../examples/profile-full.json) shows every field; replace
 its commands, paths and MCP endpoint before use. It is a reference, not a ready-to-run
-profile. The [option tables](configuration-reference.md#review-profile) explain the defaults.
+profile. The [option tables](configuration-reference.md#basic-settings) explain the defaults.
 
 ## Checks and browser
 
