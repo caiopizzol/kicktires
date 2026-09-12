@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.0](https://github.com/caiopizzol/kicktires/compare/v0.2.0...v0.3.0) (2026-09-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* **config:** simplify Codex profiles ([#26](https://github.com/caiopizzol/kicktires/issues/26))
+
+### Features
+
+* **setup:** guide GitHub and worker onboarding ([#33](https://github.com/caiopizzol/kicktires/issues/33)) ([7b0d2ec](https://github.com/caiopizzol/kicktires/commit/7b0d2ec6562bdaf8f870fbfe8cd876167ffb1919))
+
+
+### Code Refactoring
+
+* **config:** simplify Codex profiles ([#26](https://github.com/caiopizzol/kicktires/issues/26)) ([f220a9b](https://github.com/caiopizzol/kicktires/commit/f220a9bc079d5e8462c0cde7ef570060e969fc17))
+
 ## [0.2.0](https://github.com/caiopizzol/kicktires/compare/v0.1.0...v0.2.0) (2026-09-11)
 
 
