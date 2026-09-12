@@ -25,140 +25,65 @@ Currently supports Codex with a dedicated CLI login. Other backends are not yet 
 
 ## Quickstart
 
-You need a fresh Ubuntu 24.04 or 26.04 VM with Docker support, a Codex login, and
-permission to manage your GitHub repositories. This setup uses a private hub to
-review public or private repositories under the same GitHub owner. Fork PRs are unsupported.
+You need an Ubuntu 24.04 or 26.04 VM with Docker support, a Codex account, and
+GitHub admin access to your repository. Reviews run through a private hub owned
+by you. Public and private source repositories are supported; fork PRs are not.
 
-### 1. Install the worker
+### 1. Connect GitHub from your laptop
 
-On the VM, install this release and create a dedicated runner account:
-
-```sh
-curl -fsSL https://kicktires.dev/install.sh -o /tmp/kicktires-install.sh
-sudo sh /tmp/kicktires-install.sh --version 1d1119fbc638544b1cbdd20b378210796a81c320
-sudo useradd --create-home --shell /bin/bash --groups docker,kicktires runner
-sudo chmod 700 /home/runner
-sudo -iu runner
-```
-
-Sign in to Codex as `runner`:
+With [Bun](https://bun.sh) and [GitHub CLI](https://cli.github.com) installed:
 
 ```sh
-export PATH=/opt/kicktires/runtime/bin:$PATH
-release=$(cat /etc/kicktires/release)
-cd /opt/kicktires/releases/$release
-mkdir -p "$HOME/.local/share/kicktires/codex"
-chmod 700 "$HOME/.local/share/kicktires/codex"
-CODEX_HOME="$HOME/.local/share/kicktires/codex" bunx --no-install codex login --device-auth
-chmod 600 "$HOME/.local/share/kicktires/codex/auth.json"
-exit
+gh auth login
+git clone https://github.com/caiopizzol/kicktires.git
+cd kicktires
+bun install --frozen-lockfile
+bun --no-env-file scripts/connect.ts OWNER/PROJECT
 ```
 
-Create `/etc/kicktires/profile.json` with `sudoedit`. Use a model available to your account:
+Setup creates the private hub, guides GitHub App creation, stores the credentials,
+and opens a workflow PR. GitHub asks you to create one fine-grained token:
+select **only the hub repository**, with **Actions: read and write**.
 
-```json
-{
-  "model": {
-    "id": "gpt-5.6-terra",
-    "effort": "high",
-    "home": "/home/runner/.local/share/kicktires/codex"
-  },
-  "instructions": "Check boundary cases and public API compatibility."
-}
-```
+Already have a review App? Add `--app APP_ID --key /path/to/private-key.pem`.
+Use `--hub NAME` to choose another hub name. Setup refuses to overwrite an
+unrelated installation.
 
-### 2. Connect GitHub
+### 2. Connect the worker
 
-Create a **private** hub repository named `OWNER/kicktires-worker`, with a `main`
-branch. Replace `OWNER` and `PROJECT` below with your account or organization and
-source repository name.
-
-Create a private GitHub App under that owner, disable webhooks, and grant repository
-permissions **Contents: read**, **Pull requests: write**, and **Commit statuses: write**.
-Install it on `OWNER/PROJECT`. Create a fine-grained personal access token with
-resource owner `OWNER` and **Actions: read and write**, scoped to **only the hub repository**.
-
-In each repository's **Settings → Secrets and variables → Actions**, add:
-
-| Repository | Type     | Name                        | Value                    |
-| ---------- | -------- | --------------------------- | ------------------------ |
-| Hub        | Variable | `KICKTIRES_APP_ID`          | App ID                   |
-| Hub        | Secret   | `KICKTIRES_APP_PRIVATE_KEY` | App private key contents |
-| Source     | Variable | `KICKTIRES_HUB`             | `OWNER/kicktires-worker` |
-| Source     | Secret   | `KICKTIRES_DISPATCH_TOKEN`  | Hub-only token           |
-
-On the VM, create `/etc/kicktires/hub.json` with `sudoedit`. Replace
-`your-app[bot]` with your App's exact bot login:
-
-```json
-{
-  "repository": "OWNER/kicktires-worker",
-  "reviewer": "your-app[bot]",
-  "profiles": {
-    "OWNER/PROJECT": "/etc/kicktires/profile.json"
-  }
-}
-```
-
-Protect the configuration and check the worker:
+Run the install commands printed by setup on your VM. They select the same release
+as your laptop. Then run:
 
 ```sh
-sudo chown root:root /etc/kicktires/profile.json /etc/kicktires/hub.json
-sudo chmod 644 /etc/kicktires/profile.json /etc/kicktires/hub.json
-sudo -iu runner
-export PATH=/opt/kicktires/runtime/bin:$PATH
-release=$(cat /etc/kicktires/release)
-bun --no-env-file /opt/kicktires/releases/$release/scripts/doctor.ts \
-  --worker --profile /etc/kicktires/profile.json --credentials
-exit
+sudo kicktires setup
 ```
 
-In the **hub's Settings → Actions → Runners → New self-hosted runner**, select
-Linux and your VM architecture. Run GitHub's download and registration commands on
-the VM as `runner`, verify the supplied checksum, and add the `kicktires` label.
-From an administrator shell in the runner directory, run `sudo ./svc.sh install runner`
-and `sudo ./svc.sh start`. Register the runner only on the private hub.
+Paste the pairing code and complete Codex login in your browser. Setup handles the
+runner account, permissions, configuration, checks, and background service.
+Pairing codes expire after one hour; rerun the laptop command to renew one.
 
-On your development machine, run this in a checkout of the **hub repository**:
+The default model is `gpt-5.6-terra`. Use `sudo kicktires setup --model ID`
+to choose another model available to your account.
 
-```sh
-mkdir -p .github/workflows
-curl -fsSL https://raw.githubusercontent.com/caiopizzol/kicktires/1d1119fbc638544b1cbdd20b378210796a81c320/examples/github-hub-workflow.yml \
-  -o .github/workflows/review.yml
-```
+### 3. Verify a review and block merging
 
-Then run this in a checkout of the **source repository**:
+Merge the workflow PR, then open a PR from a branch in your repository. Wait for
+the App's review and **`kicktires` status**. Findings or an incomplete review fail
+that status; a completed review without findings passes.
 
-```sh
-mkdir -p .github/workflows
-curl -fsSL https://raw.githubusercontent.com/caiopizzol/kicktires/1d1119fbc638544b1cbdd20b378210796a81c320/examples/github-submit-workflow.yml \
-  -o .github/workflows/kicktires.yml
-```
+In your default branch's protection or ruleset:
 
-Commit and push both files: the hub workflow to `main`, and the source workflow to
-its default branch. Keep their filenames and security guards unchanged. The source
-queues reviews; the hub assigns them to the worker, which investigates in a sandbox
-and posts findings back to the source PR.
-
-### 3. Make reviews block merging
-
-Open a draft PR from a branch in the source repository. Wait for the App's review
-and `kicktires` status, then rerun the source workflow to check that it restores the
-result without posting duplicate findings.
-
-In the source repository's branch protection or ruleset for its default branch:
-
-- Require the **`kicktires` status from your GitHub App**. Do not substitute `queue review`.
+- Require **`kicktires` from your GitHub App**, not `queue review`.
 - Keep your existing CI checks required.
-- Require review conversations to be resolved before merging.
+- Require review conversations to be resolved.
 
-No changes to your test commands are needed. Findings or an incomplete review fail
-the Kicktires status; a completed review with no findings passes. Fix the issue and
-push a new revision to trigger another review. Resolving a thread alone does not
-turn a failed status green.
+Fix findings and push a new revision to trigger another review. Resolving a thread
+alone does not turn the status green.
 
-For more workers or projects, see [shared workers](docs/shared-workers.md).
-For optional setup commands, checks and skills, see [configuration](docs/configuration.md).
+Run `sudo kicktires doctor` to check the worker or `sudo kicktires login` to sign
+in again. Edit `/etc/kicktires/profile.json` for optional
+[configuration](docs/configuration.md). See [shared workers](docs/shared-workers.md)
+for multiple projects or VMs.
 
 ## Documentation
 

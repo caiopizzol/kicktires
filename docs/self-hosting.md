@@ -43,13 +43,31 @@ Docker access controls the host daemon. There are no per-review CPU/memory quota
 read [execution boundaries](execution.md).
 
 Bare installation and reboot were tested on Ubuntu 26.04 amd64 with 2 CPUs and 4 GB RAM.
-Ubuntu 24.04 and arm64 lack equivalent trials. Tested capacity is not a universal minimum.
+Guided setup and real reviews were also tested in an Ubuntu 24.04 arm64 systemd
+container. That does not verify bare-VM installation or reboot on that platform.
+Tested capacity is not a universal minimum.
 
 On a 4 GB Linux VM, provide 4 GB of swap. Vite+ lint can fail before analysis without
 it because it reserves large virtual-memory regions. Full checks passed with this
 configuration on the tested VM.
 
-## Add a repository
+## Guided setup
+
+For a new worker, follow the [quickstart](../README.md#quickstart). The laptop
+command prepares GitHub; `sudo kicktires setup` creates the dedicated worker
+account, signs into Codex, and registers its service. It resumes completed steps
+and refuses to overwrite an unrelated installation.
+
+Setup keeps trusted configuration in `/etc/kicktires/`. The runner uses
+`/home/kicktires-runner/`; its Codex login stays in that private home.
+`sudo kicktires doctor` checks the worker, and `sudo kicktires login` renews login.
+Setup does not activate staged upgrades or change branch protection.
+
+Laptop setup state is private under `~/.local/state/kicktires/OWNER/HUB/`.
+An App key is retained there only until it has been stored as a hub secret.
+The pairing file contains a short-lived runner credential; do not share it.
+
+## Manual setup
 
 For public repositories or several projects sharing a VM, use a private
 [shared-worker hub](shared-workers.md). Fork PRs are unsupported.
