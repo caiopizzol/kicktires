@@ -14,3 +14,5 @@ structure and verification.
 Local operator history, when present, is in `.runs/archive/goals/`.
 
 Active operator goal: `.runs/worker-queue/goal.md` (local, untracked).
+
+Active onboarding goal: `.runs/onboarding/goal.md` (local, untracked).

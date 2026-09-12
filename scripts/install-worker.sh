@@ -89,4 +89,7 @@ else
   echo "Installed release: $commit"
   echo "Active release unchanged: $(cat /etc/kicktires/release)"
 fi
-printf '\nNext: connect your repository and install its trusted profile.\nSee %s/docs/self-hosting.md\n' "$release"
+if [ "$(cat /etc/kicktires/release)" = "$commit" ]; then
+  install -m 755 "$release/scripts/kicktires.sh" /usr/local/bin/kicktires
+fi
+printf '\nNext: run sudo kicktires setup with the pairing code from your laptop.\n'
