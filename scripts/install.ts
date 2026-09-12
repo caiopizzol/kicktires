@@ -36,6 +36,11 @@ async function install() {
     const connection = await connect(directory, authenticate);
     await configureWorker(connection, async () => {
       await authenticate();
+      const hub = z.object({ private: z.boolean() }).parse(await api(`/repos/${connection.hub}`));
+      if (!hub.private)
+        throw new Error(
+          "The worker hub must be private. Restore its visibility before rerunning the installer.",
+        );
       return z
         .object({ token: z.string() })
         .parse(await api(`/repos/${connection.hub}/actions/runners/registration-token`, {})).token;

@@ -70,14 +70,16 @@ export async function connect(directory: string, authenticate: () => Promise<voi
   const sourceHub = await optionalApi(`/repos/${source.full_name}/actions/variables/KICKTIRES_HUB`);
   if (sourceHub && z.object({ value: z.string() }).parse(sourceHub).value !== hub)
     throw new Error(
-      "The source repository is already connected to another hub. Setup will not replace it.",
+      "The source uses another hub. To start over, remove its KICKTIRES_HUB variable and KICKTIRES_DISPATCH_TOKEN secret in GitHub Actions settings, then choose a new private hub.",
     );
   const secrets = z
     .array(z.object({ name: z.string() }))
     .parse(JSON.parse(await gh(["secret", "list", "--repo", source.full_name, "--json", "name"])));
   const hasDispatch = secrets.some((item) => item.name === "KICKTIRES_DISPATCH_TOKEN");
   if (hasDispatch && !saved)
-    throw new Error("The source already has a dispatch credential. Use its existing setup.");
+    throw new Error(
+      "The source already has a dispatch credential. Restore its installer state, or remove KICKTIRES_HUB and KICKTIRES_DISPATCH_TOKEN from its GitHub Actions settings and choose a new private hub.",
+    );
   const existingHub = await optionalApi(`/repos/${hub}`);
   if (existingHub && !saved) throw new Error(`${hub} already exists. Choose a new hub name.`);
   if (existingHub) {
@@ -118,6 +120,8 @@ export async function connect(directory: string, authenticate: () => Promise<voi
     if (!pending) {
       const appState =
         crypto.randomUUID().replaceAll("-", "") + crypto.randomUUID().replaceAll("-", "");
+      if (source.owner.type === "Organization")
+        console.log("Creating this App requires organization owner access.");
       await openBrowser(registrationUrl(owner, source.owner.type === "Organization", appState));
       let code: string;
       try {
@@ -127,7 +131,7 @@ export async function connect(directory: string, authenticate: () => Promise<voi
         );
       } catch {
         throw new Error(
-          `Invalid App confirmation. An App may already exist under ${owner}; reuse it or remove it in GitHub settings before retrying.`,
+          `Invalid App confirmation. App kicktires-${appState.slice(0, 8)} may already exist under ${owner}; reuse it or remove it in GitHub settings before retrying.`,
         );
       }
       const response = await fetch(`https://api.github.com/app-manifests/${code}/conversions`, {
@@ -137,7 +141,7 @@ export async function connect(directory: string, authenticate: () => Promise<voi
       });
       if (!response.ok)
         throw new Error(
-          "GitHub App registration failed. Check the App in GitHub before retrying installation.",
+          `GitHub App registration failed. Check kicktires-${appState.slice(0, 8)} under ${owner} in GitHub before retrying installation.`,
         );
       pending = appSchema.parse(await response.json());
       validateApp(appSchema.parse(pending), owner);

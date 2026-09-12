@@ -61,6 +61,8 @@ unset GH_TOKEN GIT_ASKPASS
 validate_checkout
 exec 8>/run/kicktires-install.lock
 flock --exclusive --nonblock 8 || { echo 'Another installer is running.' >&2; exit 1; }
+trap 'rm -rf "$temporary" /run/kicktires-install-gh' EXIT
+trap 'exit 130' HUP INT TERM
 if ! command -v docker >/dev/null; then
   install -d -m 755 /etc/apt/keyrings
   curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/kicktires-docker.asc
