@@ -40,7 +40,7 @@ async function install() {
         "repo,workflow",
         "--insecure-storage",
       ],
-      { stdin: "inherit", stdout: "inherit", stderr: "inherit" },
+      { stdin: "ignore", stdout: "inherit", stderr: "inherit" },
     );
     if ((await child.exited) !== 0)
       throw new Error("GitHub login failed. Rerun the installer to continue.");
