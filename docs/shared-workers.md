@@ -17,18 +17,10 @@ passes only when the investigation finishes with no findings. Findings and incom
 | GitHub organization | `acme/api`, `acme/web`   | `acme/kicktires-worker` |
 | Personal account    | `alex/shop`, `alex/blog` | `alex/kicktires-worker` |
 
-**Organization:** create the hub and GitHub App under `acme`, install the App on
-`acme/api` and `acme/web`, and select `acme` as the dispatch token's resource owner.
-Set `KICKTIRES_HUB` to `acme/kicktires-worker` in both source repositories.
-
-**Personal account:** create the hub and App under `alex`, install the App on
-`alex/shop` and `alex/blog`, and select `alex` as the token's resource owner.
-Set `KICKTIRES_HUB` to `alex/kicktires-worker` in both repositories. No organization
-is needed.
-
-In either case, grant the dispatch token access only to the hub. A source PR queues
-a job there; an available hub worker reviews it and the App posts back to the source
-PR. Two worker VMs can run two reviews at once, across either source repository.
+Create the hub and GitHub App under the same owner as the source repositories.
+Install the App on those sources and select that owner for the dispatch token,
+which must have access only to the hub. Set each source's `KICKTIRES_HUB` to the
+hub's full name from the table. A personal account needs no organization.
 
 The supplied workflow rejects sources owned by a different account. For example,
 `alex/shop` and `sam/blog` cannot share one hub; use a hub per owner or move the
