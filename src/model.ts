@@ -5,7 +5,7 @@ import type { Profile } from "./profile.ts";
 export function assertModelAccess(model: Profile["model"]) {
   assertCodexHome(model.home);
 }
-export function resolveModel(model: Profile["model"], directory?: string) {
+export function resolveModel(model: Profile["model"], directory?: string, modelSeconds = 180) {
   assertModelAccess(model);
-  return codexModel(model.id, model.home, model.effort, undefined, directory);
+  return codexModel(model.id, model.home, model.effort, undefined, directory, modelSeconds);
 }

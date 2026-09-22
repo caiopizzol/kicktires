@@ -88,6 +88,7 @@ export function codexModel(
   reasoningEffort?: string,
   respond = codexResponse,
   directory?: string,
+  modelSeconds = 180,
 ): LanguageModelV4 {
   async function generate(options: LanguageModelV4CallOptions) {
     const cli = process.env.KICKTIRES_CODEX_CLI;
@@ -102,7 +103,7 @@ export function codexModel(
     };
     const signal = AbortSignal.any([
       ...(options.abortSignal ? [options.abortSignal] : []),
-      AbortSignal.timeout(180000),
+      AbortSignal.timeout(modelSeconds * 1000),
     ]);
     const usage = {
       inputTokens: 0,
@@ -121,6 +122,7 @@ export function codexModel(
         home,
         model,
         reasoningEffort,
+        timeoutMs: modelSeconds * 1000,
         prompt: JSON.stringify({ ...conversation, correction, previousProposal }),
         schema: codexProposalSchema(options),
         signal,

@@ -43,10 +43,11 @@ export const profileSchema = z
     limits: z
       .object({
         commandSeconds: z.number().int().min(1).max(300).default(60),
+        modelSeconds: z.number().int().min(1).max(1800).default(180),
         reviewSeconds: z.number().int().min(30).max(1800).default(600),
       })
       .strict()
-      .default({ commandSeconds: 60, reviewSeconds: 600 }),
+      .default({ commandSeconds: 60, modelSeconds: 180, reviewSeconds: 600 }),
   })
   .strict();
 export type Profile = z.infer<typeof profileSchema>;
