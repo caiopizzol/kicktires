@@ -303,7 +303,7 @@ readline.createInterface({input:process.stdin}).on('line',line=>{const m=JSON.pa
 fs.appendFileSync(${JSON.stringify(requests)},line+'\\n');
 if(m.method==='initialize')send({id:m.id,result:{userAgent:'kicktires/0.154.0 (test)'}});
 if(m.method==='model/list')send({id:m.id,result:{data:[{model:m.params.cursor?'beta':'alpha',defaultReasoningEffort:'high',supportedReasoningEfforts:[{reasoningEffort:'low'},{reasoningEffort:'high'}]}],...(m.params.cursor?{}:{nextCursor:'page2'})}});
-if(m.method==='skills/list')send({id:m.id,result:{data:[{skills:[],errors:[]}]}});
+if(m.method==='skills/list')send({id:m.id,result:{data:[{skills:[{path:'/bundled/first/SKILL.md'},{path:'/bundled/second/SKILL.md'}],errors:[]}]}});
 if(m.method==='thread/start'){
  if(m.params.model==='locked')send({id:m.id,error:{message:'Model unavailable for this account'}});
  else send({id:m.id,result:{thread:{id:'test'},model:m.params.model,reasoningEffort:m.params.model==='mismatch'?'low':m.params.config.model_reasoning_effort}});
@@ -348,6 +348,11 @@ if(m.method==='turn/start'){send({id:m.id,result:{}});send({method:'thread/token
       .filter(Boolean)
       .map((line) => JSON.parse(line));
     expect(after.filter((r) => r.method === "turn/start")).toHaveLength(1);
+    for (const request of after.filter((r) => r.method === "thread/start"))
+      expect(request.params.config["skills.config"]).toEqual([
+        { path: "/bundled/first/SKILL.md", enabled: false },
+        { path: "/bundled/second/SKILL.md", enabled: false },
+      ]);
     await rejects(resolveCodexSettings({ ...base, signal: AbortSignal.abort() }));
   } finally {
     await rm(home, { recursive: true, force: true });
