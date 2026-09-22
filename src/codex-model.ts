@@ -122,6 +122,7 @@ export function codexModel(
         home,
         model,
         reasoningEffort,
+        timeoutMs: modelSeconds * 1000,
         prompt: JSON.stringify({ ...conversation, correction, previousProposal }),
         schema: codexProposalSchema(options),
         signal,

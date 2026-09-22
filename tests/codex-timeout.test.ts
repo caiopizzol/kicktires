@@ -1,10 +1,12 @@
 import { expect, spyOn, test } from "bun:test";
+import { rejects } from "node:assert/strict";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { profileSchema } from "../src/profile.ts";
 import { resolveModel } from "../src/model.ts";
 import { codexModel } from "../src/codex-model.ts";
+import { codexResponse } from "../src/codex.ts";
 
 test("configured response budget reaches the app-server and cancellation cleans it up", async () => {
   const home = await mkdtemp(join(tmpdir(), "kicktires-deadline-"));
@@ -47,17 +49,33 @@ send({method:'turn/completed',params:{turn:{status:'completed'}}});
       const { pid, cwd } = JSON.parse(await readFile(processFile, "utf8"));
       expect(() => process.kill(pid, 0)).toThrow();
       const { stat } = await import("node:fs/promises");
-      await expect(stat(cwd)).rejects.toThrow();
+      await rejects(stat(cwd));
     }
     await expectCleanedUp();
 
-    await expect(resolveModel(profile.model).doGenerate({ prompt: [] })).rejects.toThrow(
-      "cancelled or timed out",
+    await rejects(
+      Promise.resolve(resolveModel(profile.model).doGenerate({ prompt: [] })),
+      /cancelled or timed out/,
     );
     await expectCleanedUp();
 
-    await expect(model.doGenerate({ prompt: [], abortSignal: nativeTimeout(150) })).rejects.toThrow(
-      "cancelled or timed out",
+    await rejects(
+      codexResponse({
+        cli,
+        home,
+        model: "test",
+        reasoningEffort: "high",
+        prompt: "test",
+        schema: {},
+        signal: new AbortController().signal,
+      }),
+      /cancelled or timed out/,
+    );
+    await expectCleanedUp();
+
+    await rejects(
+      Promise.resolve(model.doGenerate({ prompt: [], abortSignal: nativeTimeout(150) })),
+      /cancelled or timed out/,
     );
     await expectCleanedUp();
   } finally {
@@ -93,7 +111,7 @@ test("schema correction consumes the same response budget", async () => {
         usage: { inputTokens: 1, cachedInputTokens: 0, outputTokens: 1, reasoningOutputTokens: 0 },
       };
     });
-    await expect(model.doGenerate({ prompt: [] })).rejects.toThrow();
+    await rejects(Promise.resolve(model.doGenerate({ prompt: [] })));
     expect(calls).toBe(2);
   } finally {
     timeout.mockRestore();

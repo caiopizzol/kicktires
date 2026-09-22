@@ -55,7 +55,7 @@ export const codexConfig = [
   "features.skip_host_skill_discovery=true",
 ];
 
-type CodexOptions = { cli: string; home: string; signal?: AbortSignal };
+type CodexOptions = { cli: string; home: string; signal?: AbortSignal; timeoutMs?: number };
 type Request = (method: string, params: unknown) => Promise<any>;
 type Usage = {
   inputTokens: number;
@@ -218,7 +218,10 @@ async function withCodex<T>(
       fail(error instanceof Error ? error : new Error(String(error)));
     }
   });
-  const signal = options.signal ?? AbortSignal.timeout(180000);
+  const signal = AbortSignal.any([
+    ...(options.signal ? [options.signal] : []),
+    AbortSignal.timeout(options.timeoutMs ?? 180000),
+  ]);
   const abort = () => fail(new Error("Codex response cancelled or timed out"));
   signal.addEventListener("abort", abort, { once: true });
   try {
