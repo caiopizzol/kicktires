@@ -26,6 +26,7 @@ fs.writeFileSync(${JSON.stringify(processFile)},JSON.stringify({pid:process.pid,
 const send=x=>console.log(JSON.stringify(x));
 readline.createInterface({input:process.stdin}).on('line',line=>{const m=JSON.parse(line);
 if(m.method==='initialize')send({id:m.id,result:{userAgent:'kicktires/0.154.0 (test)'}});
+if(m.method==='skills/list')send({id:m.id,result:{data:[{skills:[],errors:[]}]}});
 if(m.method==='thread/start')send({id:m.id,result:{thread:{id:'test'},model:m.params.model,reasoningEffort:'high'}});
 if(m.method==='turn/start'){
 send({id:m.id,result:{}});

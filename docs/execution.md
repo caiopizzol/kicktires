@@ -37,6 +37,10 @@ Docker does not protect against every container escape.
 
 Codex login and MCP credentials stay on the host. Codex receives the review context;
 self-hosting the worker does not self-host the model.
+Each inference thread disables Codex's discovered skills, including its bundled
+system catalog. Only skills supplied to Eve by the trusted review profile are
+part of the review. Skill discovery failure stops inference; the login home's
+configuration is not rewritten.
 
 ## Results and limits
 
