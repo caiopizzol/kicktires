@@ -291,11 +291,24 @@ export async function codexResponse(
   },
 ) {
   return withCodex(options, async (request, completed, directory) => {
+    const catalog = z
+      .object({
+        data: z.array(
+          z.object({
+            skills: z.array(z.object({ path: z.string().min(1) })),
+            errors: z.array(z.unknown()).length(0),
+          }),
+        ),
+      })
+      .parse(await request("skills/list", { cwds: [directory], forceReload: true }));
     const started = await request("thread/start", {
       model: options.model,
-      ...(options.reasoningEffort
-        ? { config: { model_reasoning_effort: options.reasoningEffort } }
-        : {}),
+      config: {
+        ...(options.reasoningEffort ? { model_reasoning_effort: options.reasoningEffort } : {}),
+        "skills.config": catalog.data.flatMap((entry) =>
+          entry.skills.map((skill) => ({ path: skill.path, enabled: false })),
+        ),
+      },
       cwd: directory,
       approvalPolicy: "never",
       sandbox: "read-only",
