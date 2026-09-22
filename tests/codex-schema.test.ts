@@ -2,6 +2,7 @@ import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import browserTool from "../agent/tools/browser_check.ts";
+import skillTool from "../agent/tools/load_skill.ts";
 import { expect, test } from "bun:test";
 import { z } from "zod";
 import type { LanguageModelV4CallOptions } from "@ai-sdk/provider";
@@ -46,7 +47,7 @@ test("native argument grammar prevents string wrapping and preserves command byt
 
 test("actual core and report schemas use native inputs; unsupported MCP schema stays encoded", async () => {
   const schemas: Record<string, Record<string, unknown>> = { final_output: reportJSONSchema };
-  for (const name of ["run_checks", "run_command", "read_file", "write_file", "load_skill"]) {
+  for (const name of ["run_checks", "run_command", "read_file", "write_file"]) {
     const tool = (await import(`../agent/tools/${name}.ts`)).default;
     schemas[name] = tool.inputSchema["~standard"].jsonSchema.input({ target: "draft-07" });
     expect(codexInputShape(schemas[name])).toBeDefined();
@@ -79,6 +80,70 @@ test("actual core and report schemas use native inputs; unsupported MCP schema s
   });
   for (const keyword of ['"$schema"', '"minimum"', '"maximum"', '"minLength"', '"maxLength"'])
     expect(JSON.stringify(schema)).not.toContain(keyword);
+});
+
+test("skill tool is absent for an empty catalog and rejects unsupplied names before execution", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "kicktires-skill-schema-"));
+  const previous = process.env.KICKTIRES_JOB;
+  const path = join(directory, "job.json");
+  type Resolver = NonNullable<(typeof skillTool.events)["session.started"]>;
+  const resolve = () =>
+    skillTool.events["session.started"]!(
+      {} as Parameters<Resolver>[0],
+      {} as Parameters<Resolver>[1],
+    );
+  const job = {
+    id: "skill-schema-test",
+    directory,
+    profile: { model: { id: "test", home: "/login" } },
+    repository: { base: "a".repeat(40), head: "b".repeat(40), files: {}, changedFiles: [] },
+    skills: {},
+  };
+  try {
+    process.env.KICKTIRES_JOB = path;
+    await writeFile(path, JSON.stringify(job));
+    expect(await resolve()).toBeNull();
+    await writeFile(
+      path,
+      JSON.stringify({
+        ...job,
+        skills: {
+          "counter-review": {
+            description: "Review counters",
+            markdown: "Check increment.",
+            files: {},
+          },
+          "tenant-isolation": {
+            description: "Review isolation",
+            markdown: "Check ownership.",
+            files: {},
+          },
+        },
+      }),
+    );
+    const tool = await resolve();
+    if (!tool) throw new Error("Supplied skills must enable the tool");
+    const schema = z.toJSONSchema(tool.inputSchema as z.ZodType);
+    expect(codexInputShape(schema)).toBeDefined();
+    const callOptions = options(schema, "load_skill");
+    const transport = z.fromJSONSchema(codexProposalSchema(callOptions));
+    for (const name of ["counter-review", "tenant-isolation"]) {
+      const text = proposal({ skill: name }, "load_skill");
+      expect(transport.safeParse(JSON.parse(text)).success).toBe(true);
+      expect(proposedResponse(text, callOptions).content[0]).toMatchObject({
+        toolName: "load_skill",
+        input: JSON.stringify({ skill: name }),
+      });
+    }
+    const absent = proposal({ skill: "code-review" }, "load_skill");
+    expect(transport.safeParse(JSON.parse(absent)).success).toBe(false);
+    expect(() => proposedResponse(absent, callOptions)).toThrow("Invalid arguments");
+    expect(() => proposedResponse(absent, { prompt: [] })).toThrow("unavailable tool");
+  } finally {
+    if (previous === undefined) delete process.env.KICKTIRES_JOB;
+    else process.env.KICKTIRES_JOB = previous;
+    await rm(directory, { recursive: true, force: true });
+  }
 });
 
 test("native optional absence is restored recursively and transport fields are enforced", () => {

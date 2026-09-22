@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { parseArgs } from "node:util";
 import { resolve } from "node:path";
-import { mkdtemp, writeFile, readFile, stat, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, readFile, stat, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { once } from "node:events";
@@ -67,6 +67,14 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
     },
   });
   const profilePath = join(directory, "profile.json");
+  const skillPath = join(directory, "counter-review");
+  // Eve 0.52.5 resolves this supplied dynamic skill by its bare catalog name.
+  const skillGuidance = "Check that Increment adds one, preserving an initial count of zero.";
+  await mkdir(skillPath);
+  await writeFile(
+    join(skillPath, "SKILL.md"),
+    `---\nname: counter-review\ndescription: Review counter increment behavior\n---\n${skillGuidance}\n`,
+  );
   const failures: string[] = [];
   for (const scenario of [
     "clean",
@@ -88,6 +96,7 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
             instructions:
               "Review this documentation change. Use execution only if needed to investigate it.",
             setup: { network: "deny-all", commands: scenario === "blocked" ? ["exit 42"] : [] },
+            connections: {},
           }
         : profile;
       if (adaptive)
@@ -102,6 +111,13 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
           setup: { network: "deny-all", commands: [] },
           browser: { start: 'case "$PWD" in */head) exit 42;; *) node app.cjs;; esac' },
         };
+      activeProfile = {
+        ...activeProfile,
+        skills: documentation ? [] : [skillPath],
+        instructions: documentation
+          ? activeProfile.instructions
+          : `Load the supplied counter-review skill before investigating. ${activeProfile.instructions}`,
+      };
       await writeFile(profilePath, JSON.stringify(activeProfile));
       await writeFile(
         join(directory, "app.cjs"),
@@ -113,9 +129,7 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
       );
       await writeFile(
         join(directory, "README.md"),
-        documentation
-          ? `Counter example. Use Increment to add one. ${scenario}.\n`
-          : "Counter example.\n",
+        documentation ? "# Counter example\n" : "Counter example.\n",
       );
       git("add", "app.cjs", "README.md");
       git("commit", "-qm", `test: ${scenario} review`);
@@ -145,6 +159,27 @@ test("initial count and accessible control",()=>{const source=fs.readFileSync("a
       ]);
       assert.equal(exit, scenario === "blocked" || browserBlocked ? 2 : 0, stderr || stdout);
       const report = JSON.parse(stdout);
+      if (scenario !== "blocked") {
+        const response = JSON.parse(
+          await readFile(join(report.directory, "response.json"), "utf8"),
+        );
+        const loads = response.events.filter(
+          (e: { type: string; data: { result?: { toolName?: string; output?: unknown } } }) =>
+            e.type === "action.result" && e.data.result?.toolName === "load_skill",
+        );
+        assert(
+          !loads.some((e: { data: { result: { isError?: boolean } } }) => e.data.result.isError),
+          "Skill load returned an execution error",
+        );
+        if (documentation) assert.equal(loads.length, 0, "Empty catalog exposed a skill load");
+        else
+          assert(
+            loads.some((e: { data: { result: { output?: unknown } } }) =>
+              JSON.stringify(e.data.result.output).includes(skillGuidance),
+            ),
+            "Supplied skill guidance was not loaded by Eve",
+          );
+      }
       if (scenario === "blocked" || browserBlocked) {
         assert.equal(report.status, "incomplete");
         assert(report.gaps.length > 0);
