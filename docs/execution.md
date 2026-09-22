@@ -62,7 +62,11 @@ A finding citing truncated or timed-out command or browser evidence remains visi
 and makes the review incomplete. Uncited executions retain their exit codes and truncation flags
 in the report but do not prevent completion. The agent can narrow a command or use
 read_file ranges to obtain complete replacement evidence. Reviews default to
-600 seconds (maximum 1,800). Eve's session limits are 2 million input tokens and
+600 seconds (maximum 1,800). Each Codex response defaults to 180 seconds, including
+its optional schema correction. Set `limits.modelSeconds` (1–1,800) in the trusted
+profile for models that need longer responses; it does not extend `reviewSeconds`.
+Catalog preflight retains its separate 180-second timeout.
+Eve's session limits are 2 million input tokens and
 24,000 output tokens, checked between calls; a final call may exceed them. A paused
 review remains incomplete.
 

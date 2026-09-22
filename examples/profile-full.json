@@ -25,6 +25,7 @@
   },
   "limits": {
     "commandSeconds": 60,
+    "modelSeconds": 180,
     "reviewSeconds": 600
   }
 }

@@ -24,6 +24,22 @@ test("defaults to offline setup and bounded execution", () => {
   });
   expect(profile.setup.network).toBe("deny-all");
   expect(profile.limits.commandSeconds).toBe(60);
+  expect(profile.limits.modelSeconds).toBe(180);
+});
+
+test("model response deadlines are bounded and preserve existing profiles", () => {
+  const model = { id: "test", home: "/login" };
+  expect(profileSchema.parse({ model, limits: { reviewSeconds: 1800 } }).limits).toEqual({
+    commandSeconds: 60,
+    modelSeconds: 180,
+    reviewSeconds: 1800,
+  });
+  for (const modelSeconds of [1, 600, 1800])
+    expect(profileSchema.parse({ model, limits: { modelSeconds } }).limits.modelSeconds).toBe(
+      modelSeconds,
+    );
+  for (const modelSeconds of [0, -1, 1801, 1.5, "600", null])
+    expect(profileSchema.safeParse({ model, limits: { modelSeconds } }).success).toBe(false);
 });
 test("loads no skills by default", async () => {
   expect(await loadSkills([])).toEqual({});

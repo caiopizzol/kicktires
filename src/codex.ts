@@ -65,6 +65,40 @@ type Usage = {
 };
 type Response = { text: string; usage: Usage | undefined };
 
+const turnStatus = z.enum(["completed", "interrupted", "failed", "inProgress"]);
+const errorCode = z.enum([
+  "contextWindowExceeded",
+  "sessionBudgetExceeded",
+  "usageLimitExceeded",
+  "rateLimitExceeded",
+  "serverOverloaded",
+  "cyberPolicy",
+  "misalignmentPolicyViolation",
+  "httpConnectionFailed",
+  "responseStreamConnectionFailed",
+  "internalServerError",
+  "unauthorized",
+  "badRequest",
+  "threadRollbackFailed",
+  "sandboxError",
+  "responseStreamDisconnected",
+  "responseTooManyFailedAttempts",
+  "activeTurnNotSteerable",
+  "other",
+]);
+
+export function incompleteTurnMessage(turn: {
+  status?: unknown;
+  error?: { codexErrorInfo?: unknown } | null;
+}) {
+  const status = turnStatus.safeParse(turn.status).data ?? "unknown";
+  const info = turn.error?.codexErrorInfo;
+  const code = errorCode.safeParse(
+    info && typeof info === "object" ? Object.keys(info)[0] : info,
+  ).data;
+  return `Codex turn did not complete with a response (status: ${status}, code: ${code ?? "unknown"})`;
+}
+
 async function withCodex<T>(
   options: CodexOptions,
   action: (request: Request, completed: Promise<Response>, directory: string) => Promise<T>,
@@ -175,7 +209,7 @@ async function withCodex<T>(
             .parse(message.params.tokenUsage.total);
         } else if (message.method === "turn/completed") {
           if (message.params.turn.status !== "completed" || !final)
-            throw new Error("Codex turn did not complete with a response");
+            throw new Error(incompleteTurnMessage(message.params.turn));
           if (!usage) throw new Error("Codex omitted token usage");
           resolveTurn({ text: final, usage });
         }
@@ -184,10 +218,7 @@ async function withCodex<T>(
       fail(error instanceof Error ? error : new Error(String(error)));
     }
   });
-  const signal = AbortSignal.any([
-    ...(options.signal ? [options.signal] : []),
-    AbortSignal.timeout(180000),
-  ]);
+  const signal = options.signal ?? AbortSignal.timeout(180000);
   const abort = () => fail(new Error("Codex response cancelled or timed out"));
   signal.addEventListener("abort", abort, { once: true });
   try {

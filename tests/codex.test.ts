@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { z } from "zod";
 import { expect, test } from "bun:test";
 import { codexModel, proposedResponse } from "../src/codex-model.ts";
-import { assertCodexHome } from "../src/codex.ts";
+import { assertCodexHome, incompleteTurnMessage } from "../src/codex.ts";
 import type { LanguageModelV4CallOptions } from "@ai-sdk/provider";
 
 const options: LanguageModelV4CallOptions = {
@@ -62,6 +62,24 @@ test("Codex proposals reject unavailable tools, invalid arguments and forged res
 test("Codex requires an explicit dedicated login home", () => {
   expect(() => assertCodexHome(undefined)).toThrow("absolute");
   expect(() => assertCodexHome("relative")).toThrow("absolute");
+});
+
+test("failed turn diagnostics retain protocol status and code without provider text", () => {
+  expect(
+    incompleteTurnMessage({ status: "failed", error: { codexErrorInfo: "usageLimitExceeded" } }),
+  ).toContain("status: failed, code: usageLimitExceeded");
+  expect(
+    incompleteTurnMessage({
+      status: "failed",
+      error: { codexErrorInfo: { responseStreamDisconnected: { httpStatusCode: 502 } } },
+    }),
+  ).toContain("code: responseStreamDisconnected");
+  expect(incompleteTurnMessage({ status: "completed", error: null })).toContain(
+    "status: completed, code: unknown",
+  );
+  expect(
+    incompleteTurnMessage({ status: "private provider text", error: { codexErrorInfo: "secret" } }),
+  ).toContain("status: unknown, code: unknown");
 });
 
 test("Codex corrects one invalid proposal atomically and counts both attempts", async () => {

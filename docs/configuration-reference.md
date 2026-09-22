@@ -82,11 +82,12 @@ with the token's permissions. Keep tokens out of JSON files.
 
 ### Timeouts
 
-| Option                  | Required? | Definition                                                                                                     | Minimal example                                          |
-| ----------------------- | --------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| `limits`                | No        | Execution timeouts in seconds. Defaults are listed below.                                                      | `"limits": {"commandSeconds": 60, "reviewSeconds": 600}` |
-| `limits.commandSeconds` | No        | Timeout for sandbox commands, including setup and browser checks. Integer `1`–`300`; default `60`.             | `"commandSeconds": 120`                                  |
-| `limits.reviewSeconds`  | No        | Review request deadline, excluding preflight, service startup and cleanup. Integer `30`–`1800`; default `600`. | `"reviewSeconds": 900`                                   |
+| Option                  | Required? | Definition                                                                                                                                               | Minimal example                                          |
+| ----------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `limits`                | No        | Execution timeouts in seconds. Defaults are listed below.                                                                                                | `"limits": {"commandSeconds": 60, "reviewSeconds": 600}` |
+| `limits.commandSeconds` | No        | Timeout for sandbox commands, including setup and browser checks. Integer `1`–`300`; default `60`.                                                       | `"commandSeconds": 120`                                  |
+| `limits.modelSeconds`   | No        | Deadline for one Codex response, including its optional schema correction. Integer `1`–`1800`; default `180`. The overall review deadline still applies. | `"modelSeconds": 600`                                    |
+| `limits.reviewSeconds`  | No        | Review request deadline, excluding preflight, service startup and cleanup. Integer `30`–`1800`; default `600`.                                           | `"reviewSeconds": 900`                                   |
 
 ## Hub settings
 
