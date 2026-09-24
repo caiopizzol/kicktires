@@ -68,3 +68,5 @@ for multiple projects or VMs.
 - [Contribute](CONTRIBUTING.md)
 
 [MIT licensed](LICENSE). Built on [Eve](https://github.com/vercel/eve).
+
+<!-- kicktires hub validation; this PR is closed without merging. -->
