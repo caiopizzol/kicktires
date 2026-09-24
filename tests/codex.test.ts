@@ -202,7 +202,7 @@ test("Codex app-server rejects host actions and cleans up the child", async () =
       `const readline=require('node:readline');
 const send=x=>console.log(JSON.stringify(x));
 readline.createInterface({input:process.stdin}).on('line',line=>{const m=JSON.parse(line);
-if(m.method==='initialize')send({id:m.id,result:{userAgent:'kicktires/0.154.0 (test)'}});
+if(m.method==='initialize')send({id:m.id,result:{userAgent:'kicktires/0.156.1 (test)'}});
 if(m.method==='skills/list')send({id:m.id,result:{data:[{skills:[],errors:[]}]}});
 if(m.method==='thread/start')send({id:m.id,result:{thread:{id:'test'}}});
 if(m.method==='turn/start'){send({id:m.id,result:{}});send({method:'item/started',params:{item:{type:'commandExecution'}}});}
@@ -255,7 +255,7 @@ test("Codex counts cumulative usage and rejects malformed protocol output", asyn
     const cli = join(home, "fake.cjs");
     const source = `const readline=require('node:readline');const send=x=>console.log(JSON.stringify(x));
 readline.createInterface({input:process.stdin}).on('line',line=>{const m=JSON.parse(line);
-if(m.method==='initialize')send({id:m.id,result:{userAgent:'kicktires/0.154.0 (test)'}});
+if(m.method==='initialize')send({id:m.id,result:{userAgent:'kicktires/0.156.1 (test)'}});
 if(m.method==='skills/list')send({id:m.id,result:{data:[{skills:[],errors:[]}]}});
 if(m.method==='thread/start')send({id:m.id,result:{thread:{id:'test'}}});
 if(m.method==='turn/start'){
@@ -301,7 +301,7 @@ test("Codex resolves paginated model defaults and rejects unsupported settings b
 const send=x=>console.log(JSON.stringify(x));
 readline.createInterface({input:process.stdin}).on('line',line=>{const m=JSON.parse(line);
 fs.appendFileSync(${JSON.stringify(requests)},line+'\\n');
-if(m.method==='initialize')send({id:m.id,result:{userAgent:'kicktires/0.154.0 (test)'}});
+if(m.method==='initialize')send({id:m.id,result:{userAgent:'kicktires/0.156.1 (test)'}});
 if(m.method==='model/list')send({id:m.id,result:{data:[{model:m.params.cursor?'beta':'alpha',defaultReasoningEffort:'high',supportedReasoningEfforts:[{reasoningEffort:'low'},{reasoningEffort:'high'}]}],...(m.params.cursor?{}:{nextCursor:'page2'})}});
 if(m.method==='skills/list')send({id:m.id,result:{data:[{skills:[{path:'/bundled/first/SKILL.md'},{path:'/bundled/second/SKILL.md'}],errors:[]}]}});
 if(m.method==='thread/start'){

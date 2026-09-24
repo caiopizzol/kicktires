@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { stopService } from "./service.ts";
 import { version } from "../package.json";
 
-export const codexVersion = "0.154.0";
+export const codexVersion = "0.156.1";
 
 export function assertCodexHome(home: string | undefined): asserts home is string {
   if (!home || !isAbsolute(home)) throw new Error("codex requires an absolute model.home");

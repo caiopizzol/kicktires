@@ -49,7 +49,7 @@ plugin caches, but its app access and code execution are disabled.
 Codex proposes responses; Eve executes tools and validates evidence. Each step
 starts a fresh Codex thread with Eve's conversation, increasing context use compared
 with a persistent thread. The adapter uses the experimental app-server API in pinned
-CLI version 0.154.0. Subscription limits and reauthentication apply.
+CLI version 0.156.1. Subscription limits and reauthentication apply.
 
 Clean and seeded browser-regression tests verified terminal checks, browser checks
 and MCP context using a ChatGPT subscription.
