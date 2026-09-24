@@ -12,14 +12,14 @@ paths, commands and MCP endpoint before use.
 
 Only `model`, `model.id` and `model.home` are required.
 
-| Option         | Required? | Definition                                                                                      | Minimal example                                                                         |
-| -------------- | --------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `model`        | Yes       | Codex model and login settings.                                                                 | `"model": {"id": "gpt-5.6-terra", "home": "/home/runner/.local/share/kicktires/codex"}` |
-| `model.id`     | Yes       | Nonempty ID from the account's Codex model catalog.                                             | `"id": "gpt-5.6-terra"`                                                                 |
-| `model.home`   | Yes       | Absolute path to a dedicated Codex login directory.                                             | `"home": "/home/runner/.local/share/kicktires/codex"`                                   |
-| `model.effort` | No        | Reasoning effort supported by that model. Defaults to its catalog setting.                      | `"effort": "high"`                                                                      |
-| `instructions` | No        | Project guidance, trimmed to 1–16,000 characters. Omitted by default.                           | `"instructions": "Check boundary cases."`                                               |
-| `checks`       | No        | Command shortcuts the reviewer can choose to run. Defaults to `[]`; not a mandatory test suite. | `"checks": ["bun test"]`                                                                |
+| Option         | Required? | Definition                                                                                      | Minimal example                                                                     |
+| -------------- | --------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `model`        | Yes       | Codex model and login settings.                                                                 | `"model": {"id": "gpt-6-sol", "home": "/home/runner/.local/share/kicktires/codex"}` |
+| `model.id`     | Yes       | Nonempty ID from the account's Codex model catalog.                                             | `"id": "gpt-6-sol"`                                                                 |
+| `model.home`   | Yes       | Absolute path to a dedicated Codex login directory.                                             | `"home": "/home/runner/.local/share/kicktires/codex"`                               |
+| `model.effort` | No        | Reasoning effort supported by that model. Defaults to its catalog setting.                      | `"effort": "high"`                                                                  |
+| `instructions` | No        | Project guidance, trimmed to 1–16,000 characters. Omitted by default.                           | `"instructions": "Check boundary cases."`                                           |
+| `checks`       | No        | Command shortcuts the reviewer can choose to run. Defaults to `[]`; not a mandatory test suite. | `"checks": ["bun test"]`                                                            |
 
 `home` needs a working [Codex login](configuration.md#codex-subscription).
 Model and effort availability are checked against the catalog; account access is

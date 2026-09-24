@@ -53,7 +53,7 @@ review; resolving a thread alone does not turn it green.
 
 Rerun the same installer to resume interrupted setup or check the worker.
 It preserves existing configuration and does not activate upgrades automatically.
-The default model is `gpt-5.6-terra`; edit `/etc/kicktires/profile.json` for
+The default model is `gpt-6-sol` with `xhigh` effort; edit `/etc/kicktires/profile.json` for
 [configuration](docs/configuration.md). See [shared workers](docs/shared-workers.md)
 for multiple projects or VMs.
 
