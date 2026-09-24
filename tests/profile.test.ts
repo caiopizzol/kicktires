@@ -1,5 +1,6 @@
 import { test, expect } from "bun:test";
 import { profileSchema } from "../src/profile.ts";
+import { defaultModel } from "../src/setup/worker.ts";
 import { loadSkills } from "../src/skills.ts";
 
 test("rejects unsupported providers and unknown configuration", () => {
@@ -100,6 +101,11 @@ test("concise Codex settings survive job serialization", async () => {
   ).toBeUndefined();
   const example = await Bun.file(new URL("../examples/profile.json", import.meta.url)).json();
   expect(profileSchema.parse(example).model).toMatchObject({ id: "gpt-6-sol", effort: "xhigh" });
+});
+
+test("guided setup applies xhigh only to the default model", () => {
+  expect(defaultModel("")).toEqual({ id: "gpt-6-sol", effort: "xhigh" });
+  expect(defaultModel("other-model")).toEqual({ id: "other-model" });
 });
 
 test("rejects legacy, unsupported and invalid model settings", () => {
