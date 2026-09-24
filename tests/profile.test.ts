@@ -99,7 +99,7 @@ test("concise Codex settings survive job serialization", async () => {
     profileSchema.parse({ model: { id: "test", home: "/login" } }).model.effort,
   ).toBeUndefined();
   const example = await Bun.file(new URL("../examples/profile.json", import.meta.url)).json();
-  expect(profileSchema.parse(example).model).toMatchObject({ id: "gpt-5.6-terra", effort: "high" });
+  expect(profileSchema.parse(example).model).toMatchObject({ id: "gpt-6-sol", effort: "xhigh" });
 });
 
 test("rejects legacy, unsupported and invalid model settings", () => {

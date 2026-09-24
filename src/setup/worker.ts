@@ -172,7 +172,8 @@ export async function configureWorker(
     ? profileSchema.parse(JSON.parse(await readTrusted(profilePath)))
     : {
         model: {
-          id: (await ask("Codex model [gpt-5.6-terra]")) || "gpt-5.6-terra",
+          id: (await ask("Codex model [gpt-6-sol]")) || "gpt-6-sol",
+          effort: (await ask("Reasoning effort [xhigh]")) || "xhigh",
           home: codexHome,
         },
       };

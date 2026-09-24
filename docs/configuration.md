@@ -9,8 +9,8 @@ Start with [profile.json](../examples/profile.json). See the
 ```json
 {
   "model": {
-    "id": "gpt-5.6-terra",
-    "effort": "high",
+    "id": "gpt-6-sol",
+    "effort": "xhigh",
     "home": "/home/runner/.local/share/kicktires/codex"
   },
   "instructions": "Check boundary cases and public API compatibility."
