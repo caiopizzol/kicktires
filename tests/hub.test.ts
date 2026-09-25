@@ -133,6 +133,7 @@ function hubScenario(
             ? [
                 {
                   user: { login: config.reviewer },
+                  commit_id: pr.head.sha,
                   body:
                     options.publishedBody ??
                     `Verification: **${options.incomplete ? "incomplete" : "reviewed"}** · ${options.findings ? 1 : 0} finding(s).\n<!-- kicktires:${pr.base.sha}:${pr.head.sha} -->\n<!-- kicktires-status:${options.incomplete ? "incomplete" : "reviewed"} -->`,

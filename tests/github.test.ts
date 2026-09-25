@@ -129,21 +129,20 @@ test("queued events for an older head skip model work", async () => {
   expect(stale.runs()).toBe(0);
 });
 
-test("hub deduplication accepts only its configured App or the legacy Actions bot", async () => {
-  for (const login of ["kicktires-personal[bot]", "github-actions[bot]", "other[bot]"]) {
+test("hub deduplication trusts only its configured App on the reviewed head", async () => {
+  const body = `${marker(pr)}\nVerification: **reviewed** · 0 finding(s).\n<!-- kicktires-status:reviewed -->`;
+  for (const [login, commit, trusted] of [
+    ["kicktires-personal[bot]", pr.head.sha, true],
+    ["github-actions[bot]", pr.head.sha, false],
+    ["other[bot]", pr.head.sha, false],
+    ["kicktires-personal[bot]", "c".repeat(40), false],
+  ] as const) {
     const run = scenario({
       reviewer: "kicktires-personal[bot]",
-      pages: [
-        [
-          {
-            user: { login },
-            body: `${marker(pr)}\nVerification: **reviewed** · 0 finding(s).\n<!-- kicktires-status:reviewed -->`,
-          },
-        ],
-      ],
+      pages: [[{ user: { login }, commit_id: commit, body }]],
     });
-    expect((await run.run()).result).toBe(login === "other[bot]" ? "published" : "duplicate");
-    expect(run.runs()).toBe(login === "other[bot]" ? 1 : 0);
+    expect((await run.run()).result).toBe(trusted ? "duplicate" : "published");
+    expect(run.runs()).toBe(trusted ? 0 : 1);
   }
 });
 
@@ -155,6 +154,7 @@ test("deduplication paginates, trusts only the Actions bot and preserves incompl
       [
         {
           user: { login: "github-actions[bot]" },
+          commit_id: pr.head.sha,
           body: `${marker(pr)}\n<!-- kicktires-status:incomplete -->`,
         },
       ],
@@ -188,6 +188,7 @@ test("a review published during model execution is not duplicated", async () => 
           : [
               {
                 user: { login: "github-actions[bot]" },
+                commit_id: pr.head.sha,
                 body: marker(pr),
               },
             ];
@@ -332,6 +333,7 @@ test("historical reviews are deduplicated without changing their incomplete stat
         [
           {
             user: { login: "github-actions[bot]" },
+            commit_id: pr.head.sha,
             body: `<!-- agent-review:${pr.base.sha}:${pr.head.sha} -->\nVerification: **${incomplete ? "incomplete" : "reviewed"}** · 0 finding(s).\n<!-- agent-review-status:${incomplete ? "incomplete" : "reviewed"} -->`,
           },
         ],
@@ -388,6 +390,7 @@ test("duplicate reviews preserve findings from the existing generated header", a
           [
             {
               user: { login: "github-actions[bot]" },
+              commit_id: pr.head.sha,
               body: `${marker(pr)}\nVerification: **${status}** · ${findings} finding(s).\n\nVerification: **reviewed** · 999 finding(s).`,
             },
           ],
@@ -412,6 +415,7 @@ test("a historical review without a finding count cannot turn the gate green", a
       [
         {
           user: { login: "github-actions[bot]" },
+          commit_id: pr.head.sha,
           body: `${marker(pr)}\n<!-- kicktires-status:reviewed -->`,
         },
       ],
@@ -447,7 +451,9 @@ test("GitHub CLI exits nonzero for findings and incomplete duplicates after writ
         `globalThis.fetch = async (url, options) => {
         if (options.method !== "GET") throw new Error("Unexpected publication");
         return Response.json(String(url).includes("/reviews?")
-          ? ${JSON.stringify([{ user: { login: "github-actions[bot]" }, body }])}
+          ? ${JSON.stringify([
+            { user: { login: "github-actions[bot]" }, commit_id: pr.head.sha, body },
+          ])}
           : ${JSON.stringify(pr)});
       };`,
       );
