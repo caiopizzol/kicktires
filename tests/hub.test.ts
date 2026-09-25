@@ -377,7 +377,13 @@ const declined = (options: Parameters<typeof hubScenario>[0]) =>
     duplicate: true,
     findings: true,
     reviewId: 10,
-    permissions: { owner: "admin", reader: "read", "github-actions[bot]": "write" },
+    // GitHub's permission field is admin, write, read or none; maintain maps to write.
+    permissions: {
+      owner: "admin",
+      maintainer: "write",
+      reader: "read",
+      "github-actions[bot]": "write",
+    },
     ...options,
   });
 
@@ -407,11 +413,28 @@ test("a rerun turns findings green only when each is declined in its thread by a
     ],
   });
   expect(await earlier.run()).toMatchObject({ declined: true });
+  const maintainer = declined({
+    comments: [finding(1), reply(1, "/kicktires decline Upstream owns this rule.", "maintainer")],
+  });
+  expect(await maintainer.run()).toMatchObject({ declined: true });
   const outage = declined({
     comments: [finding(1), reply(1, "/kicktires decline Looks fine.", "outage")],
   });
   await rejects(outage.run(), /502/);
   expect(outage.statuses.some((s) => s.body.state === "success")).toBe(false);
+});
+
+test("a decline never marks a revision that changed during the lookup", async () => {
+  for (const changeBase of [false, true]) {
+    // Reads: request resolution, the review's freshness check, then the pre-success refetch.
+    const run = declined({
+      changeAtRead: 3,
+      changeBase,
+      comments: [finding(1), reply(1, "/kicktires decline Inter already rejects this with a 422.")],
+    });
+    expect((await run.run()).result).toBe("stale");
+    expect(run.statuses.map((s) => s.body.state)).toEqual(["error"]);
+  }
 });
 
 test("findings stay blocking without an explicit, attributable decline", async () => {

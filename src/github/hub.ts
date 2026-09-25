@@ -115,6 +115,16 @@ export async function reviewHubRequest(options: {
           )
         : null;
     const count = `${result.findings} finding${result.findings === 1 ? "" : "s"}`;
+    // The decline lookup is slow; never mark a revision the reused review did not cover.
+    if (decliners) {
+      const latest = pullRequestSchema.parse(
+        await options.api(`/repos/${request.repository}/pulls/${pr.number}`),
+      );
+      if (latest.head.sha !== pr.head.sha || latest.base.sha !== pr.base.sha) {
+        await status("error", "PR changed. Review no longer applies to the current revision.");
+        return { result: "stale", incomplete: true, findings: 0 };
+      }
+    }
     if (decliners)
       await status(
         "success",
