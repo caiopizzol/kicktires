@@ -2,6 +2,7 @@ import { renderReview, type PullRequest } from "../src/github/review.ts";
 import { rejects } from "node:assert/strict";
 import { expect, test } from "bun:test";
 import { hubConfigSchema, resolveHubRequest, reviewHubRequest } from "../src/github/hub.ts";
+import { GitHubApiError } from "../src/github/api.ts";
 
 const repository = "example/project";
 const repo = { full_name: repository, private: true };
@@ -135,7 +136,8 @@ function hubScenario(
           return path.includes("page=1") ? (options.comments ?? []) : [];
         if (path.endsWith("/permission")) {
           const login = path.split("/").at(-2)!;
-          if (login === "ghost") throw new Error(`GitHub API returned 404 for ${path}`);
+          if (login === "ghost") throw new GitHubApiError(404, path);
+          if (login === "outage") throw new GitHubApiError(502, path);
           return { permission: options.permissions?.[login] ?? "read" };
         }
         if (path.includes("/reviews?"))
@@ -397,6 +399,19 @@ test("a rerun turns findings green only when each is declined in its thread by a
     ],
   });
   expect(await later.run()).toMatchObject({ declined: true });
+  const earlier = declined({
+    comments: [
+      finding(1),
+      { ...reply(1, "/kicktires decline Me too.", "ghost"), id: 50 },
+      reply(1, "/kicktires decline Inter already rejects this with a 422."),
+    ],
+  });
+  expect(await earlier.run()).toMatchObject({ declined: true });
+  const outage = declined({
+    comments: [finding(1), reply(1, "/kicktires decline Looks fine.", "outage")],
+  });
+  await rejects(outage.run(), /502/);
+  expect(outage.statuses.some((s) => s.body.state === "success")).toBe(false);
 });
 
 test("findings stay blocking without an explicit, attributable decline", async () => {

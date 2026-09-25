@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Api } from "./review.ts";
+import { GitHubApiError } from "./api.ts";
 
 const commentSchema = z.object({
   id: z.number(),
@@ -31,9 +32,15 @@ export async function declinedBy(
   const writers = new Map<string, boolean>();
   const canWrite = async (login: string) => {
     if (!writers.has(login)) {
-      const { permission } = z
-        .object({ permission: z.string() })
-        .parse(await api(`/repos/${repository}/collaborators/${login}/permission`));
+      // GitHub returns 404 for accounts it no longer considers users; they cannot decline.
+      const response = await api(`/repos/${repository}/collaborators/${login}/permission`).catch(
+        (error) => {
+          if (error instanceof GitHubApiError && error.status === 404)
+            return { permission: "none" };
+          throw error;
+        },
+      );
+      const { permission } = z.object({ permission: z.string() }).parse(response);
       writers.set(login, permission === "admin" || permission === "write");
     }
     return writers.get(login)!;
