@@ -41,6 +41,7 @@ export async function declinedBy(
         },
       );
       const { permission } = z.object({ permission: z.string() }).parse(response);
+      // `permission` is only admin, write, read or none; GitHub maps maintain to write.
       writers.set(login, permission === "admin" || permission === "write");
     }
     return writers.get(login)!;

@@ -132,8 +132,11 @@ function hubScenario(
           publications++;
           return {};
         }
-        if (path.includes("/comments?"))
+        if (path.includes("/comments?")) {
+          if (options.comments === undefined && options.reviewId)
+            throw new GitHubApiError(502, path);
           return path.includes("page=1") ? (options.comments ?? []) : [];
+        }
         if (path.endsWith("/permission")) {
           const login = path.split("/").at(-2)!;
           if (login === "ghost") throw new GitHubApiError(404, path);
@@ -393,6 +396,7 @@ test("a rerun turns findings green only when each is declined in its thread by a
   });
   expect(await run.run()).toMatchObject({ result: "duplicate", findings: 1, declined: true });
   expect(run.statuses.map((s) => [s.body.state, s.body.description])).toEqual([
+    ["pending", "Checking declined findings."],
     ["success", "Review complete. 1 finding declined by @owner."],
   ]);
   expect(run.reviews()).toBe(0);
@@ -421,7 +425,16 @@ test("a rerun turns findings green only when each is declined in its thread by a
     comments: [finding(1), reply(1, "/kicktires decline Looks fine.", "outage")],
   });
   await rejects(outage.run(), /502/);
-  expect(outage.statuses.some((s) => s.body.state === "success")).toBe(false);
+  expect(outage.statuses.map((s) => s.body.state)).toEqual(["pending", "error"]);
+});
+
+test("a failed decline lookup replaces an earlier success with an error", async () => {
+  const run = declined({ comments: undefined });
+  await rejects(run.run(), /502/);
+  expect(run.statuses.map((s) => [s.body.state, s.body.description])).toEqual([
+    ["pending", "Checking declined findings."],
+    ["error", "Declined findings could not be checked. Rerun the hub job."],
+  ]);
 });
 
 test("a decline never marks a revision that changed during the lookup", async () => {
@@ -433,7 +446,7 @@ test("a decline never marks a revision that changed during the lookup", async ()
       comments: [finding(1), reply(1, "/kicktires decline Inter already rejects this with a 422.")],
     });
     expect((await run.run()).result).toBe("stale");
-    expect(run.statuses.map((s) => s.body.state)).toEqual(["error"]);
+    expect(run.statuses.map((s) => s.body.state)).toEqual(["pending", "error"]);
   }
 });
 
