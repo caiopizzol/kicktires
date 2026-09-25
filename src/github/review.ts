@@ -50,13 +50,16 @@ async function previousReview(api: Api, endpoint: string, pr: PullRequest, revie
       .array(
         z.object({
           body: z.string().nullable(),
-          user: z.object({ login: z.string() }),
+          user: z.object({ login: z.string() }).nullable(),
+          commit_id: z.string().nullable().default(null),
         }),
       )
       .parse(await api(`${endpoint}/reviews?per_page=100&page=${page}`));
+    // Any workflow in the source repository can post as github-actions[bot]; trust only the reviewer.
     const previous = reviews.find(
       (r) =>
-        (r.user.login === reviewer || r.user.login === "github-actions[bot]") &&
+        r.user?.login === reviewer &&
+        r.commit_id === pr.head.sha &&
         (r.body?.includes(marker(pr)) ||
           r.body?.includes(`<!-- agent-review:${pr.base.sha}:${pr.head.sha} -->`)),
     );
