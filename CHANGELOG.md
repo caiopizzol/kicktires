@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/caiopizzol/kicktires/compare/v0.4.0...v0.5.0) (2026-09-25)
+
+
+### Features
+
+* **github:** let writers decline findings in their threads ([#43](https://github.com/caiopizzol/kicktires/issues/43)) ([e829971](https://github.com/caiopizzol/kicktires/commit/e829971ec2a5b12a5a9bc3dc51148586dbe2f859))
+
+
+### Bug Fixes
+
+* **github:** trust only the configured reviewer's review on the head ([#41](https://github.com/caiopizzol/kicktires/issues/41)) ([f41cdc3](https://github.com/caiopizzol/kicktires/commit/f41cdc3a94c177b4331fdbcdd04b7751a1b0dfe5))
+
 ## [0.4.0](https://github.com/caiopizzol/kicktires/compare/v0.3.0...v0.4.0) (2026-09-24)
 
 
