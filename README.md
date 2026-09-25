@@ -49,7 +49,8 @@ in branch protection. Keep your existing CI checks required and require review
 conversations to be resolved.
 
 Findings or an incomplete review fail the status. Push a fix to trigger another
-review; resolving a thread alone does not turn it green.
+review; resolving a thread alone does not turn it green. To keep the code as it is,
+reply `/kicktires decline <reason>` in each finding's thread, then rerun the hub job.
 
 Rerun the same installer to resume interrupted setup or check the worker.
 It preserves existing configuration and does not activate upgrades automatically.

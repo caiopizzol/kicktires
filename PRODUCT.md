@@ -5,7 +5,9 @@ It reviews pinned Git revisions in a disposable sandbox, investigates changes, a
 reports findings with recorded evidence and verification gaps. CI owns predefined
 project checks and their merge gates. The reviewer chooses relevant investigation;
 completion means the investigation finished, not that every test passed. The GitHub
-review check fails for any reported finding or incomplete investigation.
+review check fails for any reported finding or incomplete investigation. A human with
+write access can decline a finding in its thread; declining preserves the finding and
+is not an approval. Incomplete investigations cannot be declined.
 
 The CLI and GitHub adapter share one review workflow. GitHub support currently covers
 private repositories directly and public repositories through a private hub.

@@ -2,6 +2,7 @@ import { renderReview, type PullRequest } from "../src/github/review.ts";
 import { rejects } from "node:assert/strict";
 import { expect, test } from "bun:test";
 import { hubConfigSchema, resolveHubRequest, reviewHubRequest } from "../src/github/hub.ts";
+import { GitHubApiError } from "../src/github/api.ts";
 
 const repository = "example/project";
 const repo = { full_name: repository, private: true };
@@ -96,6 +97,9 @@ function hubScenario(
     changeAtRead?: number;
     changeBase?: boolean;
     public?: boolean;
+    reviewId?: number;
+    comments?: unknown[];
+    permissions?: Record<string, string>;
   } = {},
 ) {
   const source = { ...repo, private: !options.public };
@@ -128,10 +132,22 @@ function hubScenario(
           publications++;
           return {};
         }
+        if (path.includes("/comments?")) {
+          if (options.comments === undefined && options.reviewId)
+            throw new GitHubApiError(502, path);
+          return path.includes("page=1") ? (options.comments ?? []) : [];
+        }
+        if (path.endsWith("/permission")) {
+          const login = path.split("/").at(-2)!;
+          if (login === "ghost") throw new GitHubApiError(404, path);
+          if (login === "outage") throw new GitHubApiError(502, path);
+          return { permission: options.permissions?.[login] ?? "read" };
+        }
         if (path.includes("/reviews?"))
           return options.duplicate || (options.duplicateAfterReview && reviews > 0)
             ? [
                 {
+                  id: options.reviewId,
                   user: { login: config.reviewer },
                   commit_id: pr.head.sha,
                   body:
@@ -344,4 +360,141 @@ test("incomplete duplicates do not infer gaps from ambiguous published Markdown"
       description: "Review incomplete. See verification gaps.",
     });
   }
+});
+
+const finding = (id: number, review = 10) => ({
+  id,
+  pull_request_review_id: review,
+  user: { login: config.reviewer, type: "Bot" },
+  body: "**[P2] Finding**",
+});
+const reply = (to: number, body: string, login = "owner", type = "User") => ({
+  id: to + 100,
+  in_reply_to_id: to,
+  pull_request_review_id: 99,
+  user: { login, type },
+  body,
+});
+const declined = (options: Parameters<typeof hubScenario>[0]) =>
+  hubScenario({
+    duplicate: true,
+    findings: true,
+    reviewId: 10,
+    // GitHub's permission field is admin, write, read or none; maintain maps to write.
+    permissions: {
+      owner: "admin",
+      maintainer: "write",
+      reader: "read",
+      "github-actions[bot]": "write",
+    },
+    ...options,
+  });
+
+test("a rerun turns findings green only when each is declined in its thread by a writer", async () => {
+  const run = declined({
+    comments: [finding(1), reply(1, "/kicktires decline Inter already rejects this with a 422.")],
+  });
+  expect(await run.run()).toMatchObject({ result: "duplicate", findings: 1, declined: true });
+  expect(run.statuses.map((s) => [s.body.state, s.body.description])).toEqual([
+    ["pending", "Checking declined findings."],
+    ["success", "Review complete. 1 finding declined by @owner."],
+  ]);
+  expect(run.reviews()).toBe(0);
+  expect(run.publications()).toBe(0);
+  const later = declined({
+    comments: [
+      finding(1),
+      reply(1, "/kicktires decline Inter already rejects this with a 422."),
+      { ...reply(1, "/kicktires decline Me too.", "ghost"), id: 300 },
+    ],
+  });
+  expect(await later.run()).toMatchObject({ declined: true });
+  const earlier = declined({
+    comments: [
+      finding(1),
+      { ...reply(1, "/kicktires decline Me too.", "ghost"), id: 50 },
+      reply(1, "/kicktires decline Inter already rejects this with a 422."),
+    ],
+  });
+  expect(await earlier.run()).toMatchObject({ declined: true });
+  const maintainer = declined({
+    comments: [finding(1), reply(1, "/kicktires decline Upstream owns this rule.", "maintainer")],
+  });
+  expect(await maintainer.run()).toMatchObject({ declined: true });
+  const outage = declined({
+    comments: [finding(1), reply(1, "/kicktires decline Looks fine.", "outage")],
+  });
+  await rejects(outage.run(), /502/);
+  expect(outage.statuses.map((s) => s.body.state)).toEqual(["pending", "error"]);
+});
+
+test("a failed decline lookup replaces an earlier success with an error", async () => {
+  const run = declined({ comments: undefined });
+  await rejects(run.run(), /502/);
+  expect(run.statuses.map((s) => [s.body.state, s.body.description])).toEqual([
+    ["pending", "Checking declined findings."],
+    ["error", "Declined findings could not be checked. Rerun the hub job."],
+  ]);
+});
+
+test("a decline never marks a revision that changed during the lookup", async () => {
+  for (const changeBase of [false, true]) {
+    // Reads: request resolution, the review's freshness check, then the pre-success refetch.
+    const run = declined({
+      changeAtRead: 3,
+      changeBase,
+      comments: [finding(1), reply(1, "/kicktires decline Inter already rejects this with a 422.")],
+    });
+    expect((await run.run()).result).toBe("stale");
+    expect(run.statuses.map((s) => s.body.state)).toEqual(["pending", "error"]);
+  }
+});
+
+test("findings stay blocking without an explicit, attributable decline", async () => {
+  for (const comments of [
+    [finding(1)],
+    [finding(1), reply(1, "Will fix in a follow-up.")],
+    [finding(1), reply(1, "/kicktires decline")],
+    [finding(1), reply(1, "/kicktires decline Looks fine.", "github-actions[bot]", "Bot")],
+    [finding(1), reply(1, "/kicktires decline Looks fine.", "reader")],
+    [finding(1, 9), reply(1, "/kicktires decline From an older review.")],
+    [finding(2), reply(1, "/kicktires decline Wrong thread.")],
+  ]) {
+    const run = declined({ comments });
+    expect(await run.run()).not.toHaveProperty("declined");
+    expect(run.statuses.at(-1)?.body).toMatchObject({
+      state: "failure",
+      description: "Review complete. 1 finding. Inspect the review.",
+    });
+  }
+});
+
+test("every finding must be declined, and incomplete reviews cannot be declined", async () => {
+  const two = `Verification: **reviewed** · 2 finding(s).\n<!-- kicktires:${pr.base.sha}:${pr.head.sha} -->`;
+  const partial = declined({
+    publishedBody: two,
+    comments: [finding(1), finding(2), reply(1, "/kicktires decline Not applicable.")],
+  });
+  await partial.run();
+  expect(partial.statuses.at(-1)?.body.state).toBe("failure");
+  const both = declined({
+    publishedBody: two,
+    comments: [
+      finding(1),
+      finding(2),
+      reply(1, "/kicktires decline Not applicable."),
+      reply(2, "/kicktires decline Upstream owns this rule."),
+    ],
+  });
+  await both.run();
+  expect(both.statuses.at(-1)?.body).toMatchObject({
+    state: "success",
+    description: "Review complete. 2 findings declined by @owner.",
+  });
+  const incomplete = declined({
+    incomplete: true,
+    comments: [finding(1), reply(1, "/kicktires decline Not applicable.")],
+  });
+  await incomplete.run();
+  expect(incomplete.statuses.at(-1)?.body.state).toBe("failure");
 });

@@ -7,6 +7,7 @@ import {
   type PullRequest,
   type Report,
 } from "./review.ts";
+import { declinedBy } from "./decline.ts";
 
 const repository = z.string().regex(/^[\w.-]+\/[\w.-]+$/);
 export const hubConfigSchema = z.strictObject({
@@ -103,10 +104,44 @@ export async function reviewHubRequest(options: {
       gap ? `Incomplete: ${gap}` : "Review incomplete. See verification gaps.",
     );
   } else if (result.findings > 0) {
-    await status(
-      "failure",
-      `Review complete. ${result.findings} finding${result.findings === 1 ? "" : "s"}. Inspect the review.`,
-    );
+    const review = result.result === "duplicate" && "review" in result ? result.review : undefined;
+    let decliners: string[] | null = null;
+    if (review) {
+      // A rerun may be revoking an earlier decline; never leave a stale success while checking.
+      await status("pending", "Checking declined findings.");
+      try {
+        decliners = await declinedBy(
+          options.api,
+          request.repository,
+          pr.number,
+          review,
+          result.findings,
+        );
+        // The lookup is slow; never mark a revision the reused review did not cover.
+        if (decliners) {
+          const latest = pullRequestSchema.parse(
+            await options.api(`/repos/${request.repository}/pulls/${pr.number}`),
+          );
+          if (latest.head.sha !== pr.head.sha || latest.base.sha !== pr.base.sha) {
+            await status("error", "PR changed. Review no longer applies to the current revision.");
+            return { result: "stale", incomplete: true, findings: 0 };
+          }
+        }
+      } catch (error) {
+        await status("error", "Declined findings could not be checked. Rerun the hub job.").catch(
+          () => console.error("Could not publish the decline check status"),
+        );
+        throw error;
+      }
+    }
+    const count = `${result.findings} finding${result.findings === 1 ? "" : "s"}`;
+    if (decliners)
+      await status(
+        "success",
+        `Review complete. ${count} declined by ${decliners.map((login) => `@${login}`).join(", ")}.`,
+      );
+    else await status("failure", `Review complete. ${count}. Inspect the review.`);
+    return decliners ? { ...result, declined: true } : result;
   } else {
     await status("success", "Review complete. No findings. Not an approval.");
   }
