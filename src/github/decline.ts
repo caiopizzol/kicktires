@@ -43,7 +43,10 @@ export async function declinedBy(
     let decliner: string | undefined;
     for (const reply of comments.filter((c) => c.in_reply_to_id === thread.id)) {
       if (reply.user?.type !== "User" || !command.test(reply.body.trim())) continue;
-      if (await canWrite(reply.user.login)) decliner = reply.user.login;
+      if (await canWrite(reply.user.login)) {
+        decliner = reply.user.login;
+        break;
+      }
     }
     if (!decliner) return null;
     people.add(decliner);

@@ -133,8 +133,11 @@ function hubScenario(
         }
         if (path.includes("/comments?"))
           return path.includes("page=1") ? (options.comments ?? []) : [];
-        if (path.endsWith("/permission"))
-          return { permission: options.permissions?.[path.split("/").at(-2)!] ?? "read" };
+        if (path.endsWith("/permission")) {
+          const login = path.split("/").at(-2)!;
+          if (login === "ghost") throw new Error(`GitHub API returned 404 for ${path}`);
+          return { permission: options.permissions?.[login] ?? "read" };
+        }
         if (path.includes("/reviews?"))
           return options.duplicate || (options.duplicateAfterReview && reviews > 0)
             ? [
@@ -386,6 +389,14 @@ test("a rerun turns findings green only when each is declined in its thread by a
   ]);
   expect(run.reviews()).toBe(0);
   expect(run.publications()).toBe(0);
+  const later = declined({
+    comments: [
+      finding(1),
+      reply(1, "/kicktires decline Inter already rejects this with a 422."),
+      { ...reply(1, "/kicktires decline Me too.", "ghost"), id: 300 },
+    ],
+  });
+  expect(await later.run()).toMatchObject({ declined: true });
 });
 
 test("findings stay blocking without an explicit, attributable decline", async () => {
