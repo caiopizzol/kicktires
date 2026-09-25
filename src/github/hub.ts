@@ -7,6 +7,7 @@ import {
   type PullRequest,
   type Report,
 } from "./review.ts";
+import { declinedBy } from "./decline.ts";
 
 const repository = z.string().regex(/^[\w.-]+\/[\w.-]+$/);
 export const hubConfigSchema = z.strictObject({
@@ -103,10 +104,24 @@ export async function reviewHubRequest(options: {
       gap ? `Incomplete: ${gap}` : "Review incomplete. See verification gaps.",
     );
   } else if (result.findings > 0) {
-    await status(
-      "failure",
-      `Review complete. ${result.findings} finding${result.findings === 1 ? "" : "s"}. Inspect the review.`,
-    );
+    const decliners =
+      result.result === "duplicate" && "review" in result && result.review
+        ? await declinedBy(
+            options.api,
+            request.repository,
+            pr.number,
+            result.review,
+            result.findings,
+          )
+        : null;
+    const count = `${result.findings} finding${result.findings === 1 ? "" : "s"}`;
+    if (decliners)
+      await status(
+        "success",
+        `Review complete. ${count} declined by ${decliners.map((login) => `@${login}`).join(", ")}.`,
+      );
+    else await status("failure", `Review complete. ${count}. Inspect the review.`);
+    return decliners ? { ...result, declined: true } : result;
   } else {
     await status("success", "Review complete. No findings. Not an approval.");
   }

@@ -8,7 +8,8 @@ slot. No queue server or public endpoint is needed.
 The hub supports public and private same-owner source repositories with same-repository
 PRs. Fork PRs are unsupported. Keep the hub repository private; never register a
 self-hosted runner on a public source repository. The required `kicktires` status
-passes only when the investigation finishes with no findings. Findings and incomplete reviews block merging. Keep project CI separate.
+passes only when the investigation finishes with no findings or every finding is
+declined. Findings and incomplete reviews block merging. Keep project CI separate.
 
 ```mermaid
 flowchart LR
@@ -93,9 +94,9 @@ Its job summary links to the hub run.
 
 Only the hub App writes the `kicktires` status. Before the first review starts, the
 required status is missing and blocks merging. During investigation it is pending;
-it succeeds only when the review finishes with no findings. Findings and incomplete
-reviews fail the status. Reviews appear on the original PR. Duplicate requests
-restore the published result without new inference.
+it succeeds only when the review finishes with no findings or every finding is
+declined. Findings and incomplete reviews fail the status. Reviews appear on the
+original PR. Duplicate requests restore the published result without new inference.
 
 ## Migrate existing projects
 
@@ -117,8 +118,24 @@ it never becomes successful merely because dispatch worked. Inspect the hub run 
 rerun it after repairing the worker. Reruns of the same base/head pair preserve
 published findings and incomplete status.
 Resolve the reported blocker or correct trusted configuration, then review a new
-revision. Reply to disputed findings and resolve their threads; resolving a thread
-does not turn a failed status green. Do not bypass failed checks with automatic approvals.
+revision. Resolving a thread does not turn a failed status green. Do not bypass failed
+checks with automatic approvals.
 
 The shared VM lock remains a safety check. It is not the queue. Adding workers increases
 execution capacity, not the model account's usage allowance.
+
+## Decline a finding
+
+To keep the code as it is, reply in the finding's thread with a comment that starts
+with `/kicktires decline`, followed by the reason:
+
+```text
+/kicktires decline Inter already rejects this with a documented 422.
+```
+
+Then rerun the hub job for that PR. The rerun makes no model call. The status passes
+only when the review for the current base and head completed and every one of its
+findings has such a reply from a GitHub user with write access. The status names who
+declined. Other replies, bot replies and resolved threads do not count. Incomplete
+reviews cannot be declined, and a new push starts a new review whose findings must be
+declined again. To withdraw a decline, delete the reply and rerun the hub job.

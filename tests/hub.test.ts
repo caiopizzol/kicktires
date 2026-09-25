@@ -96,6 +96,9 @@ function hubScenario(
     changeAtRead?: number;
     changeBase?: boolean;
     public?: boolean;
+    reviewId?: number;
+    comments?: unknown[];
+    permissions?: Record<string, string>;
   } = {},
 ) {
   const source = { ...repo, private: !options.public };
@@ -128,10 +131,15 @@ function hubScenario(
           publications++;
           return {};
         }
+        if (path.includes("/comments?"))
+          return path.includes("page=1") ? (options.comments ?? []) : [];
+        if (path.endsWith("/permission"))
+          return { permission: options.permissions?.[path.split("/").at(-2)!] ?? "read" };
         if (path.includes("/reviews?"))
           return options.duplicate || (options.duplicateAfterReview && reviews > 0)
             ? [
                 {
+                  id: options.reviewId,
                   user: { login: config.reviewer },
                   commit_id: pr.head.sha,
                   body:
@@ -344,4 +352,87 @@ test("incomplete duplicates do not infer gaps from ambiguous published Markdown"
       description: "Review incomplete. See verification gaps.",
     });
   }
+});
+
+const finding = (id: number, review = 10) => ({
+  id,
+  pull_request_review_id: review,
+  user: { login: config.reviewer, type: "Bot" },
+  body: "**[P2] Finding**",
+});
+const reply = (to: number, body: string, login = "owner", type = "User") => ({
+  id: to + 100,
+  in_reply_to_id: to,
+  pull_request_review_id: 99,
+  user: { login, type },
+  body,
+});
+const declined = (options: Parameters<typeof hubScenario>[0]) =>
+  hubScenario({
+    duplicate: true,
+    findings: true,
+    reviewId: 10,
+    permissions: { owner: "admin", reader: "read", "github-actions[bot]": "write" },
+    ...options,
+  });
+
+test("a rerun turns findings green only when each is declined in its thread by a writer", async () => {
+  const run = declined({
+    comments: [finding(1), reply(1, "/kicktires decline Inter already rejects this with a 422.")],
+  });
+  expect(await run.run()).toMatchObject({ result: "duplicate", findings: 1, declined: true });
+  expect(run.statuses.map((s) => [s.body.state, s.body.description])).toEqual([
+    ["success", "Review complete. 1 finding declined by @owner."],
+  ]);
+  expect(run.reviews()).toBe(0);
+  expect(run.publications()).toBe(0);
+});
+
+test("findings stay blocking without an explicit, attributable decline", async () => {
+  for (const comments of [
+    [finding(1)],
+    [finding(1), reply(1, "Will fix in a follow-up.")],
+    [finding(1), reply(1, "/kicktires decline")],
+    [finding(1), reply(1, "/kicktires decline Looks fine.", "github-actions[bot]", "Bot")],
+    [finding(1), reply(1, "/kicktires decline Looks fine.", "reader")],
+    [finding(1, 9), reply(1, "/kicktires decline From an older review.")],
+    [finding(2), reply(1, "/kicktires decline Wrong thread.")],
+  ]) {
+    const run = declined({ comments });
+    expect(await run.run()).not.toHaveProperty("declined");
+    expect(run.statuses.at(-1)?.body).toMatchObject({
+      state: "failure",
+      description: "Review complete. 1 finding. Inspect the review.",
+    });
+  }
+});
+
+test("every finding must be declined, and incomplete reviews cannot be declined", async () => {
+  const two = `Verification: **reviewed** · 2 finding(s).\n<!-- kicktires:${pr.base.sha}:${pr.head.sha} -->`;
+  const partial = declined({
+    publishedBody: two,
+    comments: [finding(1), finding(2), reply(1, "/kicktires decline Not applicable.")],
+  });
+  await partial.run();
+  expect(partial.statuses.at(-1)?.body.state).toBe("failure");
+  const both = declined({
+    publishedBody: two,
+    comments: [
+      finding(1),
+      finding(2),
+      reply(1, "/kicktires decline Not applicable."),
+      reply(2, "/kicktires decline Upstream owns this rule."),
+    ],
+  });
+  await both.run();
+  expect(both.statuses.at(-1)?.body).toMatchObject({
+    state: "success",
+    description: "Review complete. 2 findings declined by @owner.",
+  });
+  const incomplete = declined({
+    incomplete: true,
+    comments: [finding(1), reply(1, "/kicktires decline Not applicable.")],
+  });
+  await incomplete.run();
+  expect(incomplete.statuses.at(-1)?.body.state).toBe("failure");
 });

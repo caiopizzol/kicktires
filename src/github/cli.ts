@@ -50,7 +50,8 @@ try {
         api,
         review: (pr) => review(pr, values.profile!),
       });
-  const summary = `kicktires: ${result.result}; ${result.findings} finding(s)${result.incomplete ? "; verification incomplete" : ""}.\n`;
+  const declined = "declined" in result && result.declined;
+  const summary = `kicktires: ${result.result}; ${result.findings} finding(s)${declined ? " declined" : ""}${result.incomplete ? "; verification incomplete" : ""}.\n`;
   console.log(summary.trim());
   if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, summary);
   if (process.env.GITHUB_OUTPUT)
@@ -58,7 +59,8 @@ try {
       process.env.GITHUB_OUTPUT,
       `result=${result.result}\nincomplete=${result.incomplete}\nfindings=${result.findings}\n`,
     );
-  process.exitCode = values.hub && result.result === "stale" ? 2 : reviewExitCode(result);
+  process.exitCode =
+    values.hub && result.result === "stale" ? 2 : declined ? 0 : reviewExitCode(result);
 } catch (error) {
   console.error(error instanceof Error ? error.message : "GitHub review failed");
   process.exitCode = 1;

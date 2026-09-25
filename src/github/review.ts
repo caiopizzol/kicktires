@@ -49,6 +49,7 @@ async function previousReview(api: Api, endpoint: string, pr: PullRequest, revie
     const reviews = z
       .array(
         z.object({
+          id: z.number().optional(),
           body: z.string().nullable(),
           user: z.object({ login: z.string() }).nullable(),
           commit_id: z.string().nullable().default(null),
@@ -63,7 +64,7 @@ async function previousReview(api: Api, endpoint: string, pr: PullRequest, revie
         (r.body?.includes(marker(pr)) ||
           r.body?.includes(`<!-- agent-review:${pr.base.sha}:${pr.head.sha} -->`)),
     );
-    if (previous) return previous.body!;
+    if (previous) return previous;
     if (reviews.length < 100) return null;
   }
 }
@@ -130,7 +131,8 @@ export async function reviewPullRequest(options: {
   if (duplicate)
     return {
       result: "duplicate",
-      ...previousOutcome(duplicate),
+      review: duplicate.id,
+      ...previousOutcome(duplicate.body!),
     };
   const report = publishedReportSchema.parse(await review(current));
   // Repeat after the slow model call. commit_id also anchors the unavoidable API race.
@@ -146,7 +148,8 @@ export async function reviewPullRequest(options: {
   if (published)
     return {
       result: "duplicate",
-      ...previousOutcome(published),
+      review: published.id,
+      ...previousOutcome(published.body!),
     };
   await api(`${endpoint}/reviews`, renderReview(current, report));
   return {
