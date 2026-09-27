@@ -21,6 +21,8 @@ entry="$installation/src/github/cli.ts"
 
 cd "$installation"
 printf 'kicktires release: %s\n' "$release"
+# Fits the largest reviewSeconds (1800) plus setup and publishing. The workflow's
+# timeout-minutes must cover this, the 600-second lock wait and the reporting steps.
 exec flock --exclusive --close --wait 600 /var/lock/kicktires/review.lock \
-  timeout --signal=TERM --kill-after=30s 1200 \
+  timeout --signal=TERM --kill-after=30s 2100 \
   bun --no-env-file "$entry" "$@"

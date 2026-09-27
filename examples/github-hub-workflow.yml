@@ -27,7 +27,7 @@ permissions: {}
 jobs:
   review:
     runs-on: [self-hosted, kicktires]
-    timeout-minutes: 35
+    timeout-minutes: 55
     steps:
       - name: Validate source repository
         id: source
