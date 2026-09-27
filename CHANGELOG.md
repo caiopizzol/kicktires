@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/caiopizzol/kicktires/compare/v0.5.1...v0.5.2) (2026-09-27)
+
+
+### Bug Fixes
+
+* **agent:** raise the per-review output token limit to 64000 ([#46](https://github.com/caiopizzol/kicktires/issues/46)) ([bbcf4c4](https://github.com/caiopizzol/kicktires/commit/bbcf4c497a22c500c790f8c2ec613043ec500443))
+
 ## [0.5.1](https://github.com/caiopizzol/kicktires/compare/v0.5.0...v0.5.1) (2026-09-27)
 
 
