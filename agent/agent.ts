@@ -18,6 +18,7 @@ export default defineAgent({
   defaultTools: false,
   limits: {
     maxInputTokensPerSession: 2000000,
-    maxOutputTokensPerSession: 24000,
+    // Includes reasoning: the largest measured xhigh review used about 29,000.
+    maxOutputTokensPerSession: 64000,
   },
 });
