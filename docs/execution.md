@@ -74,8 +74,8 @@ On GitHub workers the `review-pr` launcher stops the whole run after 2,100 secon
 which covers the maximum review plus setup and publishing. The workflow's
 `timeout-minutes` must exceed that plus the 600-second wait for the shared lock.
 Eve's session limits are 2 million input tokens and
-24,000 output tokens, checked between calls; a final call may exceed them. A paused
-review remains incomplete.
+64,000 output tokens, including reasoning, checked between calls; a final call may
+exceed them. A paused review remains incomplete.
 
 Codex uses native argument objects for supported closed tool schemas. Schemas with
 references, open objects, ambiguous unions, or optional nullable fields retain
