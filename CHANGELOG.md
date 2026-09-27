@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/caiopizzol/kicktires/compare/v0.5.0...v0.5.1) (2026-09-27)
+
+
+### Bug Fixes
+
+* **github:** let reviews use their full reviewSeconds on workers ([#44](https://github.com/caiopizzol/kicktires/issues/44)) ([95dc9e2](https://github.com/caiopizzol/kicktires/commit/95dc9e24c04950ecfaa8b3357c7bb4fb110cafe1))
+
 ## [0.5.0](https://github.com/caiopizzol/kicktires/compare/v0.4.0...v0.5.0) (2026-09-25)
 
 
