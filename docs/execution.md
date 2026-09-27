@@ -70,6 +70,9 @@ read_file ranges to obtain complete replacement evidence. Reviews default to
 its optional schema correction. Set `limits.modelSeconds` (1–1,800) in the trusted
 profile for models that need longer responses; it does not extend `reviewSeconds`.
 Catalog preflight retains its separate 180-second timeout.
+On GitHub workers the `review-pr` launcher stops the whole run after 2,100 seconds,
+which covers the maximum review plus setup and publishing. The workflow's
+`timeout-minutes` must exceed that plus the 600-second wait for the shared lock.
 Eve's session limits are 2 million input tokens and
 24,000 output tokens, checked between calls; a final call may exceed them. A paused
 review remains incomplete.
