@@ -68,7 +68,10 @@ and makes the review incomplete. Uncited executions retain their exit codes and 
 in the report but do not prevent completion. The agent can narrow a command or use
 read_file ranges to obtain complete replacement evidence. Reviews default to
 600 seconds (maximum 1,800). Each Codex response defaults to 180 seconds, including
-its optional schema correction. Set `limits.modelSeconds` (1–1,800) in the trusted
+its optional schema correction. A response that fails because the provider is
+overloaded or the connection drops is retried up to twice, after waits of a few
+seconds, within that same deadline. Usage, policy and authentication failures are
+not retried. Set `limits.modelSeconds` (1–1,800) in the trusted
 profile for models that need longer responses; it does not extend `reviewSeconds`.
 Catalog preflight retains its separate 180-second timeout.
 On GitHub workers the `review-pr` launcher stops the whole run after 2,100 seconds,

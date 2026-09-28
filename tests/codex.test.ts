@@ -4,8 +4,8 @@ import { rejects } from "node:assert/strict";
 import { join } from "node:path";
 import { z } from "zod";
 import { expect, test } from "bun:test";
-import { codexModel, proposedResponse } from "../src/codex-model.ts";
-import { assertCodexHome, incompleteTurnMessage } from "../src/codex.ts";
+import { codexModel, proposedResponse, retryDelay } from "../src/codex-model.ts";
+import { assertCodexHome, CodexTurnError, incompleteTurnMessage } from "../src/codex.ts";
 import type { LanguageModelV4CallOptions } from "@ai-sdk/provider";
 
 const options: LanguageModelV4CallOptions = {
@@ -421,4 +421,69 @@ test("Codex retains private bounded evidence for both rejected attempts", async 
     if (previous === undefined) delete process.env.KICKTIRES_CODEX_CLI;
     else process.env.KICKTIRES_CODEX_CLI = previous;
   }
+});
+
+test("transient Codex failures retry the same call, and others fail at once", async () => {
+  const previous = process.env.KICKTIRES_CODEX_CLI;
+  process.env.KICKTIRES_CODEX_CLI = "test";
+  const failed = (code: string) =>
+    new CodexTurnError({ status: "failed", error: { codexErrorInfo: code } });
+  const final = JSON.stringify({ toolCalls: [], text: "done" });
+  const usage = { inputTokens: 1, cachedInputTokens: 0, outputTokens: 1, reasoningOutputTokens: 0 };
+  const run = async (failures: string[]) => {
+    let calls = 0;
+    const waits: number[] = [];
+    const model = codexModel(
+      "test",
+      "unused",
+      "high",
+      async () => {
+        const code = failures[calls++];
+        if (code) throw failed(code);
+        return { text: final, usage };
+      },
+      undefined,
+      180,
+      async (ms) => {
+        waits.push(ms);
+      },
+    );
+    const result = await model.doGenerate(options).then(
+      (value) => ({ ok: true as const, value }),
+      (error: Error) => ({ ok: false as const, error }),
+    );
+    return { calls, waits, result };
+  };
+  try {
+    for (const code of [
+      "serverOverloaded",
+      "responseStreamDisconnected",
+      "responseStreamConnectionFailed",
+      "httpConnectionFailed",
+      "internalServerError",
+    ]) {
+      const retried = await run([code, code]);
+      expect(retried.result.ok).toBe(true);
+      expect(retried.calls).toBe(3);
+      expect(retried.waits).toHaveLength(2);
+    }
+    const exhausted = await run(["serverOverloaded", "serverOverloaded", "serverOverloaded"]);
+    expect(exhausted.calls).toBe(3);
+    expect(exhausted.result.ok).toBe(false);
+    for (const code of ["usageLimitExceeded", "rateLimitExceeded", "cyberPolicy", "unauthorized"]) {
+      const once = await run([code]);
+      expect(once.calls).toBe(1);
+      expect(once.waits).toHaveLength(0);
+      expect(once.result.ok).toBe(false);
+    }
+  } finally {
+    if (previous === undefined) delete process.env.KICKTIRES_CODEX_CLI;
+    else process.env.KICKTIRES_CODEX_CLI = previous;
+  }
+});
+
+test("retry waits grow, stay jittered and bounded", () => {
+  expect(retryDelay(1, () => 0)).toBe(2500);
+  expect(retryDelay(1, () => 1)).toBe(7500);
+  expect(retryDelay(2, () => 0.5)).toBe(10000);
 });
