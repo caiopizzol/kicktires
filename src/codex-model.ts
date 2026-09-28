@@ -8,8 +8,29 @@ import type {
   LanguageModelV4GenerateResult,
   LanguageModelV4StreamPart,
 } from "@ai-sdk/provider";
-import { codexResponse } from "./codex.ts";
+import { CodexTurnError, codexResponse } from "./codex.ts";
 import { codexInputShape, codexProposalSchema } from "./codex-schema.ts";
+
+const transientAttempts = 3;
+// Overload bursts last minutes, so waits are seconds; jitter keeps workers out of lockstep.
+export function retryDelay(attempt: number, random = Math.random) {
+  return Math.round(5000 * 2 ** (attempt - 1) * (0.5 + random()));
+}
+
+function sleep(ms: number, signal: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    if (signal.aborted) return reject(signal.reason);
+    const timer = setTimeout(resolve, ms);
+    signal.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        reject(signal.reason);
+      },
+      { once: true },
+    );
+  });
+}
 
 const proposalSchema = z
   .object({
@@ -89,6 +110,7 @@ export function codexModel(
   respond = codexResponse,
   directory?: string,
   modelSeconds = 180,
+  pause = sleep,
 ): LanguageModelV4 {
   async function generate(options: LanguageModelV4CallOptions) {
     const cli = process.env.KICKTIRES_CODEX_CLI;
@@ -112,21 +134,42 @@ export function codexModel(
       reasoningOutputTokens: 0,
     };
     const proposalId = randomUUID();
+    // A failed turn returns no proposal, so repeating the call cannot repeat a tool call.
+    async function respondWithRetries(call: () => ReturnType<typeof respond>) {
+      for (let attempt = 1; ; attempt++) {
+        try {
+          return await call();
+        } catch (error) {
+          if (!(error instanceof CodexTurnError && error.transient) || attempt >= transientAttempts)
+            throw error;
+          const delay = retryDelay(attempt);
+          if (directory)
+            await appendFile(
+              join(directory, "codex-retries.jsonl"),
+              JSON.stringify({ proposalId, attempt, code: error.code, waitMs: delay }) + "\n",
+              { mode: 0o600 },
+            );
+          await pause(delay, signal);
+        }
+      }
+    }
     let result: LanguageModelV4GenerateResult | undefined;
     let correction: string | undefined;
     let previousProposal: string | undefined;
     for (let attempt = 0; attempt < 2; attempt++) {
       signal.throwIfAborted();
-      const response = await respond({
-        cli,
-        home,
-        model,
-        reasoningEffort,
-        timeoutMs: modelSeconds * 1000,
-        prompt: JSON.stringify({ ...conversation, correction, previousProposal }),
-        schema: codexProposalSchema(options),
-        signal,
-      });
+      const response = await respondWithRetries(() =>
+        respond({
+          cli,
+          home,
+          model,
+          reasoningEffort,
+          timeoutMs: modelSeconds * 1000,
+          prompt: JSON.stringify({ ...conversation, correction, previousProposal }),
+          schema: codexProposalSchema(options),
+          signal,
+        }),
+      );
       signal.throwIfAborted();
       for (const key of Object.keys(usage) as (keyof typeof usage)[])
         usage[key] += response.usage![key];

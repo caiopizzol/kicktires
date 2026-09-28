@@ -87,16 +87,36 @@ const errorCode = z.enum([
   "other",
 ]);
 
-export function incompleteTurnMessage(turn: {
-  status?: unknown;
-  error?: { codexErrorInfo?: unknown } | null;
-}) {
-  const status = turnStatus.safeParse(turn.status).data ?? "unknown";
+type Turn = { status?: unknown; error?: { codexErrorInfo?: unknown } | null };
+
+function turnErrorCode(turn: Turn) {
   const info = turn.error?.codexErrorInfo;
-  const code = errorCode.safeParse(
-    info && typeof info === "object" ? Object.keys(info)[0] : info,
-  ).data;
-  return `Codex turn did not complete with a response (status: ${status}, code: ${code ?? "unknown"})`;
+  return errorCode.safeParse(info && typeof info === "object" ? Object.keys(info)[0] : info).data;
+}
+
+export function incompleteTurnMessage(turn: Turn) {
+  const status = turnStatus.safeParse(turn.status).data ?? "unknown";
+  return `Codex turn did not complete with a response (status: ${status}, code: ${turnErrorCode(turn) ?? "unknown"})`;
+}
+
+// Provider-side failures that a later attempt of the same call can succeed at.
+const transientCodes = new Set([
+  "serverOverloaded",
+  "responseStreamDisconnected",
+  "responseStreamConnectionFailed",
+  "httpConnectionFailed",
+  "internalServerError",
+]);
+
+export class CodexTurnError extends Error {
+  readonly code: string | undefined;
+  constructor(turn: Turn) {
+    super(incompleteTurnMessage(turn));
+    this.code = turnErrorCode(turn);
+  }
+  get transient() {
+    return this.code !== undefined && transientCodes.has(this.code);
+  }
 }
 
 async function withCodex<T>(
@@ -209,7 +229,7 @@ async function withCodex<T>(
             .parse(message.params.tokenUsage.total);
         } else if (message.method === "turn/completed") {
           if (message.params.turn.status !== "completed" || !final)
-            throw new Error(incompleteTurnMessage(message.params.turn));
+            throw new CodexTurnError(message.params.turn);
           if (!usage) throw new Error("Codex omitted token usage");
           resolveTurn({ text: final, usage });
         }
