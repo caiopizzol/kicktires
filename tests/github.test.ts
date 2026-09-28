@@ -1,4 +1,5 @@
 import { test, expect } from "bun:test";
+import { rejects } from "node:assert/strict";
 import {
   marker,
   parseEvent,
@@ -10,6 +11,7 @@ import {
   type Report,
 } from "../src/github/review.ts";
 import { reviewEnvironment, readValidatedReport } from "../src/github/execute.ts";
+import { GitHubApiError } from "../src/github/api.ts";
 import { profileSchema } from "../src/profile.ts";
 
 const repository = "example/project";
@@ -198,6 +200,38 @@ test("a review published during model execution is not duplicated", async () => 
   });
   expect(result.result).toBe("duplicate");
   expect(posts).toBe(0);
+});
+
+test("a review GitHub creates while answering 422 counts as published", async () => {
+  for (const [status, created, outcome] of [
+    [422, true, "published"],
+    [422, false, "error"],
+    [502, true, "error"],
+  ] as const) {
+    let lists = 0;
+    const run = reviewPullRequest({
+      repository,
+      event: pr,
+      reviewer: "kicktires[bot]",
+      api: async (path, body) => {
+        if (body) throw new GitHubApiError(status, path);
+        if (path.includes("/reviews?"))
+          return ++lists > 2 && created
+            ? [
+                {
+                  user: { login: "kicktires[bot]" },
+                  commit_id: pr.head.sha,
+                  body: `${marker(pr)}\nVerification: **reviewed** · 0 finding(s).`,
+                },
+              ]
+            : [];
+        return pr;
+      },
+      review: async () => report,
+    });
+    if (outcome === "published") expect((await run).result).toBe("published");
+    else await rejects(run, new RegExp(`returned ${status}`));
+  }
 });
 
 test("incomplete evidence is published before returning failure", async () => {

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { publishedReportSchema } from "../review/report.ts";
+import { GitHubApiError } from "./api.ts";
 
 const sha = z.string().regex(/^[a-f0-9]{40}$/);
 const repositorySchema = z.object({
@@ -153,7 +154,13 @@ export async function reviewPullRequest(options: {
       review: published.id,
       ...previousOutcome(published.body!),
     };
-  await api(`${endpoint}/reviews`, renderReview(current, report));
+  try {
+    await api(`${endpoint}/reviews`, renderReview(current, report));
+  } catch (error) {
+    // GitHub can create the review and still answer 422; the published review is the result.
+    if (!(error instanceof GitHubApiError && error.status === 422)) throw error;
+    if (!(await previousReview(api, endpoint, current, reviewer))) throw error;
+  }
   return {
     result: "published",
     incomplete: report.status === "incomplete",
