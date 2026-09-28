@@ -86,7 +86,9 @@ references, open objects, ambiguous unions, or optional nullable fields retain
 JSON-encoded arguments. Native optional fields use null to represent omission;
 the adapter restores omission and validates every call against its original schema
 before Eve executes any call. One rejected proposal may be corrected within the
-same deadline.
+same deadline. A final report proposed before any tool ran, or beside other calls
+whose results it could not include, is rejected the same way; if the correction
+proposes it again, it is accepted as is.
 
 ## Cleanup and retained data
 

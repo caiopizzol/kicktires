@@ -39,13 +39,26 @@ const proposalSchema = z
   })
   .strict();
 
+// Eve ends the turn on this call, so calls proposed beside it never return results.
+const finalTool = "final_output";
+
 export function proposedResponse(
   text: string,
   options: LanguageModelV4CallOptions,
+  lastAttempt = false,
 ): LanguageModelV4GenerateResult {
   const proposal = proposalSchema.parse(JSON.parse(text));
   if (proposal.toolCalls.length && proposal.text)
     throw new Error("Codex returned both tool calls and a final response");
+  // A premature report is corrected once; the last one is kept so its explanation is published.
+  if (!lastAttempt && proposal.toolCalls.some((call) => call.name === finalTool)) {
+    if (proposal.toolCalls.length > 1)
+      throw new Error(`${finalTool} must be the only call; propose the other calls first`);
+    if (!options.prompt.some((message) => message.role === "assistant"))
+      throw new Error(
+        `Codex returned ${finalTool} before any tool ran; read /workspace/review.json and /workspace/change.diff first`,
+      );
+  }
   if (options.toolChoice?.type === "required" && !proposal.toolCalls.length)
     throw new Error("Codex omitted a required tool call");
   const content: LanguageModelV4GenerateResult["content"] = proposal.toolCalls.map(
@@ -174,7 +187,7 @@ export function codexModel(
       for (const key of Object.keys(usage) as (keyof typeof usage)[])
         usage[key] += response.usage![key];
       try {
-        result = proposedResponse(response.text, options);
+        result = proposedResponse(response.text, options, attempt === 1);
         break;
       } catch (error) {
         previousProposal = response.text.slice(0, 65536);
