@@ -105,6 +105,19 @@ test("retains finding evidence and rejects fabricated references", () => {
   expect(unsupported.status).toBe("incomplete");
   expect(unsupported.findings).toEqual([]);
   expect(unsupported.executions).toHaveLength(2);
+  const citedAnchor = validateReport(
+    { ...report, findings: [{ ...finding, evidenceRefs: [finding.anchor, "head"] }] },
+    events(),
+    job,
+    diff,
+  );
+  expect(citedAnchor.status).toBe("reviewed");
+  expect(citedAnchor.findings[0]).toHaveProperty("evidenceRefs", ["head"]);
+  for (const evidenceRefs of [[finding.anchor], [finding.anchor, "head", "invented"]])
+    expect(
+      validateReport({ ...report, findings: [{ ...finding, evidenceRefs }] }, events(), job, diff)
+        .findings,
+    ).toEqual([]);
   expect(
     validateReport(
       { ...report, findings: [{ ...finding, anchor: "other-file" }] },

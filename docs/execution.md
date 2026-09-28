@@ -54,9 +54,10 @@ A completed review is not an approval. The validator requires recorded tool refe
 host-resolved change references and a completed agent session. Configured checks
 and browser access do not impose a mandatory test suite.
 The agent copies a changed line’s anchor from the review manifest; kicktires resolves
-it to the file, side and source line. Unknown anchors are rejected. It does not prove
-that the evidence supports a finding. A completed investigation can report bugs or
-failing tests. Missing evidence needed to finish the investigation remains a gap.
+it to the file, side and source line. Unknown anchors are rejected. An anchor listed
+among a finding's evidence references is ignored; any other reference that is not a
+recorded tool call drops the finding. References do not prove that the evidence
+supports a finding. A completed investigation can report bugs or failing tests. Missing evidence needed to finish the investigation remains a gap.
 Use CI for predefined project checks and their merge gate. Thrown tool errors
 currently keep a review incomplete even after a retry, except for file-read misses.
 The report names the failed tool; inspect its private run evidence on the worker.
