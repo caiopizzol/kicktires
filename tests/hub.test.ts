@@ -1,4 +1,4 @@
-import { renderReview, type PullRequest } from "../src/github/review.ts";
+import type { PullRequest } from "../src/github/review.ts";
 import { rejects } from "node:assert/strict";
 import { expect, test } from "bun:test";
 import { hubConfigSchema, resolveHubRequest, reviewHubRequest } from "../src/github/hub.ts";
@@ -210,17 +210,17 @@ test("hub duplicate restores completed status without pending or inference", asy
   expect(s.statuses.map((s) => s.body.state)).toEqual(["success"]);
 });
 
-test("hub publishes before completing status and preserves incomplete duplicates", async () => {
+test("hub publishes before completing status and retries an incomplete earlier review", async () => {
   const complete = hubScenario();
   expect((await complete.run()).result).toBe("published");
   expect(complete.publications()).toBe(1);
   expect(complete.statuses.map((s) => s.body.state)).toEqual(["pending", "success"]);
   for (const duplicate of [false, true]) {
     const s = hubScenario({ duplicate, incomplete: true });
-    expect((await s.run()).incomplete).toBe(true);
-    expect(s.statuses.map((s) => s.body.state)).toEqual(
-      duplicate ? ["failure"] : ["pending", "failure"],
-    );
+    expect(await s.run()).toMatchObject({ result: "published", incomplete: true });
+    expect(s.reviews()).toBe(1);
+    expect(s.publications()).toBe(1);
+    expect(s.statuses.map((s) => s.body.state)).toEqual(["pending", "failure"]);
   }
 });
 
@@ -315,51 +315,17 @@ test("incomplete status describes the published gap within GitHub's character li
   expect(description).toMatch(/^Incomplete: Could not inspect (?:🧪)+\.\.\.$/);
 });
 
-test("incomplete duplicates do not describe a discarded investigation's gap", async () => {
-  for (const duplicateAfterReview of [false, true]) {
-    const s = hubScenario({
-      incomplete: true,
-      duplicate: !duplicateAfterReview,
-      duplicateAfterReview,
-      gaps: ["This gap belongs only to the unpublished candidate report"],
-    });
-    expect((await s.run()).result).toBe("duplicate");
-    expect(s.reviews()).toBe(duplicateAfterReview ? 1 : 0);
-    expect(s.publications()).toBe(0);
-    expect(s.statuses.at(-1)?.body.description).toBe("Review incomplete. See verification gaps.");
-    expect(s.statuses.at(-1)?.body.state).toBe("failure");
-  }
-});
-
-test("incomplete duplicates do not infer gaps from ambiguous published Markdown", async () => {
-  const summaryBullet = renderReview(pr, {
-    summary: "Investigation summary\n\n- Browser unavailable",
-    status: "incomplete",
-    findings: [],
-    gaps: [],
-  }).body;
-  const publishedGap = renderReview(pr, {
-    summary: "Investigation summary",
-    status: "incomplete",
-    findings: [],
-    gaps: ["Browser unavailable"],
-  }).body;
-  expect(summaryBullet).toBe(publishedGap);
-  for (const duplicateAfterReview of [false, true]) {
-    const s = hubScenario({
-      incomplete: true,
-      duplicate: !duplicateAfterReview,
-      duplicateAfterReview,
-      publishedBody: publishedGap,
-      gaps: ["Discarded candidate gap"],
-    });
-    expect((await s.run()).result).toBe("duplicate");
-    expect(s.publications()).toBe(0);
-    expect(s.statuses.at(-1)?.body).toMatchObject({
-      state: "failure",
-      description: "Review incomplete. See verification gaps.",
-    });
-  }
+test("a retried review reports its own gap, not the earlier incomplete one", async () => {
+  const s = hubScenario({
+    incomplete: true,
+    duplicate: true,
+    gaps: ["Gap from the new investigation"],
+  });
+  expect((await s.run()).result).toBe("published");
+  expect(s.statuses.at(-1)?.body).toMatchObject({
+    state: "failure",
+    description: "Incomplete: Gap from the new investigation",
+  });
 });
 
 const finding = (id: number, review = 10) => ({

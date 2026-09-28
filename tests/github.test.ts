@@ -146,7 +146,7 @@ test("hub deduplication trusts only its configured App on the reviewed head", as
   }
 });
 
-test("deduplication paginates, trusts only the Actions bot and preserves incomplete status", async () => {
+test("deduplication paginates, trusts only the reviewer and preserves findings", async () => {
   const human = { user: { login: "someone" }, body: marker(pr) };
   const duplicate = scenario({
     pages: [
@@ -155,15 +155,15 @@ test("deduplication paginates, trusts only the Actions bot and preserves incompl
         {
           user: { login: "github-actions[bot]" },
           commit_id: pr.head.sha,
-          body: `${marker(pr)}\n<!-- kicktires-status:incomplete -->`,
+          body: `${marker(pr)}\nVerification: **reviewed** · 1 finding(s).`,
         },
       ],
     ],
   });
   expect(await duplicate.run()).toEqual({
     result: "duplicate",
-    incomplete: true,
-    findings: 0,
+    incomplete: false,
+    findings: 1,
   });
   expect(duplicate.runs()).toBe(0);
   expect(duplicate.posts).toHaveLength(0);
@@ -189,7 +189,7 @@ test("a review published during model execution is not duplicated", async () => 
               {
                 user: { login: "github-actions[bot]" },
                 commit_id: pr.head.sha,
-                body: marker(pr),
+                body: `${marker(pr)}\nVerification: **reviewed** · 0 finding(s).`,
               },
             ];
       return pr;
@@ -326,7 +326,7 @@ test("preparation failures retain diagnostics but cannot publish findings or cla
   }
 });
 
-test("historical reviews are deduplicated without changing their incomplete status", async () => {
+test("completed historical reviews are reused and incomplete ones are retried", async () => {
   for (const incomplete of [false, true]) {
     const old = scenario({
       pages: [
@@ -339,9 +339,9 @@ test("historical reviews are deduplicated without changing their incomplete stat
         ],
       ],
     });
-    expect(await old.run()).toEqual({ result: "duplicate", incomplete, findings: 0 });
-    expect(old.runs()).toBe(0);
-    expect(old.posts).toHaveLength(0);
+    expect((await old.run()).result).toBe(incomplete ? "published" : "duplicate");
+    expect(old.runs()).toBe(incomplete ? 1 : 0);
+    expect(old.posts).toHaveLength(incomplete ? 1 : 0);
   }
 });
 
@@ -383,33 +383,27 @@ test("all published findings fail the GitHub CLI without marking investigation i
 });
 
 test("duplicate reviews preserve findings from the existing generated header", async () => {
-  for (const status of ["reviewed", "incomplete"] as const) {
-    for (const findings of [0, 1]) {
-      const run = scenario({
-        pages: [
-          [
-            {
-              user: { login: "github-actions[bot]" },
-              commit_id: pr.head.sha,
-              body: `${marker(pr)}\nVerification: **${status}** · ${findings} finding(s).\n\nVerification: **reviewed** · 999 finding(s).`,
-            },
-          ],
+  for (const findings of [0, 1]) {
+    const run = scenario({
+      pages: [
+        [
+          {
+            user: { login: "github-actions[bot]" },
+            commit_id: pr.head.sha,
+            body: `${marker(pr)}\nVerification: **reviewed** · ${findings} finding(s).\n\nVerification: **reviewed** · 999 finding(s).`,
+          },
         ],
-      });
-      const result = await run.run();
-      expect(result).toEqual({
-        result: "duplicate",
-        incomplete: status === "incomplete",
-        findings,
-      });
-      expect(reviewExitCode(result)).toBe(status === "incomplete" || findings > 0 ? 2 : 0);
-      expect(run.runs()).toBe(0);
-      expect(run.posts).toHaveLength(0);
-    }
+      ],
+    });
+    const result = await run.run();
+    expect(result).toEqual({ result: "duplicate", incomplete: false, findings });
+    expect(reviewExitCode(result)).toBe(findings > 0 ? 2 : 0);
+    expect(run.runs()).toBe(0);
+    expect(run.posts).toHaveLength(0);
   }
 });
 
-test("a historical review without a finding count cannot turn the gate green", async () => {
+test("a historical review without a finding count is retried, not reused", async () => {
   const run = scenario({
     pages: [
       [
@@ -421,10 +415,11 @@ test("a historical review without a finding count cannot turn the gate green", a
       ],
     ],
   });
-  expect(await run.run()).toEqual({ result: "duplicate", incomplete: true, findings: 0 });
+  expect((await run.run()).result).toBe("published");
+  expect(run.runs()).toBe(1);
 });
 
-test("GitHub CLI exits nonzero for findings and incomplete duplicates after writing workflow outputs", async () => {
+test("GitHub CLI exits nonzero for duplicate findings after writing workflow outputs", async () => {
   const { mkdtemp, writeFile, readFile, rm } = await import("node:fs/promises");
   const { tmpdir } = await import("node:os");
   const { join, resolve } = await import("node:path");
@@ -439,7 +434,6 @@ test("GitHub CLI exits nonzero for findings and incomplete duplicates after writ
     for (const [status, findings, exit] of [
       ["reviewed", 0, 0],
       ["reviewed", 1, 2],
-      ["incomplete", 0, 2],
     ] as const) {
       const body = renderReview(pr, {
         ...report,
@@ -487,7 +481,7 @@ test("GitHub CLI exits nonzero for findings and incomplete duplicates after writ
       expect(stderr).toBe("");
       expect(await child.exited).toBe(exit);
       expect(await readFile(output, "utf8")).toBe(
-        `result=duplicate\nincomplete=${status === "incomplete"}\nfindings=${findings}\n`,
+        `result=duplicate\nincomplete=false\nfindings=${findings}\n`,
       );
     }
   } finally {
