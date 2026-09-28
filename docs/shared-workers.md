@@ -96,7 +96,8 @@ Only the hub App writes the `kicktires` status. Before the first review starts, 
 required status is missing and blocks merging. During investigation it is pending;
 it succeeds only when the review finishes with no findings or every finding is
 declined. Findings and incomplete reviews fail the status. Reviews appear on the
-original PR. Duplicate requests restore the published result without new inference.
+original PR. Duplicate requests restore a completed result without new inference; an
+incomplete result is retried.
 
 ## Migrate existing projects
 
@@ -115,8 +116,9 @@ the old listeners alongside the hub reintroduces hidden capacity contention.
 The hub serializes requests for each repository and PR. GitHub can queue jobs for up to
 24 hours. A lost worker or queue expiry can leave the required status missing or pending;
 it never becomes successful merely because dispatch worked. Inspect the hub run and
-rerun it after repairing the worker. Reruns of the same base/head pair preserve
-published findings and incomplete status.
+rerun it after repairing the worker. Reruns of the same base/head pair keep a
+completed review's findings without new inference, and retry an incomplete review, for
+example one stopped by a time or output limit.
 Resolve the reported blocker or correct trusted configuration, then review a new
 revision. Resolving a thread does not turn a failed status green. Do not bypass failed
 checks with automatic approvals.

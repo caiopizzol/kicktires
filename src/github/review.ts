@@ -57,12 +57,14 @@ async function previousReview(api: Api, endpoint: string, pr: PullRequest, revie
       )
       .parse(await api(`${endpoint}/reviews?per_page=100&page=${page}`));
     // Any workflow in the source repository can post as github-actions[bot]; trust only the reviewer.
+    // An incomplete review is a failed attempt, not a verdict, so a rerun retries it.
     const previous = reviews.find(
       (r) =>
         r.user?.login === reviewer &&
         r.commit_id === pr.head.sha &&
         (r.body?.includes(marker(pr)) ||
-          r.body?.includes(`<!-- agent-review:${pr.base.sha}:${pr.head.sha} -->`)),
+          r.body?.includes(`<!-- agent-review:${pr.base.sha}:${pr.head.sha} -->`)) &&
+        !previousOutcome(r.body!).incomplete,
     );
     if (previous) return previous;
     if (reviews.length < 100) return null;
