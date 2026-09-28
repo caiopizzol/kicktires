@@ -487,3 +487,79 @@ test("retry waits grow, stay jittered and bounded", () => {
   expect(retryDelay(1, () => 1)).toBe(7500);
   expect(retryDelay(2, () => 0.5)).toBe(10000);
 });
+
+test("a final report before any tool result, or beside other calls, is a correctable proposal", async () => {
+  const withReport: LanguageModelV4CallOptions = {
+    ...options,
+    tools: [
+      ...options.tools!,
+      {
+        type: "function",
+        name: "final_output",
+        inputSchema: {
+          type: "object",
+          properties: { summary: { type: "string" } },
+          required: ["summary"],
+          additionalProperties: false,
+        },
+      },
+    ],
+  };
+  const report = { name: "final_output", input: { summary: "done" } };
+  const check = { name: "run_checks", input: { revision: "head" } };
+  const proposal = (...toolCalls: unknown[]) => JSON.stringify({ toolCalls, text: "" });
+  const started: LanguageModelV4CallOptions = {
+    ...withReport,
+    prompt: [
+      { role: "user", content: [{ type: "text", text: "Review" }] },
+      {
+        role: "assistant",
+        content: [{ type: "tool-call", toolCallId: "a", toolName: "run_checks", input: {} }],
+      },
+      {
+        role: "tool",
+        content: [
+          {
+            type: "tool-result",
+            toolCallId: "a",
+            toolName: "run_checks",
+            output: { type: "text", value: "ok" },
+          },
+        ],
+      },
+    ],
+  };
+  expect(() => proposedResponse(proposal(report), withReport)).toThrow("before any tool");
+  expect(() => proposedResponse(proposal(check, report), started)).toThrow("only call");
+  expect(proposedResponse(proposal(report), started).content[0]).toMatchObject({
+    toolName: "final_output",
+  });
+
+  const previous = process.env.KICKTIRES_CODEX_CLI;
+  process.env.KICKTIRES_CODEX_CLI = "test";
+  try {
+    const prompts: string[] = [];
+    const model = codexModel("test", "unused", undefined, async (request) => {
+      prompts.push(request.prompt);
+      return {
+        text: prompts.length === 1 ? proposal(report) : proposal(check),
+        usage: { inputTokens: 1, cachedInputTokens: 0, outputTokens: 1, reasoningOutputTokens: 0 },
+      };
+    });
+    const result = await model.doGenerate(withReport);
+    expect(prompts).toHaveLength(2);
+    expect(JSON.parse(prompts[1]).correction).toContain("before any tool");
+    expect(result.content[0]).toMatchObject({ toolName: "run_checks" });
+
+    const insistent = codexModel("test", "unused", undefined, async () => ({
+      text: proposal(report),
+      usage: { inputTokens: 1, cachedInputTokens: 0, outputTokens: 1, reasoningOutputTokens: 0 },
+    }));
+    expect((await insistent.doGenerate(withReport)).content[0]).toMatchObject({
+      toolName: "final_output",
+    });
+  } finally {
+    if (previous === undefined) delete process.env.KICKTIRES_CODEX_CLI;
+    else process.env.KICKTIRES_CODEX_CLI = previous;
+  }
+});
