@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/caiopizzol/kicktires/compare/v0.6.1...v0.6.2) (2026-09-28)
+
+
+### Bug Fixes
+
+* **codex:** retry model calls that fail for transient provider reasons ([#59](https://github.com/caiopizzol/kicktires/issues/59)) ([d130346](https://github.com/caiopizzol/kicktires/commit/d1303469c9c3740be6be3ee121a46e52969e9f55))
+
 ## [0.6.1](https://github.com/caiopizzol/kicktires/compare/v0.6.0...v0.6.1) (2026-09-28)
 
 
