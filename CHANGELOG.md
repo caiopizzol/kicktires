@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.1](https://github.com/caiopizzol/kicktires/compare/v0.6.0...v0.6.1) (2026-09-28)
+
+
+### Bug Fixes
+
+* **github:** accept a review GitHub creates while answering 422 ([#56](https://github.com/caiopizzol/kicktires/issues/56)) ([5e838dc](https://github.com/caiopizzol/kicktires/commit/5e838dc1cb935d7316c65f0098afcf5410a2e622))
+* **review:** ignore diff anchors cited as finding evidence ([#54](https://github.com/caiopizzol/kicktires/issues/54)) ([701cec0](https://github.com/caiopizzol/kicktires/commit/701cec0f70f17a50dd88708a6920da81a44f2a99))
+
 ## [0.6.0](https://github.com/caiopizzol/kicktires/compare/v0.5.2...v0.6.0) (2026-09-28)
 
 
