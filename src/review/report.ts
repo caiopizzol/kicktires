@@ -81,9 +81,14 @@ export function validateReport(data: unknown, rawEvents: unknown[], job: ReviewJ
   });
   if (locatedFindings.length !== report.findings.length)
     gaps.push("Finding(s) dropped because their change references were unknown");
-  const supportedFindings = locatedFindings.filter((f) =>
-    f.evidenceRefs.every((id) => evidence.has(id)),
-  );
+  // Models sometimes repeat a diff anchor as evidence. An anchor locates the finding but
+  // proves nothing, so it is ignored; any other unrecorded reference still drops the finding.
+  const supportedFindings = locatedFindings.flatMap((f) => {
+    const refs = f.evidenceRefs.filter((id) => evidence.has(id) || !anchors.has(id));
+    return refs.length && refs.every((id) => evidence.has(id))
+      ? [{ ...f, evidenceRefs: refs }]
+      : [];
+  });
   if (supportedFindings.length !== locatedFindings.length)
     gaps.push(
       `${locatedFindings.length - supportedFindings.length} finding(s) dropped because their evidence references were missing or failed`,
