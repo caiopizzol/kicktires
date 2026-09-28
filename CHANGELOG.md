@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0](https://github.com/caiopizzol/kicktires/compare/v0.5.2...v0.6.0) (2026-09-28)
+
+
+### Features
+
+* **sandbox:** include poppler in the review image ([#50](https://github.com/caiopizzol/kicktires/issues/50)) ([2cde2c2](https://github.com/caiopizzol/kicktires/commit/2cde2c2704b5d4d451a901f0552ed919fae89405))
+
+
+### Bug Fixes
+
+* **github:** retry incomplete reviews on rerun ([#48](https://github.com/caiopizzol/kicktires/issues/48)) ([d303811](https://github.com/caiopizzol/kicktires/commit/d303811763efc179a25ef7c8cf98db160b0e18ce))
+
 ## [0.5.2](https://github.com/caiopizzol/kicktires/compare/v0.5.1...v0.5.2) (2026-09-27)
 
 
