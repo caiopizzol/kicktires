@@ -85,7 +85,7 @@ Results retain exit codes and bounded output. A failing test may support a findi
 it makes the review incomplete only when it blocks necessary investigation.
 Keep project-wide pass/fail gates in CI.
 
-The image includes Node, Bun, Git and Chromium. Add other runtimes to
+The image includes Node, Bun, Git, Chromium and poppler (`pdftotext`, `pdfinfo`, `pdftoppm`). Add other runtimes to
 `Dockerfile.sandbox` and rebuild. Browser mode starts the app with `PORT` and provides
 Playwright's `page`, Node's `assert` and `origin`. The agent chooses when to use it
 and compares revisions when attributing a regression. Successful checks save screenshots. See [execution limits](execution.md).
