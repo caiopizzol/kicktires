@@ -10,7 +10,7 @@ export const reportSchema = z.object({
   gaps: z
     .array(z.string())
     .describe(
-      "Blockers to finishing the requested review, not a list of optional work that was not requested. Put contextual scope limitations in the summary.",
+      "Blockers to finishing the requested review, not a list of optional work that was not requested. Put scope limitations, such as a toolchain the sandbox lacks or unread upstream source, in the summary.",
     ),
   findings: z.array(
     findingSchema.omit({ file: true, side: true, line: true }).extend({

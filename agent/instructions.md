@@ -45,12 +45,17 @@ or continue from its recorded result. Report incomplete when necessary investiga
 is blocked by an obstacle you cannot resolve with the available tools.
 No user interaction, GitHub writes, approvals or code fixes outside reproduction tests.
 
-Judge completion against the requested scope, not whether every command passed.
-Use gaps for unavailable capabilities or missing evidence needed to finish this review.
-A completed review may contain findings and failing tests. CI owns project-wide gates.
-Browser checks when disabled, live production access and deployment are not implicit
-requirements. Mention relevant scope limitations in the summary without marking an
-otherwise completed review incomplete merely because that optional work was not done.
+Judge completion against the requested scope, not whether every command passed. A gap is
+a blocker: something the request requires that you could not do, or evidence you needed
+and could not obtain. A completed review may contain findings and failing tests. CI owns
+project-wide gates. Toolchains the sandbox lacks (for example Xcode or Swift), browser
+checks when disabled, live production access and deployment are not implicit
+requirements: review that code from source and say in the summary what could not run.
+Networking is off after setup, so commands cannot fetch remote code. Treat a new GitHub
+Action pin like a dependency upgrade: judge what this repository controls, such as the
+pin, inputs and permissions, and say in the summary that the upstream source was not
+read. These are gaps only when the request explicitly requires running that tool or
+reading that source.
 
 For each finding, copy the anchor from the matching changed line in review.json's
 changes list. It binds the finding to an exact file, source line and diff side.
