@@ -102,3 +102,5 @@ The `release` workflow uses `RELEASE_PLEASE_TOKEN`, a fine-grained token for thi
 repository with Contents, Issues and Pull requests read/write. Its PRs run normal
 CI and KickTires checks. Keep the hosted installer pinned to a tested release using
 the deployment command above.
+
+See [configuration](docs/configuration.md) for the model and effort a worker uses.
