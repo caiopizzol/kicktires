@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0](https://github.com/caiopizzol/kicktires/compare/v0.6.2...v0.7.0) (2026-09-30)
+
+
+### Features
+
+* **codex:** pin CLI 0.159.2 and default to gpt-6.1-sol ([#64](https://github.com/caiopizzol/kicktires/issues/64)) ([9ba3a97](https://github.com/caiopizzol/kicktires/commit/9ba3a979a24a621e32d0b61912fd9c3559260ac6))
+
+
+### Bug Fixes
+
+* **codex:** correct a final report sent before any tool ran ([#63](https://github.com/caiopizzol/kicktires/issues/63)) ([6f44af9](https://github.com/caiopizzol/kicktires/commit/6f44af922b187e34377b83acf93490ef63c214d8))
+* **review:** keep missing toolchains and unread Action source out of gaps ([#61](https://github.com/caiopizzol/kicktires/issues/61)) ([65b73bc](https://github.com/caiopizzol/kicktires/commit/65b73bc5b966d0a7fab67c94f3ec45e754ded81b))
+
 ## [0.6.2](https://github.com/caiopizzol/kicktires/compare/v0.6.1...v0.6.2) (2026-09-28)
 
 
