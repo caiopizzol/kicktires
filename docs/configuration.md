@@ -9,7 +9,7 @@ Start with [profile.json](../examples/profile.json). See the
 ```json
 {
   "model": {
-    "id": "gpt-6-sol",
+    "id": "gpt-6.1-sol",
     "effort": "xhigh",
     "home": "/home/runner/.local/share/kicktires/codex"
   },
@@ -49,7 +49,7 @@ plugin caches, but its app access and code execution are disabled.
 Codex proposes responses; Eve executes tools and validates evidence. Each step
 starts a fresh Codex thread with Eve's conversation, increasing context use compared
 with a persistent thread. The adapter uses the experimental app-server API in pinned
-CLI version 0.156.1. Subscription limits and reauthentication apply.
+CLI version 0.159.2. Subscription limits and reauthentication apply.
 
 Clean and seeded browser-regression tests verified terminal checks, browser checks
 and MCP context using a ChatGPT subscription.

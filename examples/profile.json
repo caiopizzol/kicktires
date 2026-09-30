@@ -1,6 +1,6 @@
 {
   "model": {
-    "id": "gpt-6-sol",
+    "id": "gpt-6.1-sol",
     "effort": "xhigh",
     "home": "/home/runner/.local/share/kicktires/codex"
   },
