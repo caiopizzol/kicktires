@@ -21,7 +21,7 @@ const workerStateSchema = z.strictObject({
 
 // Custom models keep their catalog default effort; xhigh applies only to the default model.
 export function defaultModel(answer: string) {
-  return answer ? { id: answer } : { id: "gpt-6-sol", effort: "xhigh" };
+  return answer ? { id: answer } : { id: "gpt-6.1-sol", effort: "xhigh" };
 }
 
 function run(
@@ -177,7 +177,7 @@ export async function configureWorker(
     ? profileSchema.parse(JSON.parse(await readTrusted(profilePath)))
     : {
         model: {
-          ...defaultModel(await ask("Codex model [gpt-6-sol]")),
+          ...defaultModel(await ask("Codex model [gpt-6.1-sol]")),
           home: codexHome,
         },
       };
