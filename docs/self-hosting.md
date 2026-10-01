@@ -116,11 +116,12 @@ check to its observed app. See [retry behavior](shared-workers.md#retries-and-in
 
 ## Upgrade and operate
 
-Test a candidate release through its CLI before activation. With reviews stopped
-(`flock --exclusive /var/lock/kicktires/review.lock` waits for running reviews),
-install its launcher and atomically replace `/etc/kicktires/release`. That file
-selects the release for every repository on the worker. Retain the old release for
-rollback and refresh skills containing launcher snapshots.
+Test a candidate release through its CLI before activation. With reviews stopped,
+install its launcher and atomically replace `/etc/kicktires/release`. Run both steps
+under `flock --exclusive /var/lock/kicktires/review.lock sh -c '...'`, which waits for
+running reviews and holds new ones until activation finishes. That file selects the
+release for every repository on the worker. Retain the old release for rollback and
+refresh skills containing launcher snapshots.
 
 Runtimes and the shared sandbox image require separate tested upgrades. Update and
 verify download versions/checksums when changing bootstrap runtimes.
