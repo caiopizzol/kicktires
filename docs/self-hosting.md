@@ -38,7 +38,8 @@ removing it and retrying. Changed sandbox source requires a planned image upgrad
 | `/opt/kicktires/bin/review-pr`   | GitHub launcher             |
 | `/etc/kicktires/release`         | Active commit               |
 
-A shared lock serializes reviews; a tmpfiles rule recreates it after reboot.
+Reviews share a lock that release upgrades hold exclusively; a tmpfiles rule recreates
+it after reboot.
 Docker access controls the host daemon. There are no per-review CPU/memory quotas;
 read [execution boundaries](execution.md).
 
@@ -115,7 +116,8 @@ check to its observed app. See [retry behavior](shared-workers.md#retries-and-in
 
 ## Upgrade and operate
 
-Test a candidate release through its CLI before activation. With reviews stopped,
+Test a candidate release through its CLI before activation. With reviews stopped
+(`flock --exclusive /var/lock/kicktires/review.lock` waits for running reviews),
 install its launcher and atomically replace `/etc/kicktires/release`. That file
 selects the release for every repository on the worker. Retain the old release for
 rollback and refresh skills containing launcher snapshots.
