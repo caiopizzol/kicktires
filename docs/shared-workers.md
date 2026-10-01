@@ -2,8 +2,8 @@
 
 Use one private GitHub repository as a review hub for several repositories owned by
 one organization or personal account.
-GitHub queues the jobs. Each VM runs one hub runner, so a second VM adds a second review
-slot. No queue server or public endpoint is needed.
+GitHub queues the jobs. Each hub runner is one review slot; add slots with more runners
+on a VM or more VMs. No queue server or public endpoint is needed.
 
 The hub supports public and private same-owner source repositories with same-repository
 PRs. Fork PRs are unsupported. Keep the hub repository private; never register a
@@ -55,9 +55,11 @@ repositories under one organization.
 
 ## Connect a VM
 
-[Install kicktires](self-hosting.md), then register one repository runner against the
-**hub repository** with the `kicktires` label. Use a dedicated Unix account and runner
-service. Do not register a separate listener for each source repository on this VM.
+[Install kicktires](self-hosting.md), then register a repository runner against the
+**hub repository** with the `kicktires` label for each review slot. Use one dedicated
+Unix account for every slot on the VM, with a runner service per slot. Size the VM for
+its slots: there are no per-review CPU or memory quotas. Do not register a separate
+listener for each source repository on this VM.
 
 Install each project's trusted profile and skills. Copy [hub.json](../examples/hub.json)
 to `/etc/kicktires/hub.json`, owned by root and readable by the runner. Set the hub's full
@@ -123,8 +125,9 @@ Resolve the reported blocker or correct trusted configuration, then review a new
 revision. Resolving a thread does not turn a failed status green. Do not bypass failed
 checks with automatic approvals.
 
-The shared VM lock remains a safety check. It is not the queue. Adding workers increases
-execution capacity, not the model account's usage allowance.
+The VM's review lock only keeps upgrades from replacing a release mid-review. It is not
+the queue. Adding slots increases execution capacity, not the model account's usage
+allowance.
 
 ## Decline a finding
 
