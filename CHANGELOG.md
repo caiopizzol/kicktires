@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/caiopizzol/kicktires/compare/v0.7.0...v0.8.0) (2026-10-01)
+
+
+### Features
+
+* **worker:** run hub runners on one worker concurrently ([#66](https://github.com/caiopizzol/kicktires/issues/66)) ([657c97a](https://github.com/caiopizzol/kicktires/commit/657c97a451073936bccf072510e70ac39580c4cb))
+
 ## [0.7.0](https://github.com/caiopizzol/kicktires/compare/v0.6.2...v0.7.0) (2026-09-30)
 
 
